@@ -21,6 +21,7 @@
 
 #include "GameConsts.h"
 #include "MapConsts.h"
+#include "Properties.h"
 
 class SerializedGameData;
 
@@ -101,6 +102,7 @@ class fowBuildingSite : public FOWObject
         const Nation nation;
         /// Gibt den Baufortschritt an, wie hoch das Gebäude schon gebaut ist, gemessen in 8 Stufen für jede verbaute Ware
         const unsigned char build_progress;
+        Property<BaseBuildingProp> properties;
     public:
 
         fowBuildingSite(const bool planing, const BuildingType type, const Nation nation, const unsigned char build_progress);

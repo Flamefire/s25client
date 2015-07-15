@@ -114,13 +114,13 @@ void iwBuildingSite::Msg_PaintAfter()
 
         if(i == 0)
         {
-            wares_count = BUILDING_COSTS[buildingsite->GetNation()][buildingsite->GetBuildingType()].boards;
+            wares_count = buildingsite->properties->costs.boards;
             wares_used = buildingsite->getUsedBoards();
             wares_delivered = buildingsite->getBoards() + wares_used;
         }
         else
         {
-            wares_count = BUILDING_COSTS[buildingsite->GetNation()][buildingsite->GetBuildingType()].stones;
+            wares_count = buildingsite->properties->costs.stones;
             wares_used = buildingsite->getUsedStones();
             wares_delivered = buildingsite->getStones() + wares_used;
         }

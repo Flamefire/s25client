@@ -216,6 +216,7 @@ SET(SOURCES_NOF
 
 SET(SOURCES_OTHER
 										BuildingConsts.h
+										BuildingConstsLegacy.h
 										BuildingTypes.h
 	BurnedWarehouse.cpp                 BurnedWarehouse.h
 	CatapultStone.cpp                   CatapultStone.h
@@ -261,6 +262,7 @@ SET(SOURCES_OTHER
 										JobConsts.h
 										JobTypes.h
 	languages.cpp                       languages.h
+										LegacyConsts.h
 										list.h
 	ListDir.cpp                         ListDir.h
 	Loader.cpp                          Loader.h
@@ -277,6 +279,8 @@ SET(SOURCES_OTHER
 										NationConsts.h
 										NodalObjectTypes.h
 										Node.h
+										Properties.h
+	PropertyLoader.cpp					PropertyLoader.h
 	DriverWrapper.cpp                   DriverWrapper.h
 	VideoDriverWrapper.cpp              VideoDriverWrapper.h
 	AudioDriverWrapper.cpp              AudioDriverWrapper.h
@@ -301,6 +305,7 @@ SET(SOURCES_OTHER
 	PostMsg.cpp                         PostMsg.h
 	win32_nanosleep.cpp                 win32_nanosleep.h
 	Debug.cpp                           Debug.h
+	XmlSerializer.cpp					XmlSerializer.h
    )
 
 SET(SOURCES_ADDONS

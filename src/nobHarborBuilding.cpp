@@ -378,8 +378,8 @@ void nobHarborBuilding::StartExpedition()
 
     // In unseren Warenbestand gucken und die erforderlichen Bretter und Steine sowie den
     // Bauarbeiter holen, falls vorhanden
-    expedition.boards = min(unsigned(BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards), real_goods.goods[GD_BOARDS]);
-    expedition.stones = min(unsigned(BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones), real_goods.goods[GD_STONES]);
+    expedition.boards = min(unsigned(properties->costs.boards), real_goods.goods[GD_BOARDS]);
+    expedition.stones = min(unsigned(properties->costs.stones), real_goods.goods[GD_STONES]);
     real_goods.goods[GD_BOARDS] -= expedition.boards;
     goods.goods[GD_BOARDS] -= expedition.boards;
     real_goods.goods[GD_STONES] -= expedition.stones;
@@ -528,9 +528,9 @@ void nobHarborBuilding::OrderExpeditionWares()
 
     // Prüfen, ob jeweils noch weitere Waren bestellt werden müssen
     unsigned todo_boards = 0;
-    if(boards + expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
+    if(boards + expedition.boards < properties->costs.boards)
     {
-        todo_boards = BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards - (boards + expedition.boards);
+        todo_boards = properties->costs.boards - (boards + expedition.boards);
         Ware* ware;
         do
         {
@@ -545,9 +545,9 @@ void nobHarborBuilding::OrderExpeditionWares()
     }
 
     unsigned todo_stones = 0;
-    if(stones + expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+    if(stones + expedition.stones < properties->costs.stones)
     {
-        todo_stones = BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones - (stones + expedition.stones);
+        todo_stones = properties->costs.stones - (stones + expedition.stones);
         Ware* ware;
         do
         {
@@ -607,8 +607,8 @@ void nobHarborBuilding::ShipArrived(noShip* ship)
     }
     //Expedition ready?
     if(expedition.active && expedition.builder
-            && expedition.boards == BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards
-            && expedition.stones == BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+            && expedition.boards == properties->costs.boards
+            && expedition.stones == properties->costs.stones)
     {
         // Aufräumen am Hafen
         expedition.active = false;
@@ -715,8 +715,8 @@ void nobHarborBuilding::AddWare(Ware* ware)
     // Brauchen wir die Ware?
     if(expedition.active)
     {
-        if((ware->type == GD_BOARDS && expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
-                || (ware->type == GD_STONES && expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones))
+        if((ware->type == GD_BOARDS && expedition.boards < properties->costs.boards)
+                || (ware->type == GD_STONES && expedition.stones < properties->costs.stones))
         {
             if(ware->type == GD_BOARDS) ++expedition.boards;
             else ++expedition.stones;
@@ -773,9 +773,9 @@ bool nobHarborBuilding::IsExpeditionReady() const
     if(!expedition.active)
         return false;
     // Alles da?
-    if(expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
+    if(expedition.boards < properties->costs.boards)
         return false;
-    if(expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+    if(expedition.stones < properties->costs.stones)
         return false;
     if(!expedition.builder)
         return false;
@@ -1166,7 +1166,7 @@ void nobHarborBuilding::ReceiveGoodsFromShip(const std::list<noFigure*> figures,
             if(expedition.active)
             {
                 //board or stones and still required for the expedition?
-                if(((*it)->type == GD_BOARDS && expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)  || ((*it)->type == GD_STONES && expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones))
+                if(((*it)->type == GD_BOARDS && expedition.boards < properties->costs.boards)  || ((*it)->type == GD_STONES && expedition.stones < properties->costs.stones))
                 {
                     // use it for expedition and reduce count
                     if((*it)->type == GD_BOARDS) ++expedition.boards;
@@ -1373,10 +1373,10 @@ unsigned nobHarborBuilding::CalcDistributionPoints(const GoodType type)
 
     // Ermitteln, ob wir noch Bretter oder Steine brauchen
     if(expedition.boards + ordered_boards
-            >= BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards && type == GD_BOARDS)
+            >= properties->costs.boards && type == GD_BOARDS)
         return 0;
     if(expedition.stones + ordered_stones
-            >= BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones && type == GD_STONES)
+            >= properties->costs.stones && type == GD_STONES)
         return 0;
 
     // Schon bestellte Sachen wirken sich positiv aus, da wir ja so eher eine Expedition bereit haben

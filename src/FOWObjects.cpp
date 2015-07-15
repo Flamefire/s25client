@@ -98,14 +98,15 @@ void fowBuilding::Draw(int x, int y) const
 
 
 fowBuildingSite::fowBuildingSite(const bool planing, const BuildingType type, const Nation nation, const unsigned char build_progress)
-    : planing(planing), type(type), nation(nation), build_progress(build_progress)
+    : planing(planing), type(type), nation(nation), build_progress(build_progress), properties(nation, type)
 {}
 
 fowBuildingSite::fowBuildingSite(SerializedGameData* sgd) :
     planing(sgd->PopBool()),
     type(BuildingType(sgd->PopUnsignedChar())),
     nation(Nation(sgd->PopUnsignedChar())),
-    build_progress(sgd->PopUnsignedChar())
+    build_progress(sgd->PopUnsignedChar()),
+    properties(nation, type)
 {}
 
 void fowBuildingSite::Serialize(SerializedGameData* sgd) const
@@ -138,17 +139,17 @@ void fowBuildingSite::Draw(int x, int y) const
         // ausrechnen, wie weit er ist
         unsigned int p1 = 0, p2 = 0;
 
-        if(BUILDING_COSTS[nation][type].stones)
+        if(properties->costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            p1 = min<unsigned int>(build_progress, BUILDING_COSTS[nation][type].boards * 8);
-            p2 = BUILDING_COSTS[nation][type].boards * 8;
+            p1 = min<unsigned int>(build_progress, properties->costs.boards * 8);
+            p2 = properties->costs.boards * 8;
         }
         else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            p1 = min<unsigned int>(build_progress, BUILDING_COSTS[nation][type].boards * 4);
-            p2 = BUILDING_COSTS[nation][type].boards * 4;
+            p1 = min<unsigned int>(build_progress, properties->costs.boards * 4);
+            p2 = properties->costs.boards * 4;
         }
 
         glArchivItem_Bitmap* image;
@@ -175,17 +176,17 @@ void fowBuildingSite::Draw(int x, int y) const
         }
 
         // Das richtige Haus
-        if(BUILDING_COSTS[nation][type].stones)
+        if(properties->costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            p1 = ((build_progress >  BUILDING_COSTS[nation][type].boards * 8) ? (build_progress - BUILDING_COSTS[nation][type].boards * 8) : 0);
-            p2 = BUILDING_COSTS[nation][type].stones * 8;
+            p1 = ((build_progress >  properties->costs.boards * 8) ? (build_progress - properties->costs.boards * 8) : 0);
+            p2 = properties->costs.stones * 8;
         }
         else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            p1 = ((build_progress >  BUILDING_COSTS[nation][type].boards * 4) ? (build_progress - BUILDING_COSTS[nation][type].boards * 4) : 0);
-            p2 = BUILDING_COSTS[nation][type].boards * 4;
+            p1 = ((build_progress >  properties->costs.boards * 4) ? (build_progress - properties->costs.boards * 4) : 0);
+            p2 = properties->costs.boards * 4;
         }
 
         // Normal

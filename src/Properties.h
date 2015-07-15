@@ -24,7 +24,7 @@
 // Interfaces
 //////////////////////////////////////////////////////////////////////////
 
-/// Base class for all properties that are used inside the units
+/// Base class for all property types that can be loaded
 class PropertyBase{
 public:
 	virtual ~PropertyBase(){} // Required to do dynamic_casts
@@ -47,7 +47,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 // Properties
-// Do NOT use instances of any of them directly. Inherit from ContainsProb<Prop> to use them!
+// Do NOT use instances of any of them directly. Inherit from Property<Prop> to use them!
 //////////////////////////////////////////////////////////////////////////
 
 struct DoorProb{
@@ -61,19 +61,22 @@ struct BaseBuildingProp: PropertyBase {
 
 //////////////////////////////////////////////////////////////////////////
 // Property container
-// To use a property in a unit, make it inherit from ContainsProp<Prop>
-// and call PROPERTY_LOADER.register*<UnitClass>(UnitType) in static context (e.g. via anonymous namespace)
+// To use a property in a unit, add an instance of Property<ActualProperty> to it
+// and call PROPERTY_LOADER.register*<ActualProperty>(UnitType) in static context (e.g. via anonymous namespace)
+// All other classes can then use the property simply by creating an instance of Property<ActualProperty>
 //////////////////////////////////////////////////////////////////////////
 
-class ContainsPropBase{
+class IProperty{
 protected:
 	static const IPropertyLoader* loader;
 };
 
 template<class T>
-class ContainsProp: public ContainsPropBase {
+class Property: public IProperty {
+    const T* const prop;
 public:
-	const T* const prop;
-	ContainsProp(Nation nation, BuildingType type): prop(loader->getProperty<T>(nation, type)){}
+	Property(Nation nation, BuildingType type): prop(loader->getProperty<T>(nation, type)){}
+    const T* operator->() const{ return prop; }
+    const T& operator*() const{ return *prob; }
 };
 #endif // Properties_h__

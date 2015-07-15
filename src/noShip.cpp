@@ -310,9 +310,10 @@ void noShip::HandleEvent(const unsigned int id)
                     {
                         Goods goods;
                         memset(&goods, 0, sizeof(Goods));
-                        unsigned char nation = players->getElement(player)->nation;
-                        goods.goods[GD_BOARDS] = BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards;
-                        goods.goods[GD_STONES] = BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones;
+                        Nation nation = players->getElement(player)->nation;
+                        Property<BaseBuildingProp> prop(nation, BLD_HARBORBUILDING);
+                        goods.goods[GD_BOARDS] = prop->costs.boards;
+                        goods.goods[GD_STONES] = prop->costs.stones;
                         goods.people[JOB_BUILDER] = 1;
                         static_cast<nobBaseWarehouse*>(hb)->AddGoods(goods);
                         // Wieder idlen und ggf. neuen Job suchen

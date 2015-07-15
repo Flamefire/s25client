@@ -409,7 +409,7 @@ void nofBuilder::Draw(int x, int y)
 bool nofBuilder::ChooseWare()
 {
     // Brauch ich ein Brett(Rohbau und wenn kein Stein benötigt wird) oder Stein?
-    if(building_site->GetBuildProgress(false) < BUILDING_COSTS[building_site->GetNation()][building_site->GetBuildingType()].boards * 8 || !BUILDING_COSTS[building_site->GetNation()][building_site->GetBuildingType()].stones)
+    if(building_site->GetBuildProgress(false) < building_site->properties->costs.boards * 8 || !building_site->properties->costs.stones)
     {
         // Brett
         if(building_site->boards)

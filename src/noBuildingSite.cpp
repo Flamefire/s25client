@@ -85,8 +85,8 @@ noBuildingSite::noBuildingSite(const unsigned short x, const unsigned short y, c
       state(STATE_BUILDING),
       planer(0),
       builder(new nofBuilder(x, y, player, this)),
-      boards(BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards),
-      stones(BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones),
+      boards(properties->costs.boards),
+      stones(properties->costs.stones),
       used_boards(0),
       used_stones(0),
       build_progress(0)
@@ -187,13 +187,13 @@ void noBuildingSite::OrderConstructionMaterial()
 
     // Bretter
     Ware* w;
-    for(unsigned char i = used_boards + boards + ordered_boards.size(); i < BUILDING_COSTS[gwg->GetPlayer(player)->nation][type].boards; ++i)
+    for(unsigned char i = used_boards + boards + ordered_boards.size(); i < properties->costs.boards; ++i)
     {
         if( (w = gwg->GetPlayer(player)->OrderWare(GD_BOARDS, this)) )
             ordered_boards.push_front(w);
     }
     // Steine
-    for(unsigned char i = used_stones + stones + ordered_stones.size(); i < BUILDING_COSTS[gwg->GetPlayer(player)->nation][type].stones; ++i)
+    for(unsigned char i = used_stones + stones + ordered_stones.size(); i < properties->costs.stones; ++i)
     {
         if( (w = gwg->GetPlayer(player)->OrderWare(GD_STONES, this)) )
             ordered_stones.push_back(w);
@@ -231,33 +231,33 @@ void noBuildingSite::Draw(int x, int y)
         // ausrechnen, wie weit er ist
         unsigned int p1 = 0, p2 = 0;
 
-        if(BUILDING_COSTS[nation][GetBuildingType()].stones)
+        if(properties->costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            p1 = min<unsigned int>(build_progress, BUILDING_COSTS[nation][GetBuildingType()].boards * 8);
-            p2 = BUILDING_COSTS[nation][GetBuildingType()].boards * 8;
+            p1 = min<unsigned int>(build_progress, properties->costs.boards * 8);
+            p2 = properties->costs.boards * 8;
         }
         else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            p1 = min<unsigned int>(build_progress, BUILDING_COSTS[nation][GetBuildingType()].boards * 4);
-            p2 = BUILDING_COSTS[nation][GetBuildingType()].boards * 4;
+            p1 = min<unsigned int>(build_progress, properties->costs.boards * 4);
+            p2 = properties->costs.boards * 4;
         }
 
         Loader::building_cache[nation][type][1].drawPercent(x, y, p1 * 100 / p2);
 
         // Das richtige Haus
-        if(BUILDING_COSTS[nation][GetBuildingType()].stones)
+        if(properties->costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            p1 = ((build_progress >  BUILDING_COSTS[nation][GetBuildingType()].boards * 8) ? (build_progress - BUILDING_COSTS[nation][GetBuildingType()].boards * 8) : 0);
-            p2 = BUILDING_COSTS[nation][GetBuildingType()].stones * 8;
+            p1 = ((build_progress >  properties->costs.boards * 8) ? (build_progress - properties->costs.boards * 8) : 0);
+            p2 = properties->costs.stones * 8;
         }
         else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            p1 = ((build_progress >  BUILDING_COSTS[nation][GetBuildingType()].boards * 4) ? (build_progress - BUILDING_COSTS[nation][GetBuildingType()].boards * 4) : 0);
-            p2 = BUILDING_COSTS[nation][GetBuildingType()].boards * 4;
+            p1 = ((build_progress >  properties->costs.boards * 4) ? (build_progress - properties->costs.boards * 4) : 0);
+            p2 = properties->costs.boards * 4;
         }
 
         Loader::building_cache[nation][type][0].drawPercent(x, y, p1 * 100 / p2);
@@ -305,8 +305,8 @@ unsigned noBuildingSite::CalcDistributionPoints(noRoadNode* start, const GoodTyp
         return 0;
 
     // Wenn wir schon genug Baumaterial haben, brauchen wir nichts mehr
-    if((BUILDING_COSTS[nation][this->type].boards == ordered_boards.size() + boards + used_boards && goodtype == GD_BOARDS) ||
-            (BUILDING_COSTS[nation][this->type].stones == ordered_stones.size() + stones + used_stones && goodtype == GD_STONES))
+    if((properties->costs.boards == ordered_boards.size() + boards + used_boards && goodtype == GD_BOARDS) ||
+            (properties->costs.stones == ordered_stones.size() + stones + used_stones && goodtype == GD_STONES))
         return 0;
 
     // 10000 als Basis wählen, damit man auch noch was abziehen kann
@@ -314,8 +314,8 @@ unsigned noBuildingSite::CalcDistributionPoints(noRoadNode* start, const GoodTyp
 
     // Baumaterial mit einberechnen (wer noch am wenigsten braucht, soll mehr Punkte kriegen, da ja möglichst
     // zuerst Gebäude fertiggestellt werden sollten)
-    points -= (BUILDING_COSTS[nation][type].boards - ordered_boards.size() - boards - used_boards) * 20;
-    points -= (BUILDING_COSTS[nation][type].stones - ordered_stones.size() - stones - used_stones) * 20;
+    points -= (properties->costs.boards - ordered_boards.size() - boards - used_boards) * 20;
+    points -= (properties->costs.stones - ordered_stones.size() - stones - used_stones) * 20;
 
 
     // Baupriorität mit einberechnen (niedriger = höhere Priorität, daher - !)
@@ -404,7 +404,7 @@ void noBuildingSite::TakeWare(Ware* ware)
 
 bool noBuildingSite::IsBuildingComplete()
 {
-    return (build_progress == BUILDING_COSTS[nation][type].boards * 8 + BUILDING_COSTS[nation][type].stones * 8);
+    return (build_progress == properties->costs.boards * 8 + properties->costs.stones * 8);
 }
 
 unsigned char noBuildingSite::GetBuildProgress(bool percent) const
@@ -412,7 +412,7 @@ unsigned char noBuildingSite::GetBuildProgress(bool percent) const
     if(!percent)
         return build_progress;
 
-    unsigned costs = BUILDING_COSTS[nation][type].boards * 8 + BUILDING_COSTS[nation][type].stones * 8;
+    unsigned costs = properties->costs.boards * 8 + properties->costs.stones * 8;
     unsigned progress = (((unsigned) build_progress) * 100) / costs;
 
     return (unsigned char)progress;

@@ -25,7 +25,7 @@
 #include "BuildingConsts.h"
 #include "Properties.h"
 
-class noBaseBuilding : public noRoadNode, public ContainsProp<BaseBuildingProp>
+class noBaseBuilding : public noRoadNode
 {
     protected:
 
@@ -45,11 +45,10 @@ class noBaseBuilding : public noRoadNode, public ContainsProp<BaseBuildingProp>
         /// Zerstört Anbauten, falls es sich um ein großes Gebäude handelt (wo es diese auch gibt)
         void DestroyBuildingExtensions();
 
-    public:
-
         noBaseBuilding(const NodalObjectType nop, const BuildingType type, const unsigned short x, const unsigned short y, const unsigned char player);
         noBaseBuilding(SerializedGameData* sgd, const unsigned obj_id);
 
+    public:
         virtual ~noBaseBuilding();
 
         /// Aufräummethoden
@@ -101,6 +100,7 @@ class noBaseBuilding : public noRoadNode, public ContainsProp<BaseBuildingProp>
         /// Gibt ein Bild zurück für die Tür des Gebäudes
         glArchivItem_Bitmap* GetDoorImage() const;
 
+        Property<BaseBuildingProp> properties;
 };
 
 

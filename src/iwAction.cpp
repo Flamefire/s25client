@@ -37,6 +37,7 @@
 
 #include "noFlag.h"
 #include "nobMilitary.h"
+#include "PropertyLoader.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Makros / Defines
@@ -224,18 +225,20 @@ iwAction::iwAction(dskGameInterface* const gi, GameWorldViewer* const gwv, const
                 if (!building_available[bt][j])
                     continue;
 
+                Property<BaseBuildingProp> prop(GAMECLIENT.GetLocalPlayer()->nation, building_icons[bt][j]);
+
                 // Baukosten im Tooltip mit anzeigen
                 std::stringstream tooltip;
                 tooltip << _(BUILDING_NAMES[building_icons[bt][j]]);
 
                 tooltip << _("\nCosts: ");
-                if(BUILDING_COSTS[GAMECLIENT.GetLocalPlayer()->nation][building_icons[bt][j]].boards > 0)
-                    tooltip << (int)BUILDING_COSTS[GAMECLIENT.GetLocalPlayer()->nation][building_icons[bt][j]].boards << _(" boards");
-                if(BUILDING_COSTS[GAMECLIENT.GetLocalPlayer()->nation][building_icons[bt][j]].stones > 0)
+                if(prop->costs.boards > 0)
+                    tooltip << (int)prop->costs.boards << _(" boards");
+                if(prop->costs.stones > 0)
                 {
-                    if(BUILDING_COSTS[GAMECLIENT.GetLocalPlayer()->nation][building_icons[bt][j]].boards > 0)
+                    if(prop->costs.boards > 0)
                         tooltip << ", ";
-                    tooltip << (int)BUILDING_COSTS[GAMECLIENT.GetLocalPlayer()->nation][building_icons[bt][j]].stones << _(" stones");
+                    tooltip << (int)prop->costs.stones << _(" stones");
                 }
 
                 build_tab->GetGroup(bt)->AddBuildingIcon(j, (k % 5) * 36, (k / 5) * 36 + 45, building_icons[bt][j], GAMECLIENT.GetLocalPlayer()->nation, 36, tooltip.str());

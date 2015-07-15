@@ -47,7 +47,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 noBaseBuilding::noBaseBuilding(const NodalObjectType nop, const BuildingType type, const unsigned short x, const unsigned short y, const unsigned char player)
-    : noRoadNode(nop, x, y, player), type(type), nation(GAMECLIENT.GetPlayer(player)->nation), ContainsProp<BaseBuildingProp>(nation, type), door_point_x(1000000), door_point_y(DOOR_CONSTS[GAMECLIENT.GetPlayer(player)->nation][type])
+    : noRoadNode(nop, x, y, player), type(type), nation(GAMECLIENT.GetPlayer(player)->nation), properties(nation, type), door_point_x(1000000), door_point_y(DOOR_CONSTS[GAMECLIENT.GetPlayer(player)->nation][type])
 {
     // Evtl Flagge setzen, wenn noch keine da ist
     if(gwg->GetNO(gwg->GetXA(x, y, 4), gwg->GetYA(x, y, 4))->GetType() != NOP_FLAG)
@@ -148,8 +148,8 @@ void noBaseBuilding::Destroy_noBaseBuilding()
             const unsigned int percent = 10 * percents[percent_index];
 
             // zurückgaben berechnen (abgerundet)
-            unsigned int boards = (percent * BUILDING_COSTS[nation][type].boards) / 1000;
-            unsigned int stones = (percent * BUILDING_COSTS[nation][type].stones) / 1000;
+            unsigned int boards = (percent * properties->costs.boards) / 1000;
+            unsigned int stones = (percent * properties->costs.stones) / 1000;
 
             GoodType goods[2] = {GD_BOARDS, GD_STONES};
             bool which = 0;
@@ -197,7 +197,7 @@ void noBaseBuilding::Serialize_noBaseBuilding(SerializedGameData* sgd) const
 noBaseBuilding::noBaseBuilding(SerializedGameData* sgd, const unsigned obj_id) : noRoadNode(sgd, obj_id),
     type(BuildingType(sgd->PopUnsignedChar())),
     nation(Nation(sgd->PopUnsignedChar())),
-    ContainsProp(nation, type),
+    properties(nation, type),
     door_point_x(sgd->PopSignedInt()),
     door_point_y(sgd->PopSignedInt())
 {
@@ -352,7 +352,7 @@ glArchivItem_Bitmap* noBaseBuilding::GetDoorImage() const
 namespace{
 	int registerAll(){
 		for(int i=0; i<BuildingType::BLD_COUNT; i++)
-			PROPERTY_LOADER.registerBuilding<noBaseBuilding>(BuildingType(i));
+			PROPERTY_LOADER.registerBuilding<BaseBuildingProp>(BuildingType(i));
 		return 0;
 	}
 	static int tmp = registerAll();

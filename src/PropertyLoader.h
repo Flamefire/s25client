@@ -109,10 +109,4 @@ private:
 
 #define PROPERTY_LOADER PropertyLoader::inst()
 
-template<class T>
-void PropertyLoader::registerBuilding(BuildingType type){
-	if(IS_SUPER_CLASS(ContainsProp<BaseBuildingProp>, T)){
-		regBaseBuildingProb.insert(type);
-	}
-}
 #endif // PropertyLoader_h__
