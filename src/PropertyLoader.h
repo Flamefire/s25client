@@ -85,13 +85,6 @@ public:
 	void save(const std::string& filePath);
 
 	virtual void getProperty(Nation nation, BuildingType type, const PropertyBase*& prop) const;
-	/// Returns a pointer to a property of the templated type
-	template<typename T>
-	const T* getProperty(Nation nation, BuildingType type) const {
-		const PropertyBase* prop = nullptr;
-		getProperty(nation, type, prop);
-		return static_cast<const T*>(prop);
-	}
 private:
 	std::string getXmlName(std::string name) const;
 	void loadNation(Nation nation, const std::string& filePath, const std::string& fileName);

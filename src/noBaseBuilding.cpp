@@ -35,7 +35,6 @@
 #include "SerializedGameData.h"
 #include "GameInterface.h"
 #include "PropertyLoader.h"
-#include <iostream>
 
 
 ///////////////////////////////////////////////////////////////////////////////

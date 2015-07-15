@@ -37,7 +37,7 @@
 
 #include "noFlag.h"
 #include "nobMilitary.h"
-#include "PropertyLoader.h"
+#include "Properties.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Makros / Defines

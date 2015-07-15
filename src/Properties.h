@@ -18,7 +18,8 @@
 #ifndef Properties_h__
 #define Properties_h__
 
-#include "BuildingConsts.h"
+#include "BuildingTypes.h"
+#include "NationConsts.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Interfaces
