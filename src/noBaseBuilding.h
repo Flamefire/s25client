@@ -23,9 +23,9 @@
 #include "noRoadNode.h"
 #include "noFlag.h"
 #include "BuildingConsts.h"
+#include "Properties.h"
 
-
-class noBaseBuilding : public noRoadNode
+class noBaseBuilding : public noRoadNode, public ContainsProp<BaseBuildingProp>
 {
     protected:
 

@@ -41,6 +41,8 @@
 
 #include "MusicPlayer.h"
 
+#include "PropertyLoader.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 // Makros / Defines
 #if defined _WIN32 && defined _DEBUG && defined _MSC_VER
@@ -127,6 +129,9 @@ bool GameManager::Start()
     std::string playlist = iwMusicPlayer::GetFullPlaylistPath(SETTINGS.sound.playlist);
     if(MusicPlayer::inst().Load(playlist))
         MusicPlayer::inst().Play();
+
+    PROPERTY_LOADER.save(GetFilePath(UNIT_DATA_DIR));
+    PROPERTY_LOADER.load(GetFilePath(UNIT_DATA_DIR));
 
     return true;
 }
