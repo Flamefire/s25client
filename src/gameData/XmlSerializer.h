@@ -18,60 +18,30 @@
 #ifndef XmlSerializer_h__
 #define XmlSerializer_h__
 
+#include "XmlNode.h"
+#include <vector>
 #include <rapidxml.hpp>
-#include <string>
-#include <sstream>
-
 typedef rapidxml::xml_document<> xmlDoc;
-typedef rapidxml::xml_node<>* node_t;
 typedef rapidxml::xml_attribute<>* att_t;
 
-class XmlSerializer;
-
-class XmlNode{
-private:
-	XmlSerializer& doc;
-	node_t node;
-
-	template <typename T>
-	std::string ToString(T const &data){
-		std::stringstream Io;
-		Io << data;
-		return Io.str();
-	}
-	std::string ToString(signed char const& data){
-		return ToString<int>(data);
-	}
-	std::string ToString(unsigned char const& data){
-		return ToString<unsigned>(data);
-	}
-public:
-	XmlNode(XmlSerializer& doc, node_t& node): doc(doc), node(node){}
-	inline XmlNode addNode(const std::string& name);
-	inline XmlNode addNode(const std::string& name, const std::string& value);
-	template<typename T>
-	inline XmlNode addNode(const std::string& name, const T& value){
-		return addNode(name, ToString(value));
-	}
-
-	inline att_t addAttribute(const std::string& name, const std::string& value);
-
-	operator node_t(){ return node; }
+enum XmlOpenAction{
+    XML_LOAD,
+    XML_CREATE
 };
 
 class XmlSerializer{
 public:
-	XmlSerializer(const std::string& filePath, const std::string& rootName = "root");
+	XmlSerializer(const std::string& filePath, XmlOpenAction loadOrCreate, const std::string& rootName = "root");
 	~XmlSerializer();
 
-	XmlNode getRoot(){ return XmlNode(*this, root); }
+	XmlNode* getRoot(){ return root; }
+    XmlNode* getNode(const string& name);
 
-	XmlNode addNode(node_t parent, const char* name = NULL, const char* value = NULL);
-	XmlNode addNode(node_t parent, const std::string& name);
-	XmlNode addNode(node_t parent, const std::string& name, const std::string& value);
+    XmlNode* addNode(XmlNode* parent, const char* name, const char* value = NULL);
+	XmlNode* addNode(XmlNode* parent, const std::string& name);
+	XmlNode* addNode(XmlNode* parent, const std::string& name, const std::string& value);
 
-	att_t addAttribute(node_t parent, const char* name = NULL, const char* value = NULL);
-	att_t addAttribute(node_t parent, const std::string& name, const std::string& value);
+	void addAttribute(XmlNode* parent, const std::string& name, const std::string& value);
 
 	void write();
 private:
@@ -79,14 +49,19 @@ private:
 	XmlSerializer(XmlSerializer&);
 	XmlSerializer& operator=(XmlSerializer);
 
+    XmlNode* newNode(node_t node);
+    friend class XmlNode;
+
 	std::string filePath;
 	xmlDoc doc;
-	node_t root;
+	XmlNode* root;
+
+    struct NodeChunk{
+        static const unsigned chunkSize = 64;
+        unsigned usedCt;
+        XmlNode nodes[chunkSize];
+    };
+    std::vector<NodeChunk*> chunks_;
 };
-
-XmlNode XmlNode::addNode(const std::string& name){ return doc.addNode(*this, name); }
-XmlNode XmlNode::addNode(const std::string& name, const std::string& value){ return doc.addNode(*this, name, value); }
-
-att_t XmlNode::addAttribute(const std::string& name, const std::string& value){ return doc.addAttribute(*this, name, value); }
 
 #endif // XmlSerializer_h__

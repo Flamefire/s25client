@@ -24,18 +24,8 @@
 #include <map>
 #include <string>
 
-namespace rapidxml{
-	template<class Ch>
-	class xml_node;
-	template<class Ch>
-	class xml_attribute;
-}
-
 class XmlNode;
 class noBaseBuilding;
-
-typedef rapidxml::xml_node<char>* node_t;
-typedef rapidxml::xml_attribute<char>* att_t;
 
 /// Trait that evaluates to true if type T can be converted to type U
 template<class T, class U>
@@ -89,8 +79,8 @@ private:
 	std::string getXmlName(std::string name) const;
 	void loadNation(Nation nation, const std::string& filePath, const std::string& fileName);
 	void saveNation(Nation nation, const std::string& filePath);
-	void load(node_t node, BaseBuildingProp& prop);
-	void save(XmlNode& node, Nation nation, BuildingType type, const BaseBuildingProp& prop);
+	void load(XmlNode* node, BaseBuildingProp& prop);
+	void save(XmlNode* node, Nation nation, BuildingType type, const BaseBuildingProp& prop);
 
 	struct BaseBuildingProps{ BaseBuildingProp props[Nation::NAT_COUNT]; };
 	std::set<BuildingType> regBaseBuildingProb;
