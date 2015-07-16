@@ -9,7 +9,7 @@ FIND_PACKAGE(Gettext REQUIRED)
 ################################################################################
 
 INCLUDE_DIRECTORIES(
-					"${CMAKE_SOURCE_DIR}"
+					"${CMAKE_SOURCE_DIR}/src"
 					"${CMAKE_SOURCE_DIR}/liblobby/src/"
 					"${CMAKE_SOURCE_DIR}/libutil/src/"
 					"${CMAKE_SOURCE_DIR}/mygettext/src/"
@@ -216,7 +216,6 @@ SET(SOURCES_NOF
 
 SET(SOURCES_OTHER
 										BuildingConsts.h
-										BuildingConstsLegacy.h
 										BuildingTypes.h
 	BurnedWarehouse.cpp                 BurnedWarehouse.h
 	CatapultStone.cpp                   CatapultStone.h
@@ -262,7 +261,6 @@ SET(SOURCES_OTHER
 										JobConsts.h
 										JobTypes.h
 	languages.cpp                       languages.h
-										LegacyConsts.h
 										list.h
 	ListDir.cpp                         ListDir.h
 	Loader.cpp                          Loader.h
@@ -279,8 +277,6 @@ SET(SOURCES_OTHER
 										NationConsts.h
 										NodalObjectTypes.h
 										Node.h
-										Properties.h
-	PropertyLoader.cpp					PropertyLoader.h
 	DriverWrapper.cpp                   DriverWrapper.h
 	VideoDriverWrapper.cpp              VideoDriverWrapper.h
 	AudioDriverWrapper.cpp              AudioDriverWrapper.h
@@ -305,7 +301,6 @@ SET(SOURCES_OTHER
 	PostMsg.cpp                         PostMsg.h
 	win32_nanosleep.cpp                 win32_nanosleep.h
 	Debug.cpp                           Debug.h
-	XmlSerializer.cpp					XmlSerializer.h
    )
 
 SET(SOURCES_ADDONS
@@ -365,6 +360,15 @@ SET(SOURCES_GL
 	glSmartBitmap.cpp                   glSmartBitmap.h
    )
 
+SET(SOURCES_SUBDIRS )
+MACRO(AddDirectory dir)
+	FILE(GLOB SUB_FILES ${dir}/*.cpp ${dir}/*.h)
+	SET(SOURCES_SUBDIRS ${SOURCES_SUBDIRS} ${SUB_FILES})
+	SOURCE_GROUP(${dir} FILES ${SUB_FILES})
+	INCLUDE_DIRECTORIES(${dir})
+ENDMACRO()
+
+AddDirectory(gameData)
 ################################################################################
 
 GETTEXT_CREATE_TRANSLATIONS(../RTTR/languages/rttr.pot ALL
@@ -424,6 +428,7 @@ SET(s25client_SRCS
 	${SOURCES_NO}
 	${SOURCES_NOB}
 	${SOURCES_NOF}
+	${SOURCES_SUBDIRS}
 )
 
 source_group(controls FILES ${SOURCES_CONTROLS})
