@@ -24,6 +24,11 @@
 typedef rapidxml::xml_document<> xmlDoc;
 typedef rapidxml::xml_attribute<>* att_t;
 
+namespace rapidxml{
+    template<class Ch>
+    class file;
+}
+
 enum XmlOpenAction{
     XML_LOAD,
     XML_CREATE
@@ -35,7 +40,6 @@ public:
 	~XmlSerializer();
 
 	XmlNode* getRoot(){ return root; }
-    XmlNode* getNode(const string& name);
 
     XmlNode* addNode(XmlNode* parent, const char* name, const char* value = NULL);
 	XmlNode* addNode(XmlNode* parent, const std::string& name);
@@ -54,6 +58,7 @@ private:
 
 	std::string filePath;
 	xmlDoc doc;
+    rapidxml::file<char>* file_;
 	XmlNode* root;
 
     struct NodeChunk{

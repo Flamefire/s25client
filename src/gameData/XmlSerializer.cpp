@@ -14,10 +14,12 @@ using namespace rapidxml;
 
 XmlSerializer::XmlSerializer(const std::string& filePath, XmlOpenAction loadOrCreate, const std::string& rootName): filePath(filePath){
     if(loadOrCreate == XmlOpenAction::XML_LOAD){
-        rapidxml::file<> xmlFile(filePath.c_str());
-        xmlDoc doc;
-        doc.parse<0>(xmlFile.data());
+        file_ = new rapidxml::file<>(filePath.c_str());
+        doc.parse<0>(file_->data());
+        node_t rootNode = doc.first_node();
+        root = (rootNode) ? newNode(rootNode) : NULL;
     }else{
+        file_ = NULL;
 	    node_t rootNode = doc.allocate_node(node_element, doc.allocate_string(rootName.c_str()));
 	    doc.append_node(rootNode);
         root = newNode(rootNode);
@@ -34,11 +36,7 @@ XmlSerializer::~XmlSerializer(void){
         }
         delete chunk;
     }
-}
-
-XmlNode* XmlSerializer::getNode(const string& name){
-    node_t node = doc.first_node(name.empty() ? NULL : name.c_str());
-    return (node) ? newNode(node) : NULL;
+    delete file_;
 }
 
 XmlNode* XmlSerializer::newNode(node_t node){

@@ -28,7 +28,7 @@ XmlNode* XmlNode::getChild(const string& name, bool throwOnError) const{
     node_t child = node->first_node(name.empty() ? NULL : name.c_str());
     if(!child){
         if(throwOnError && !name.empty())
-            throw std::runtime_error("Node " + string(name) +" in " + string(getName()) + " not found!");
+            throw std::runtime_error("Node " + name +" in " + getName() + " not found!");
         return NULL;
     }
     return doc->newNode(child);
@@ -42,6 +42,6 @@ XmlNode* XmlNode::getNextSibling(const string& name) const{
 string XmlNode::getAttribute(const string& name) const{
     att_t att = node->first_attribute(name.c_str());
     if(!att)
-        throw std::runtime_error("Attribute " + string(name) +" in " + string(getName()) + " not found!");
+        throw std::runtime_error("Attribute " + name +" in " + getName() + " not found!");
     return att->value();
 }
