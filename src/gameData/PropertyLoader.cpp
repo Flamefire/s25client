@@ -94,8 +94,10 @@ void PropertyLoader::loadNation(Nation nation, const string& filePath, const str
 	const string nationXml = filePath + fileName;
 	XmlSerializer doc(nationXml, XML_LOAD);
 	for(XmlNode* node = doc.getRoot()->getChild("buildings")->getChild(); node; node = node->getNextSibling()){
-		string name = node->getName();
+		string name = node->getValue("Name");
 		BuildingType type = getBuildingType(name);
+        if(type == BLD_NOTHING)
+            throw runtime_error("Invalid building found");
 		if(contains(regBaseBuildingProb, type)){
 			load(node, baseBuildingProbs[type].props[nation]);
 		}
