@@ -33,27 +33,20 @@ string PropertyLoader::getXmlName(string name) const {
 }
 
 void PropertyLoader::load(const string& filePath){
-    for(int i=0; i<Nation::NAT_COUNT; i++){
-        NationName2Idx.insert(make_pair(getXmlName(NationNames[i]), Nation(i)));
-    }
 	if(loaded){
 		cerr << "Tried to load nations multiple times, ignoring";
 		return;
 	}
 	const string nationsXml = filePath + NATIONS_DATA_FILE;
     XmlSerializer doc(nationsXml, XML_LOAD);
-	for(XmlNode* node = doc.getNode("nations")->getChild(); node; node = node->getNextSibling()){
-		string name = node->getName();
-        if(name.empty()){
-            error("Nations file is invalid as the name for a nations is missing: %s", nationsXml.c_str());
-            throw exception("Invalid nations file");
-        }
-		if(!contains(NationName2Idx, name)){
-			error("Invalid or unknown nation name: %s", name);
-			throw exception("Invalid nation name");
-		}
-		Nation nat = NationName2Idx[name];
-		if(loadedNations.find(nat) != loadedNations.end()){
+    int highestNatIdx = -1;
+	for(XmlNode* node = doc.getRoot()->getChild(); node; node = node->getNextSibling()){
+		string name = node->getValue("Name");
+        int idx = node->getIntValue("Index", true, 0, NAT_COUNT-1);
+        if(idx > highestNatIdx)
+            highestNatIdx = idx;
+		Nation nat = Nation(idx);
+		if(contains(loadedNations, nat)){
 			cerr << "Already loaded nation " << name << ". Ignoring...";
 			continue;
 		}
@@ -61,27 +54,30 @@ void PropertyLoader::load(const string& filePath){
 			loadNation(nat, filePath+node->getValue("path")+"/", "buildings.xml");
 		}catch (exception e)
 		{
-			error("Error loading nation %s: %s", name, e.what());
+			error("Error loading nation %s: %s", name.c_str(), e.what());
 			continue;
 		}
 		loadedNations.insert(nat);
 	}
+    for(int i=0; i<highestNatIdx; i++)
+        if(!contains(loadedNations, Nation(i))){
+            error("Nation file is invalid. Missing index %d", i);
+            throw runtime_error("Missing nation idx");
+        }
 }
 
 void PropertyLoader::save(const string& filePath){
-    for(int i=0; i<Nation::NAT_COUNT; i++){
-        NationName2Idx.insert(make_pair(getXmlName(NationNames[i]), Nation(i)));
-    }
 	const string nationsXml = filePath + NATIONS_DATA_FILE;
 	mkdir_p(filePath);
 	XmlSerializer doc(nationsXml, XML_CREATE);
-	XmlNode* nations = doc.getRoot()->addNode("nations");
-	for(std::map<string, Nation>::const_iterator it = NationName2Idx.cbegin(); it!=NationName2Idx.cend(); ++it){
-		XmlNode* nation = nations->addNode(it->first);
-		string nationPath = filePath + it->first;
-		nation->addNode("path", nationPath);
+	for(int i=0; i<Nation::NAT_COUNT; i++){
+		XmlNode* nation = doc.getRoot()->addNode("Nation");
+        nation->addNode("Name", NationNames[i]);
+		string nationPath = NationNames[i];
+        nation->addNode("path", nationPath);
+        nation->addNode("Index", i);
 
-		saveNation(it->second, nationPath+"/");
+		saveNation(Nation(i), filePath + nationPath+"/");
 	}
 	doc.write();
 }
@@ -97,7 +93,7 @@ BuildingType getBuildingType(const string& name){
 void PropertyLoader::loadNation(Nation nation, const string& filePath, const string& fileName){
 	const string nationXml = filePath + fileName;
 	XmlSerializer doc(nationXml, XML_LOAD);
-	for(XmlNode* node = doc.getNode("buildings")->getChild(); node; node = node->getNextSibling()){
+	for(XmlNode* node = doc.getRoot()->getChild("buildings")->getChild(); node; node = node->getNextSibling()){
 		string name = node->getName();
 		BuildingType type = getBuildingType(name);
 		if(contains(regBaseBuildingProb, type)){
@@ -116,7 +112,8 @@ void PropertyLoader::saveNation(Nation nation, const string& filePath){
 		const std::string name = BUILDING_NAMES[i];
 		if(name.empty())
 			continue;
-		XmlNode* b = buildings->addNode(getXmlName(name));
+		XmlNode* b = buildings->addNode("Building");
+        b->addNode("Name", name);
 		if(contains(regBaseBuildingProb, type)){
 			save(b, nation, type, BaseBuildingProp());
 		}
@@ -127,9 +124,9 @@ void PropertyLoader::saveNation(Nation nation, const string& filePath){
 void PropertyLoader::load(XmlNode* node, BaseBuildingProp& prop){
 	XmlNode* costs = node->getChild("Costs");
 	XmlNode* door = node->getChild("Door");
-	prop.costs.boards = node->getIntValue<char>("Boards");
-	prop.costs.stones = node->getIntValue<char>("Stones");
-	prop.door.y = node->getIntValue<char>("Y");
+	prop.costs.boards = costs->getIntValue<char>("Boards");
+	prop.costs.stones = costs->getIntValue<char>("Stones");
+	prop.door.y = door->getIntValue<char>("Y");
 }
 
 void PropertyLoader::save(XmlNode* node, Nation nation, BuildingType type, const BaseBuildingProp& prop){

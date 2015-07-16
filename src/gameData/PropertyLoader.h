@@ -85,7 +85,6 @@ private:
 	struct BaseBuildingProps{ BaseBuildingProp props[Nation::NAT_COUNT]; };
 	std::set<BuildingType> regBaseBuildingProb;
 	std::map<BuildingType, BaseBuildingProps> baseBuildingProbs;
-	std::map<std::string, Nation> NationName2Idx;
 	std::set<Nation> loadedNations;
 	bool loaded;
 };
