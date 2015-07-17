@@ -277,6 +277,7 @@ SET(SOURCES_OTHER
 										NationConsts.h
 										NodalObjectTypes.h
 										Node.h
+										Point.h
 	DriverWrapper.cpp                   DriverWrapper.h
 	VideoDriverWrapper.cpp              VideoDriverWrapper.h
 	AudioDriverWrapper.cpp              AudioDriverWrapper.h
@@ -369,6 +370,8 @@ MACRO(AddDirectory dir)
 ENDMACRO()
 
 AddDirectory(gameData)
+AddDirectory(factories)
+AddDirectory(helpers)
 ################################################################################
 
 GETTEXT_CREATE_TRANSLATIONS(../RTTR/languages/rttr.pot ALL

@@ -25,6 +25,8 @@
 #include "BuildingConsts.h"
 #include "Properties.h"
 
+class glArchivItem_Bitmap;
+
 class noBaseBuilding : public noRoadNode
 {
     protected:
