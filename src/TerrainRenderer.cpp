@@ -30,6 +30,8 @@
 #include "world/GameWorldBase.h"
 #include "world/GameWorldViewer.h"
 #include "world/MapGeometry.h"
+#include "gameData/EdgeDesc.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/MapConsts.h"
 #include "gameData/TerrainDesc.h"
 #include "libsiedler2/Archiv.h"

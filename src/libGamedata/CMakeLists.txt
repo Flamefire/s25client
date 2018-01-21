@@ -6,6 +6,7 @@ MACRO(AddDirectory dir)
 ENDMACRO()
 
 AddDirectory(gameData)
+AddDirectory(gameTypes)
 AddDirectory(lua)
 
 FILE(GLOB SOURCES_OTHER *.cpp *.h)

@@ -34,6 +34,9 @@ bool CheckedLuaTable::checkUnused(bool throwError)
 {
     checkEnabled = false;
 
+    if(table.isNilref())
+        return true;
+
     std::vector<std::string> tableKeys = table.keys<std::string>();
     std::sort(tableKeys.begin(), tableKeys.end());
     std::vector<std::string> unusedKeys;

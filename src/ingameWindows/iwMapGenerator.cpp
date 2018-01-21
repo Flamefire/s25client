@@ -23,6 +23,7 @@
 #include "controls/ctrlProgress.h"
 #include "helpers/containerUtils.h"
 #include "lua/GameDataLoader.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/MaxPlayers.h"
 #include "gameData/WorldDescription.h"
 #include "gameData/const_gui_ids.h"

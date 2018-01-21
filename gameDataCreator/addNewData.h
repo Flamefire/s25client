@@ -1,4 +1,4 @@
-// Copyright (c) 2016 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -15,22 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#include "commonDefines.h" // IWYU pragma: keep
-#include "WorldDescription.h"
-#include "BuildingDesc.h"
-#include "EdgeDesc.h"
-#include "LandscapeDesc.h"
-#include "NationDesc.h"
-#include "TerrainDesc.h"
+#ifndef addNewData_h__
+#define addNewData_h__
 
-WorldDescription::WorldDescription() {}
-WorldDescription::~WorldDescription() {}
+struct WorldDescription;
 
-WorldDescription& WorldDescription::operator=(const WorldDescription& other)
-{
-    landscapes = other.landscapes;
-    edges = other.edges;
-    terrain = other.terrain;
-    nations = other.nations;
-    return *this;
-}
+void addNewData(WorldDescription& worldDesc);
+
+#endif // addNewData_h__

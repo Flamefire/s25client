@@ -20,6 +20,7 @@
 
 #include "DrawPointInit.h"
 #include "helpers/SimpleMultiArray.h"
+#include "gameTypes/BuildingQuality.h"
 #include "gameTypes/BuildingType.h"
 #include "gameTypes/BuildingTypes.h"
 #include "gameData/NationConsts.h"

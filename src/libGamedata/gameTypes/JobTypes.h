@@ -63,4 +63,6 @@ const unsigned NUM_JOB_TYPES = JOB_NOTHING;
 static const boost::array<Job, 5> SUPPRESS_UNUSED SOLDIER_JOBS = {
   {JOB_PRIVATE, JOB_PRIVATEFIRSTCLASS, JOB_SERGEANT, JOB_OFFICER, JOB_GENERAL}};
 
+extern const boost::array<std::string, NUM_JOB_TYPES> SUPPRESS_UNUSED JOB_NAMES;
+
 #endif // JobTypes_h__

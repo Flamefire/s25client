@@ -18,11 +18,14 @@
 #include "commonDefines.h" // IWYU pragma: keep
 #include "GameDataLoader.h"
 #include "CheckedLuaTable.h"
+#include "NationDataLoader.h"
 #include "RttrConfig.h"
 #include "files.h"
 #include "helpers/containerUtils.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/EdgeDesc.h"
 #include "gameData/LandscapeDesc.h"
+#include "gameData/NationDesc.h"
 #include "gameData/TerrainDesc.h"
 #include "gameData/WorldDescription.h"
 #include "libutil/Log.h"
@@ -39,8 +42,8 @@ GameDataLoader::GameDataLoader(WorldDescription& worldDesc, const std::string& b
 }
 
 GameDataLoader::GameDataLoader(WorldDescription& worldDesc)
-    : worldDesc_(worldDesc), basePath_(bfs::canonical(RTTRCONFIG.ExpandPath(FILE_PATHS[1]) + "/world").make_preferred().string()),
-      curIncludeDepth_(0), errorInIncludeFile_(false)
+    : worldDesc_(worldDesc), basePath_(bfs::canonical(RTTRCONFIG.ExpandPath(FILE_PATHS[1])).make_preferred().string()), curIncludeDepth_(0),
+      errorInIncludeFile_(false)
 {
     Register(lua);
 
@@ -72,7 +75,11 @@ void GameDataLoader::Register(kaguya::State& state)
     state["RTTRGameData"].setClass(kaguya::UserdataMetatable<GameDataLoader, LuaInterfaceBase>()
                                      .addFunction("AddLandscape", &GameDataLoader::AddLandscape)
                                      .addFunction("AddTerrainEdge", &GameDataLoader::AddTerrainEdge)
-                                     .addFunction("AddTerrain", &GameDataLoader::AddTerrain));
+                                     .addFunction("AddTerrain", &GameDataLoader::AddTerrain)
+                                     .addFunction("AddBuilding", &GameDataLoader::AddBuilding)
+                                     .addFunction("AddNation", &GameDataLoader::AddNation)
+                                     .addFunction("GetWorldDesc", &GameDataLoader::GetWorldDesc));
+    NationDataLoader::Register(state);
 }
 
 void GameDataLoader::Include(const std::string& filepath)
@@ -109,4 +116,20 @@ void GameDataLoader::AddTerrainEdge(const kaguya::LuaTable& data)
 void GameDataLoader::AddTerrain(const kaguya::LuaTable& data)
 {
     worldDesc_.terrain.add(TerrainDesc(data, worldDesc_));
+}
+
+void GameDataLoader::AddBuilding(const kaguya::LuaTable& data)
+{
+    worldDesc_.buildings.add(BuildingDesc(data, worldDesc_));
+}
+
+NationDataLoader GameDataLoader::AddNation(const kaguya::LuaTable& data)
+{
+    DescIdx<NationDesc> idx = worldDesc_.nations.add(NationDesc(data, worldDesc_));
+    return NationDataLoader(worldDesc_, worldDesc_.nations.getMutable(idx));
+}
+
+WorldDescription& GameDataLoader::GetWorldDesc()
+{
+    return worldDesc_;
 }

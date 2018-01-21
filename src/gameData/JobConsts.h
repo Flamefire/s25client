@@ -23,8 +23,6 @@
 #include "gameTypes/JobTypes.h"
 #include <boost/array.hpp>
 
-extern const boost::array<std::string, NUM_JOB_TYPES> JOB_NAMES;
-
 /// Berufsstruktur
 struct JobConst
 {

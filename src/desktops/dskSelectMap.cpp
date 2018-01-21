@@ -43,6 +43,7 @@
 #include "network/GameClient.h"
 #include "ogl/FontStyle.h"
 #include "ogl/glArchivItem_Map.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/WorldDescription.h"
 #include "liblobby/LobbyClient.h"
 #include "libsiedler2/ArchivItem_Map_Header.h"

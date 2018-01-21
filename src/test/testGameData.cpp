@@ -19,6 +19,7 @@
 #include "helpers/containerUtils.h"
 #include "initTestHelpers.h"
 #include "gameData/EdgeDesc.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
 #include "gameData/WorldDescription.h"
 #include "test/BQOutput.h"

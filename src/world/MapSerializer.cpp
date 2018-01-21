@@ -21,6 +21,8 @@
 #include "SerializedGameData.h"
 #include "lua/GameDataLoader.h"
 #include "world/World.h"
+#include "gameData/LandscapeDesc.h"
+#include "gameData/TerrainDesc.h"
 
 void MapSerializer::Serialize(const World& world, const unsigned numPlayers, SerializedGameData& sgd)
 {

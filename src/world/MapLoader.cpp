@@ -31,6 +31,7 @@
 #include "nodeObjs/noStaticObject.h"
 #include "nodeObjs/noTree.h"
 #include "gameTypes/ShipDirection.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/MaxPlayers.h"
 #include "gameData/TerrainDesc.h"
 #include "libsiedler2/ArchivItem_Map_Header.h"

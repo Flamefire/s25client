@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#include "rttrDefines.h" // IWYU pragma: keep
-#include "gameData/JobConsts.h"
+#include "commonDefines.h" // IWYU pragma: keep
+#include "JobTypes.h"
 #include "mygettext/mygettext.h"
 
 const boost::array<std::string, NUM_JOB_TYPES> JOB_NAMES = {{gettext_noop("Helper"),
@@ -49,5 +49,5 @@ const boost::array<std::string, NUM_JOB_TYPES> JOB_NAMES = {{gettext_noop("Helpe
                                                              gettext_noop("Shipwright"),
                                                              gettext_noop("Scout"),
                                                              gettext_noop("Pack donkey"),
-                                                             "", // Bootstr√§ger
+                                                             "", // Bootstr‰ger
                                                              gettext_noop("Charburner")}};

@@ -15,39 +15,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef GameDataLoader_h__
-#define GameDataLoader_h__
+#ifndef NationDataLoader_h__
+#define NationDataLoader_h__
 
 #include "LuaInterfaceBase.h"
 
 struct WorldDescription;
-class NationDataLoader;
+struct NationDesc;
 
-class GameDataLoader : public LuaInterfaceBase
+namespace kaguya {
+class State;
+class LuaTable;
+} // namespace kaguya
+
+class NationDataLoader
 {
 public:
-    GameDataLoader(WorldDescription& worldDesc, const std::string& basePath);
-    GameDataLoader(WorldDescription& worldDesc);
-    ~GameDataLoader() override;
-
-    bool Load();
-
+    NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc);
     static void Register(kaguya::State& state);
 
 private:
-    void Include(const std::string& filePath);
-    void AddLandscape(const kaguya::LuaTable& data);
-    void AddTerrainEdge(const kaguya::LuaTable& data);
-    void AddTerrain(const kaguya::LuaTable& data);
     void AddBuilding(const kaguya::LuaTable& data);
-    NationDataLoader AddNation(const kaguya::LuaTable& data);
-
-    WorldDescription& GetWorldDesc();
 
     WorldDescription& worldDesc_;
-    std::string basePath_, curFile_;
-    int curIncludeDepth_;
-    bool errorInIncludeFile_;
+    NationDesc& nationDesc_;
 };
 
-#endif // GameDataLoader_h__
+#endif // NationDataLoader_h__

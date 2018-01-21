@@ -1,4 +1,4 @@
-// Copyright (c) 2016 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -16,21 +16,24 @@
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
 #include "commonDefines.h" // IWYU pragma: keep
-#include "WorldDescription.h"
-#include "BuildingDesc.h"
-#include "EdgeDesc.h"
-#include "LandscapeDesc.h"
 #include "NationDesc.h"
-#include "TerrainDesc.h"
+#include "NatBuildingDesc.h"
+#include "lua/CheckedLuaTable.h"
 
-WorldDescription::WorldDescription() {}
-WorldDescription::~WorldDescription() {}
+NationDesc::NationDesc() {}
 
-WorldDescription& WorldDescription::operator=(const WorldDescription& other)
+NationDesc::NationDesc(CheckedLuaTable luaData, const WorldDescription&)
 {
-    landscapes = other.landscapes;
-    edges = other.edges;
-    terrain = other.terrain;
-    nations = other.nations;
+    luaData.getOrThrow(name, "name");
+    s2Id = luaData.getOrDefault("s2Id", 0);
+    luaData.checkUnused();
+}
+
+NationDesc::~NationDesc() {}
+
+NationDesc& NationDesc::operator=(const NationDesc& other)
+{
+    name = other.name;
+    buildings = other.buildings;
     return *this;
 }

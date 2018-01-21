@@ -39,6 +39,8 @@ public:
     /// Check and report unused entries
     bool checkUnused(bool throwError = true);
 
+    kaguya::LuaTable& getBaseTable() { return table; }
+
     /// Return the value from lua or throw an error
     template<typename T>
     T getOrThrow(const std::string& fieldName);

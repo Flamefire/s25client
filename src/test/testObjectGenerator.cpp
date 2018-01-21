@@ -18,6 +18,7 @@
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "mapGenerator/ObjectGenerator.h"
 #include "mapGenerator/RandomConfig.h"
+#include "gameData/TerrainDesc.h"
 #include "libsiedler2/enumTypes.h"
 #include <boost/bind.hpp>
 #include <boost/test/unit_test.hpp>

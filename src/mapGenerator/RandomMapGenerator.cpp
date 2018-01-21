@@ -21,6 +21,7 @@
 #include "mapGenerator/RandomConfig.h"
 #include "mapGenerator/VertexUtility.h"
 #include "world/MapGeometry.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
 #include <algorithm>
 #include <cmath>

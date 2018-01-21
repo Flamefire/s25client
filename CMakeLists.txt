@@ -37,6 +37,7 @@ INCLUDE(CMakeMacroEnsureOutOfSourceBuild)
 include(CheckStructHasMember)
 INCLUDE(CheckIncludeFile)
 
+
 ################################################################################
 # Include platform specific config files
 ################################################################################
@@ -289,6 +290,14 @@ ADD_SUBDIRECTORY(libsiedler2)
 SET(RTTR_BUILD_LOBBY_CLIENT TRUE)
 ADD_SUBDIRECTORY(liblobby)
 ADD_SUBDIRECTORY(s-c)
+
+SET(RTTR_Assert_Enabled 2 CACHE STRING "Status of RTTR assertions: 0=Disabled, 1=Enabled, 2=Default(Enabled only in debug)")
+IF("${RTTR_Assert_Enabled}" EQUAL 0)
+	ADD_DEFINITIONS(-DRTTR_ENABLE_ASSERTS=0)
+ELSEIF("${RTTR_Assert_Enabled}" EQUAL 1)
+	ADD_DEFINITIONS(-DRTTR_ENABLE_ASSERTS=1)
+ENDIF()
+
 if(RTTR_BUILD_UPDATER)
 	ADD_SUBDIRECTORY(s25update)
 endif()
@@ -297,6 +306,11 @@ add_subdirectory(common)
 ADD_SUBDIRECTORY(driver)
 ADD_SUBDIRECTORY(rttrConfig)
 ADD_SUBDIRECTORY(src)
+
+option(RTTR_BUILD_GDCREATOR "Build the game data creator" OFF)
+if(RTTR_BUILD_GDCREATOR)
+	ADD_SUBDIRECTORY(gameDataCreator)
+endif()
 
 option(RTTR_BUILD_EDITOR "Build editor." ON)
 if(RTTR_BUILD_EDITOR)

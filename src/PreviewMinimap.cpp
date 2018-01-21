@@ -21,6 +21,7 @@
 #include "mygettext/mygettext.h"
 #include "ogl/glArchivItem_Map.h"
 #include "world/MapGeometry.h"
+#include "gameData/LandscapeDesc.h"
 #include "gameData/MinimapConsts.h"
 #include "gameData/TerrainDesc.h"
 #include "gameData/WorldDescription.h"

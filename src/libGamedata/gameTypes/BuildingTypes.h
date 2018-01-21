@@ -18,7 +18,6 @@
 #ifndef BuildingTypes_h__
 #define BuildingTypes_h__
 
-#include "BuildingQuality.h"
 #include "GoodTypes.h"
 #include "JobTypes.h"
 #include "Point.h"
@@ -28,15 +27,6 @@ struct BuildingCost
 {
     uint8_t boards;
     uint8_t stones;
-};
-
-// Größe der Gebäude
-enum BuildingSize
-{
-    BZ_HUT = 0,
-    BZ_HOUSE,
-    BZ_CASTLE,
-    BZ_MINE
 };
 
 struct WaresNeeded : boost::array<GoodType, 3>
@@ -83,7 +73,7 @@ struct BldWorkDescription
 struct SmokeConst
 {
     SmokeConst() : type(0), offset(Point<int8_t>::Invalid()) {}
-    SmokeConst(uint8_t type, const DrawPoint& offset) : type(type), offset(offset) {}
+    SmokeConst(uint8_t type, const Point<int8_t>& offset) : type(type), offset(offset) {}
     SmokeConst(uint8_t type, int8_t x, int8_t y) : type(type), offset(x, y) {}
     /// Smoke type (1-4), 0 = no smoke
     uint8_t type;

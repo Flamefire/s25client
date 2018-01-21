@@ -19,14 +19,13 @@
 #define WorldDescription_h__
 
 #include "DescriptionContainer.h"
-#include "EdgeDesc.h"
-#include "LandscapeDesc.h"
-#include "TerrainDesc.h"
 #include <stdexcept>
 
 struct LandscapeDesc;
 struct EdgeDesc;
 struct TerrainDesc;
+struct NationDesc;
+struct BuildingDesc;
 
 struct GameDataError : public std::runtime_error
 {
@@ -42,9 +41,13 @@ struct WorldDescription
 {
     WorldDescription();
     ~WorldDescription();
+    WorldDescription& operator=(const WorldDescription& other);
     DescriptionContainer<LandscapeDesc> landscapes;
     DescriptionContainer<EdgeDesc> edges;
     DescriptionContainer<TerrainDesc> terrain;
+    DescriptionContainer<NationDesc> nations;
+    DescriptionContainer<BuildingDesc> buildings;
+
     // Convenience accessors
     template<class T>
     const T& get(DescIdx<T> idx) const
@@ -71,6 +74,18 @@ template<>
 inline const DescriptionContainer<TerrainDesc>& WorldDescription::getContainer() const
 {
     return terrain;
+}
+
+template<>
+inline const DescriptionContainer<NationDesc>& WorldDescription::getContainer() const
+{
+    return nations;
+}
+
+template<>
+inline const DescriptionContainer<BuildingDesc>& WorldDescription::getContainer() const
+{
+    return buildings;
 }
 
 #endif // WorldDescription_h__

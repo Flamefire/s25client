@@ -7,7 +7,7 @@ if(NOT Boost_USE_STATIC_LIBS)
 	ADD_DEFINITIONS(-DBOOST_TEST_DYN_LINK) 
 endif()
 if(MSVC)
-    # Use full paths for defines (makes Boost.Test with the VS addin work better)
+    # Use full paths for defines (makes Boost.Test with the VS addon work better)
     add_definitions(/FC)
 endif()
 

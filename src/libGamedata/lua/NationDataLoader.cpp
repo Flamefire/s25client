@@ -1,4 +1,4 @@
-// Copyright (c) 2016 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -16,21 +16,20 @@
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
 #include "commonDefines.h" // IWYU pragma: keep
-#include "WorldDescription.h"
-#include "BuildingDesc.h"
-#include "EdgeDesc.h"
-#include "LandscapeDesc.h"
-#include "NationDesc.h"
-#include "TerrainDesc.h"
+#include "NationDataLoader.h"
+#include "CheckedLuaTable.h"
+#include "gameData/NatBuildingDesc.h"
+#include "gameData/NationDesc.h"
+#include <kaguya/kaguya.hpp>
 
-WorldDescription::WorldDescription() {}
-WorldDescription::~WorldDescription() {}
+NationDataLoader::NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc) : worldDesc_(worldDesc), nationDesc_(nationDesc) {}
 
-WorldDescription& WorldDescription::operator=(const WorldDescription& other)
+void NationDataLoader::Register(kaguya::State& state)
 {
-    landscapes = other.landscapes;
-    edges = other.edges;
-    terrain = other.terrain;
-    nations = other.nations;
-    return *this;
+    state["RTTRNation"].setClass(kaguya::UserdataMetatable<NationDataLoader>().addFunction("AddBuilding", &NationDataLoader::AddBuilding));
+}
+
+void NationDataLoader::AddBuilding(const kaguya::LuaTable& data)
+{
+    nationDesc_.buildings.add(NatBuildingDesc(data, worldDesc_));
 }

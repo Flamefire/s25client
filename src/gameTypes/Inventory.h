@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#include "GoodTypes.h"
-#include "JobTypes.h"
+#include "gameTypes/GoodTypes.h"
+#include "gameTypes/JobTypes.h"
 #include <boost/array.hpp>
 
 #ifndef Inventory_h__

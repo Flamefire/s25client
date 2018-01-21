@@ -37,6 +37,9 @@
 #include "network/GameClient.h"
 #include "ogl/FontStyle.h"
 #include "world/GameWorldBase.h"
+#include "gameData/EdgeDesc.h"
+#include "gameData/LandscapeDesc.h"
+#include "gameData/TerrainDesc.h"
 #include "liblobby/LobbyClient.h"
 #include <set>
 #include <vector>
