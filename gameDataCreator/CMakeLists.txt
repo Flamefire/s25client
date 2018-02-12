@@ -1,4 +1,4 @@
-FIND_PACKAGE(Boost 1.55.0 REQUIRED COMPONENTS filesystem iostreams system unit_test_framework)
+FIND_PACKAGE(Boost 1.55.0 REQUIRED COMPONENTS filesystem iostreams system regex unit_test_framework)
 if(NOT Boost_USE_STATIC_LIBS)
 	ADD_DEFINITIONS(-DBOOST_TEST_DYN_LINK) 
 endif()
@@ -8,6 +8,7 @@ if(MSVC)
 endif()
 
 INCLUDE_DIRECTORIES(SYSTEM ${Boost_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(.)
 
 SET(SOURCES_SUBDIRS )
 MACRO(AddDirectory dir)
@@ -19,10 +20,19 @@ ENDMACRO()
 FILE(GLOB SOURCES_OTHER *.cpp *.h)
 SOURCE_GROUP(other FILES ${SOURCES_OTHER})
 
-add_library(gdCreator STATIC addNewData.h addNewData.cpp)
+AddDirectory(gameData)
+AddDirectory(gameTypes)
+
+add_library(gdCreator STATIC addNewData.h addNewData.cpp simpleLuaData.h simpleLuaData.cpp  ${SOURCES_SUBDIRS})
 add_executable(gameDataCreator gameDataCreator.cpp)
-add_executable(gameDataTest gameDataTest.cpp testGameDataCreate.cpp)
-target_link_libraries(gdCreator PUBLIC s25Main ${Boost_LIBRARIES})
+add_executable(gameDataTest gameDataTest.cpp testGameDataCreate.cpp testSimpleLuaData.cpp)
+target_link_libraries(gdCreator
+	PUBLIC s25util
+	PUBLIC mygettext
+	PUBLIC s25Common
+	PUBLIC rttrConfig
+	PUBLIC gamedata
+ ${Boost_LIBRARIES})
 
 target_link_libraries(gameDataCreator gdCreator)
 target_link_libraries(gameDataTest gdCreator)
