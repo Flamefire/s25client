@@ -17,19 +17,22 @@
 
 #pragma once
 
-#ifndef NationConsts_h__
-#define NationConsts_h__
+#ifndef Nation_h__
+#define Nation_h__
 
-#include "mygettext/mygettext.h"
-#include "gameTypes/Nation.h"
-#include <boost/array.hpp>
+/// Nations (byte sized)
+enum Nation
+{
+    NAT_AFRICANS = 0,
+    NAT_JAPANESE,
+    NAT_ROMANS,
+    NAT_VIKINGS,
+    NAT_BABYLONIANS,
+    NUM_NATS,
+    NAT_INVALID = 0xFF
+};
 
-const boost::array<const char*, NUM_NATS> SUPPRESS_UNUSED NationNames = {
-  {gettext_noop("Africans"), gettext_noop("Japanese"), gettext_noop("Romans"), gettext_noop("Vikings"), gettext_noop("Babylonians")}};
+/// Number of native notions
+#define NUM_NATIVE_NATS 4
 
-/// Konvertierungstabelle von RttR-Nation-Indizes in Original-S2-Nation-Indizes
-const boost::array<unsigned char, NUM_NATS> SUPPRESS_UNUSED NATION_RTTR_TO_S2 = {{
-  3, 2, 0, 1, 0 /* Babylonians get the roman figures where no others are used */
-}};
-
-#endif // NationConsts_h__
+#endif // Nation_h__

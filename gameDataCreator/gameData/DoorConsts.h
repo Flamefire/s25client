@@ -18,12 +18,12 @@
 #ifndef DOOR_CONSTS_H_
 #define DOOR_CONSTS_H_
 
-#include "gameTypes/BuildingType.h"
-#include "gameTypes/Nation.h"
+#include "gameTypes/OldBuildingType.h"
+#include "gameTypes/OldNation.h"
 
 // Konstanten für den Punkt, ab dem die Träger "verschwinden" bei einem Gebäude, jeweils als Y-Angabe
 
-const signed char DOOR_CONSTS[NUM_NATS][NUM_BUILDING_TYPES] = {
+const signed char DOOR_CONSTS[NUM_NATS][OLD_NUM_BUILDING_TYPES] = {
   // Nubier
   {5, 10, 13, 0,  10, 0,  0,  0, 0,  6,  8, 8,  8,  8, 6,  0, 10, 10, 12, 14,
    9, 5,  11, 19, 19, 12, 18, 0, -6, 19, 0, 12, 11, 6, 10, 0, 0,  -1, 4,  13},

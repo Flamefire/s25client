@@ -18,17 +18,15 @@
 #ifndef BUILD_COSTS_H_
 #define BUILD_COSTS_H_
 
-#include "DrawPointInit.h"
+#include "PositionPtInit.h"
 #include "helpers/SimpleMultiArray.h"
 #include "gameTypes/BuildingQuality.h"
-#include "gameTypes/BuildingType.h"
 #include "gameTypes/BuildingTypes.h"
+#include "gameTypes/OldBuildingType.h"
 #include "gameData/NationConsts.h"
 
-extern const boost::array<const char*, NUM_BUILDING_TYPES> BUILDING_NAMES;
-
 // Konstanten für die Baukosten der Gebäude von allen 4 Völkern
-const helpers::SimpleMultiArray<BuildingCost, NUM_NATS, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_COSTS = {
+const helpers::SimpleMultiArray<BuildingCost, NUM_NATS, OLD_NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_COSTS = {
   {// Nubier
    {{0, 0}, {2, 0}, {2, 3}, {0, 0}, {3, 5}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {4, 7}, {4, 0}, {4, 0}, {4, 0}, {4, 0},
     {4, 0}, {0, 0}, {4, 2}, {2, 0}, {2, 0}, {2, 0}, {2, 0}, {2, 2}, {2, 0}, {2, 2}, {2, 2}, {2, 2}, {2, 2}, {4, 3},
@@ -51,13 +49,13 @@ const helpers::SimpleMultiArray<BuildingCost, NUM_NATS, NUM_BUILDING_TYPES> SUPP
     {3, 3}, {4, 3}, {0, 0}, {2, 2}, {2, 2}, {2, 2}, {2, 2}, {2, 0}, {2, 3}, {3, 3}, {3, 3}, {4, 6}}}};
 
 // Bauqualitäten der Gebäude
-const boost::array<BuildingQuality, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SIZE = {
+const boost::array<BuildingQuality, OLD_NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SIZE = {
   {BQ_CASTLE,  BQ_HUT,   BQ_HUT,   BQ_NOTHING, BQ_HOUSE, BQ_NOTHING, BQ_NOTHING, BQ_NOTHING, BQ_NOTHING, BQ_CASTLE,
    BQ_MINE,    BQ_MINE,  BQ_MINE,  BQ_MINE,    BQ_HUT,   BQ_NOTHING, BQ_HOUSE,   BQ_HUT,     BQ_HUT,     BQ_HUT,
    BQ_HUT,     BQ_HOUSE, BQ_HUT,   BQ_HOUSE,   BQ_HOUSE, BQ_HOUSE,   BQ_HOUSE,   BQ_CASTLE,  BQ_CASTLE,  BQ_HOUSE,
    BQ_NOTHING, BQ_HOUSE, BQ_HOUSE, BQ_HOUSE,   BQ_HOUSE, BQ_HUT,     BQ_HOUSE,   BQ_CASTLE,  BQ_CASTLE,  BQ_HARBOR}};
 
-const boost::array<BldWorkDescription, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BLD_WORK_DESC = {{
+const boost::array<BldWorkDescription, OLD_NUM_BUILDING_TYPES> SUPPRESS_UNUSED BLD_WORK_DESC = {{
   BldWorkDescription(), // HQ
   BldWorkDescription(JOB_PRIVATE, GD_NOTHING, WaresNeeded(GD_COINS), 1),
   BldWorkDescription(JOB_PRIVATE, GD_NOTHING, WaresNeeded(GD_COINS), 2),
@@ -101,7 +99,7 @@ const boost::array<BldWorkDescription, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BLD_W
 }};
 
 /// Smoke consts for all buildings and nations
-const helpers::SimpleMultiArray<SmokeConst, NUM_NATS, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SMOKE_CONSTS = {
+const helpers::SimpleMultiArray<SmokeConst, NUM_NATS, OLD_NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SMOKE_CONSTS = {
   {// Nubier
    {
      SmokeConst(),
@@ -319,7 +317,7 @@ const helpers::SimpleMultiArray<SmokeConst, NUM_NATS, NUM_BUILDING_TYPES> SUPPRE
    }}};
 
 /// Offset of the production-/gold- stop signs per building
-const helpers::SimpleMultiArray<DrawPointInit, NUM_NATS, NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SIGN_CONSTS = {
+const helpers::SimpleMultiArray<PositionPtInit, NUM_NATS, OLD_NUM_BUILDING_TYPES> SUPPRESS_UNUSED BUILDING_SIGN_CONSTS = {
   {// Nubier
    {{0, 0},    {19, -4},  {19, -3},  {0, 0},    {23, -19}, {0, 0},    {0, 0},   {0, 0},     {0, 0},     {29, -23},
     {-2, -15}, {2, -13},  {-5, -16}, {-5, -15}, {0, 0},    {0, 0},    {0, 0},   {4, -16},   {9, -12},   {7, -10},
@@ -348,7 +346,7 @@ const helpers::SimpleMultiArray<DrawPointInit, NUM_NATS, NUM_BUILDING_TYPES> SUP
 
 /// Position der nubischen Feuer für alle 4 Bergwerke
 /// (Granit, Kohle, Eisen, Gold)
-const boost::array<DrawPointInit, 4> SUPPRESS_UNUSED NUBIAN_MINE_FIRE = {{
+const boost::array<PositionPtInit, 4> SUPPRESS_UNUSED NUBIAN_MINE_FIRE = {{
   {31, -18},
   {34, -10},
   {30, -11},
@@ -356,6 +354,6 @@ const boost::array<DrawPointInit, 4> SUPPRESS_UNUSED NUBIAN_MINE_FIRE = {{
 }};
 
 /// Hilfetexte für Gebäude
-extern const boost::array<const char*, NUM_BUILDING_TYPES> BUILDING_HELP_STRINGS;
+extern const boost::array<const char*, OLD_NUM_BUILDING_TYPES> BUILDING_HELP_STRINGS;
 
 #endif
