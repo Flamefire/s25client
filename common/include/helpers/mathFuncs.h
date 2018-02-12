@@ -25,6 +25,11 @@ namespace helpers {
 int gcd(int a, int b);
 /// Returns the result of "divident / divisor" rounded to the nearest integer value
 unsigned roundedDiv(unsigned dividend, unsigned divisor);
+/// Returns ceil(dividend/divisor) in integer arithmetic
+unsigned ceilDiv(unsigned dividend, unsigned divisor)
+{
+    return (dividend + divisor - 1) / divisor;
+}
 /// Clamp the value into [min, max]
 template<typename T>
 T clamp(T val, T min, T max)

@@ -117,6 +117,9 @@ typedef int socklen_t;
 /// Call a member function trough an object and a member function pointer
 #define CALL_MEMBER_FN(object, ptrToMember) ((object).*(ptrToMember))
 
+/// Shortcut for tests
+#define RTTR_REQUIRE_EQUAL_COLLECTIONS(Col1, Col2) BOOST_REQUIRE_EQUAL_COLLECTIONS(Col1.begin(), Col1.end(), Col2.begin(), Col2.end())
+
 /// Deletes the ptr and sets it to NULL
 template<typename T>
 inline void deletePtr(T*& ptr)
@@ -136,7 +139,7 @@ inline T safeDiff(T a, T b)
 template<typename T, typename T_Src>
 inline T checkedCast(T_Src src)
 {
-    RTTR_Assert(!src || dynamic_cast<T>(src));
+    RTTR_Assert(src == dynamic_cast<T>(src));
     return static_cast<T>(src);
 }
 

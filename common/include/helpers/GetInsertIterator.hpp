@@ -19,6 +19,7 @@
 #define GetInsertIterator_h__
 
 #include "helpers/traits.h"
+#include <iterator>
 
 namespace helpers {
 

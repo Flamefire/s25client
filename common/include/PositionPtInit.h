@@ -17,26 +17,26 @@
 
 #pragma once
 
-#ifndef DrawPointInit_h__
-#define DrawPointInit_h__
+#ifndef PositionPtInit_h__
+#define PositionPtInit_h__
 
-#include "DrawPoint.h"
+#include "Point.h"
 
 /// Helper struct to allow use in array initializers till C++11.
-/// Implicitly convertible to DrawPoint
-struct DrawPointInit
+/// Implicitly convertible to Position
+struct PositionPtInit
 {
-    typedef DrawPoint::ElementType ElementType;
+    typedef Position::ElementType ElementType;
     const ElementType x;
     const ElementType y;
-    operator DrawPoint() const { return DrawPoint(x, y); }
+    operator Position() const { return Position(x, y); }
 };
 
 // Helper for defining the operations
-#define DEF_DRAWPOINT_OP(OP)                                                                                       \
-    inline DrawPoint operator OP(const DrawPoint& lhs, const DrawPointInit& rhs) { return lhs OP DrawPoint(rhs); } \
-    inline DrawPoint operator OP(const DrawPointInit& lhs, const DrawPoint& rhs) { return DrawPoint(lhs) OP rhs; } \
-    inline DrawPoint operator OP(const DrawPointInit& lhs, const DrawPointInit& rhs) { return DrawPoint(lhs) OP rhs; }
+#define DEF_DRAWPOINT_OP(OP)                                                                                     \
+    inline Position operator OP(const Position& lhs, const PositionPtInit& rhs) { return lhs OP Position(rhs); } \
+    inline Position operator OP(const PositionPtInit& lhs, const Position& rhs) { return Position(lhs) OP rhs; } \
+    inline Position operator OP(const PositionPtInit& lhs, const PositionPtInit& rhs) { return Position(lhs) OP rhs; }
 
 DEF_DRAWPOINT_OP(+)
 DEF_DRAWPOINT_OP(-)
@@ -45,4 +45,4 @@ DEF_DRAWPOINT_OP(/)
 
 #undef DEF_DRAWPOINT_OP
 
-#endif // DrawPointInit_h__
+#endif // PositionPtInit_h__
