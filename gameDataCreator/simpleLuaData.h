@@ -19,48 +19,54 @@
 #define addNewData_h__
 
 #include <boost/optional.hpp>
-#include <string>
+#include <boost/regex.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <boost/variant.hpp>
-#include <boost/regex_fwd.hpp>
+#include <string>
 
 namespace simpleLuaData {
 
-    /// View into a string. Can be replaced by future std::string_view or boost::string_view
-    typedef boost::string_ref string_view;
+/// View into a string. Can be replaced by future std::string_view or boost::string_view
+typedef boost::string_ref string_view;
 
-    bool isWhitespace(char c);
+bool isWhitespace(char c);
 
-    /// Skip whitespace (space, tab, newline) in the given direction and return position to first non-whitespace char or std::string::npos
-    template<typename T_String>
-    size_t skipWhitespaces(const T_String& str, size_t pos = 0, bool forward = true);
-    /// Return the position of the first char on the current line. This is the char after the previous \n or 0 if no \n found
-    template<typename T_String>
-    size_t getStartOfLine(const T_String& str, size_t pos);
+/// Skip whitespace (space, tab, newline) in the given direction and return position to first non-whitespace char or std::string::npos
+template<typename T_String>
+size_t skipWhitespaces(const T_String& str, size_t pos = 0, bool forward = true);
+/// Return the position of the first char on the current line. This is the char after the previous \n or 0 if no \n found
+template<typename T_String>
+size_t getStartOfLine(const T_String& str, size_t pos);
 
-    
 struct StringRef
 {
     size_t start, len;
-    StringRef(size_t start = 0, size_t len = 0) : start(start), len(len) {}
+    explicit StringRef(size_t start = 0, size_t len = 0) : start(start), len(len) {}
     bool empty() const { return len == 0; }
     size_t end() const { return start + len; }
-    std::string get(const std::string& src) const { return src.substr(start, len); }
+    std::string get(const std::string& src) const { return empty() ? "" : src.substr(start, len); }
 };
 
 struct LuaValueRef
 {
     StringRef data;
     StringRef comment;
-    LuaValueRef(StringRef data, StringRef comment = StringRef()) : data(data), comment(comment) {}
+    explicit LuaValueRef(StringRef data, StringRef comment = StringRef()) : data(data), comment(comment) {}
 };
 
 struct LuaTableEntry;
+class GameDataFile;
 
 struct LuaTable
 {
     StringRef data;
     std::vector<LuaTableEntry> values;
+
+    explicit LuaTable(const GameDataFile& gd) : gd(&gd) {}
+    const LuaTableEntry& operator[](const std::string& entryName) const;
+
+private:
+    const GameDataFile* gd;
 };
 
 struct LuaTableEntry
@@ -84,7 +90,10 @@ class GameDataFile
     bool isNext(char toSearch) const;
     bool matchesNext(boost::smatch& match, boost::regex& re) const;
     char getNext() const;
+
 public:
+    struct LuaDataError;
+
     void setContents(const std::string& src);
     const std::string& getContents() const { return contents; }
     const std::vector<LuaTable>& getTables() const { return tables; }
@@ -92,19 +101,37 @@ public:
     bool save(const std::string& filepath) const;
     void parse();
     /// Find the first table that has the given name. Range includes { and }
-    boost::optional<LuaValueRef> findTableByName(const std::string& name) const;
-    /// Find the comment for the given data. Range includes "--" and ends at last non-whitespace
-    bool findComment(LuaValueRef& valRef) const;
+    boost::optional<const LuaTable&> findTableByName(const std::string& name) const;
+    boost::optional<const LuaTableEntry&> findNamedValue(const LuaTable& table, const std::string& name) const;
     /// Return true, if the position is part of a comment (has "--" before a new line)
     bool isInComment(size_t pos) const { return getStartOfComment(pos) != std::string::npos; }
     /// Get the start of the comment ("--" before a new line) or npos if not found
     size_t getStartOfComment(size_t pos) const;
-    std::string getComment(const boost::optional<LuaValueRef>& valRef) const { return valRef ? valRef->comment.get(contents) : ""; }
-    std::string getData(const boost::optional<LuaValueRef>& valRef) const { return valRef ? valRef->data.get(contents) : ""; }
+    std::string getComment(const LuaTableEntry& valRef) const { return valRef.comment.get(contents); }
+    template<class T>
+    std::string getComment(const boost::optional<T>& ref) const
+    {
+        return ref ? getComment(*ref) : "";
+    }
+    std::string getData(const LuaValueRef& valRef) const { return valRef.data.get(contents); }
+    std::string getData(const LuaTable& tableRef) const { return tableRef.data.get(contents); }
+    template<class T>
+    std::string getData(const boost::optional<T>& ref) const
+    {
+        return ref ? getData(*ref) : "";
+    }
+
+    const LuaTable& operator[](const std::string& tableName);
+
 private:
     void skipList();
+    bool isNextString();
     LuaTable parseTable();
     boost::variant<StringRef, LuaTable> parseValue(char endChar);
+    void skipExpression();
+    void skipWhitespaceAndComments();
+    size_t skipWhitespaceAndCommentsBackwards(size_t pos) const;
+    LuaDataError createError(const std::string& msg) const;
 };
 
 //////////////////////////////////////////////////////////////////////////

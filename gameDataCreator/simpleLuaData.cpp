@@ -19,207 +19,314 @@
 #include "simpleLuaData.h"
 #include <boost/foreach.hpp>
 #include <boost/nowide/fstream.hpp>
-#include <boost/utility/string_ref.hpp>
-#include <boost/regex.hpp>
 #include <stdexcept>
+#include "helpers/converters.h"
 
 namespace simpleLuaData {
-    bool startsWith(const std::string& txt, size_t offset, const std::string& toSearch)
+    struct GameDataFile::LuaDataError : public std::runtime_error
     {
-        return string_view(txt).substr(offset).starts_with(toSearch);
-    }
+        LuaDataError(const std::string& msg) : std::runtime_error(msg) {}
+    };
 
-    simpleLuaData::StringRef GameDataFile::parseComment(StringRef lastComment)
+bool startsWith(const std::string& txt, size_t offset, const std::string& toSearch)
 {
-        size_t endl = contents.find('\n', curPos);
-        if(endl == std::string::npos)
-            endl = contents.size();
-        curPos = endl;
-        // If the last comment was not a trailing one AND the 2 are only separated by whitespace -> combine
-        if(!lastComment.empty() && !isTrailingComment(lastComment) && isAdjacent(lastComment.end(), curPos))
-        {
-            return StringRef(lastComment.start, endl - lastComment.start);
-        }else
-        return StringRef(curPos, endl - curPos);
-    }
+    return string_view(txt).substr(offset).starts_with(toSearch);
+}
 
-    bool GameDataFile::isAdjacent(size_t pos1, size_t pos2)
+GameDataFile::LuaDataError GameDataFile::createError(const std::string & msg) const
+{
+    return LuaDataError(msg + " at position " + helpers::toString(curPos) + "\n" + contents.substr(curPos, 40));
+}
+
+StringRef GameDataFile::parseComment(StringRef lastComment)
+{
+    size_t endl = contents.find('\n', curPos);
+    if(endl == std::string::npos)
+        endl = contents.size();
+    size_t start = curPos;
+    curPos = endl;
+    // Ignore trailing whitespace
+    endl = skipWhitespaces(contents, endl, false) + 1u;
+    // If the last comment was not a trailing one AND the 2 are only separated by whitespace -> combine
+    if(!lastComment.empty() && !isTrailingComment(lastComment) && isAdjacent(lastComment.end(), start))
+        start = lastComment.start;
+    return StringRef(start, endl - start);
+}
+
+bool GameDataFile::isAdjacent(size_t pos1, size_t pos2)
+{
+    if(pos2 < pos1)
+        std::swap(pos2, pos1);
+    return skipWhitespaces(contents, pos1) >= pos2;
+}
+
+bool GameDataFile::isTrailingComment(StringRef comment)
+{
+    // Just whitespace between newline and comment -> not trailing
+    if(skipWhitespaces(contents, getStartOfLine(contents, comment.start)) == comment.start)
+        return false;
+    // Comment after start of table or function -> not trailing
+    size_t pos = skipWhitespaces(contents, comment.start- 1u, false);
+    RTTR_Assert(pos < contents.size());
+    if(contents[pos] == '{' || contents[pos] == '(')
+        return false;
+    return true;
+}
+
+void GameDataFile::parseString()
+{
+    char startChar = contents[curPos];
+    bool isEscaped = false;
+    while(++curPos < contents.size())
     {
-        if(pos2 < pos1)
-            std::swap(pos2, pos1);
-        return skipWhitespaces(contents, pos1) >= pos2;
+        char c = getNext();
+        if(c == '\\')
+            isEscaped = !isEscaped;
+        else if(!isEscaped && c == startChar)
+        {
+            curPos++;
+            break;
+        } else if(c == '\n')
+            throw createError("New line in string");
     }
+}
 
-    bool GameDataFile::isTrailingComment(StringRef comment)
+const LuaTable& GameDataFile::operator[](const std::string& tableName)
+{
+    return *findTableByName(tableName);
+}
+
+void GameDataFile::skipList()
+{
+    char openChar = getNext();
+    char closeChar;
+    if(openChar == '(')
+        closeChar = ')';
+    else if(openChar == '{')
+        closeChar = '}';
+    else if(openChar == '[')
+        closeChar = ']';
+    else
+        throw createError("Open list expected");
+    curPos++;
+    while(curPos < contents.size())
     {
-        return skipWhitespaces(contents, getStartOfLine(contents, comment.start)) != comment.start;
-    }
-
-    void GameDataFile::parseString()
-    {
-        char startChar = contents[curPos];
-        bool isEscaped = false;
-        while(++curPos < contents.size())
+        if(isNext("--"))
+            parseComment();
+        else if(isNext(closeChar))
         {
-            char c = getNext();
-            if(c == '\\')
-                isEscaped = !isEscaped;
-            else if(!isEscaped && c == startChar)
-            {
-                curPos++;
-                break;
-            } else if(c == '\n')
-                throw std::runtime_error("New line in string");
-        }
-    }
-
-    void GameDataFile::skipList()
-{
-        char openChar = getNext();
-        RTTR_Assert(openChar == '(' || openChar == '{');
-        char closeChar = (openChar == '(') ? ')' : '}';
-        curPos++;
-        while(curPos < contents.size())
-        {
-            if(isNext("--"))
-                parseComment();
-            else if(isNext(closeChar))
-            {
-                curPos++;
-                return;
-            }
-            else if(isNext("'") || isNext("\""))
-                parseString();
-            else if(isNext('{') || isNext('('))
-                skipList();
-            else if(std::string("})[]").find(getNext()) != std::string::npos)
-                throw std::runtime_error("Invalid char");
-            else
-                curPos++;
-        }
-    }
-
-    LuaTable GameDataFile::parseTable()
-{
-        RTTR_Assert(getNext() == '{');
-        LuaTable result;
-        result.data.start = curPos;
-        curPos++;
-        StringRef lastComment;
-        boost::regex nameValueRE("$(\w+) += +");
-        while(curPos < contents.size())
-        {
-            curPos = skipWhitespaces(contents, curPos);
-            if(curPos == std::string::npos)
-                break;
-            if(isNext('}'))
-            {
-                result.data.len = curPos - result.data.start + 1u;
-                curPos++;
-                return result;
-            }
-            if(isNext("--"))
-            {
-                lastComment = parseComment(lastComment);
-                // Ignore for now
-                if(isTrailingComment(lastComment))
-                    lastComment = StringRef();
-                continue;
-            }
-            LuaTableEntry entry;
-            entry.data.start = curPos;
-            if(isAdjacent(lastComment.end(), curPos))
-                entry.comment = lastComment;
-            boost::smatch nameValue;
-            if(matchesNext(nameValue, nameValueRE))
-            {
-                entry.name = StringRef(nameValue.position(1), nameValue.length(1));
-                curPos += nameValue.position() + nameValue.length();
-            }
-            entry.value = parseValue('}');
-            entry.data.len = curPos - entry.data.start + 1u;
-            result.values.push_back(entry);
-        }
-    }
-
-    boost::variant<simpleLuaData::StringRef, simpleLuaData::LuaTable> GameDataFile::parseValue(char endChar)
-{
-        curPos = skipWhitespaces(contents, curPos);
-        RTTR_Assert(!isNext("--"));
-        // Table end
-        if(isNext('}'))
-            return StringRef();
-        if(isNext('{'))
-            return parseTable();
-        // Ignore translations
-        if(isNext("__"))
-            curPos += 2;
-        size_t startPos = curPos;
-        while(curPos < contents.size())
-        {
-            curPos = skipWhitespaces(contents, curPos);
-            if(curPos == std::string::npos)
-                break;
-            // End of table or value
-            if(isNext(endChar) || isNext(','))
-            {
-                size_t endPos = skipWhitespaces(contents, curPos - 1u, false);
-                if(endPos < startPos)
-                    return StringRef();
-                else
-                    return StringRef(startPos, endPos - startPos + 1u);
-            }
-            // Skip over
+            curPos++;
+            return;
+        } else if(isNextString())
+            parseString();
+        else if(isNext('{') || isNext('(') || isNext('['))
             skipList();
+        else if(std::string("})[]").find(getNext()) != std::string::npos)
+            throw createError("Invalid char");
+        else
+            curPos++;
+    }
+}
+
+LuaTable GameDataFile::parseTable()
+{
+    RTTR_Assert(getNext() == '{');
+    LuaTable result(*this);
+    result.data.start = curPos;
+    curPos++;
+    StringRef lastComment;
+    boost::regex nameValueRE("^(\\w+) *= *");
+    while(curPos < contents.size())
+    {
+        curPos = skipWhitespaces(contents, curPos);
+        if(curPos == std::string::npos)
+            break;
+        if(isNext('}'))
+        {
+            result.data.len = curPos - result.data.start + 1u;
+            curPos++;
+            return result;
         }
-    }
-
-    bool GameDataFile::isNext(const std::string & toSearch) const
-    {
-        return startsWith(contents, curPos, toSearch);
-    }
-
-    bool GameDataFile::isNext(char toSearch) const
-    {
-        return getNext() == toSearch;
-    }
-
-    bool GameDataFile::matchesNext(boost::smatch& match, boost::regex& re) const
-    {
-        return boost::regex_match(contents.begin() + curPos, contents.end(), match, re);
-    }
-
-    char GameDataFile::getNext() const
-    {
-        return contents[curPos];
-    }
-
-    void GameDataFile::setContents(const std::string& src)
-    {
-        contents = src;
-        parse();
-    }
-
-    void GameDataFile::parse()
-    {
-        boost::regex re("\w+:Add\w+(\{)");
-            boost::match_results<std::string::const_iterator> what;
-            boost::match_flag_type flags = boost::match_default;
-            std::string::const_iterator curIt = contents.begin();
-            std::string::const_iterator endPos = contents.end();
-            while(boost::regex_search(curIt, endPos, what, re, flags))
+        if(isNext("--"))
+        {
+            lastComment = parseComment(lastComment);
+            if(isTrailingComment(lastComment))
             {
-                curPos = what.position(1);
-                if(!isInComment(curPos))
-                {
-                    tables.push_back(parseTable());
-                    curIt = contents.begin() + curPos;
-                }else
-                    curIt += what.position() + what.length();
+                if(!result.values.empty() && isAdjacent(result.values.back().data.end(), lastComment.start))
+                    result.values.back().comment = lastComment;
+                lastComment = StringRef();
             }
+            continue;
+        }
+        LuaTableEntry entry;
+        entry.data.start = curPos;
+        if(isAdjacent(lastComment.end(), curPos))
+            entry.comment = lastComment;
+        boost::smatch nameValue;
+        if(matchesNext(nameValue, nameValueRE))
+        {
+            entry.name = StringRef(nameValue.position(1) + curPos, nameValue.length(1));
+            curPos += nameValue.position() + nameValue.length();
+        }
+        entry.value = parseValue('}');
+        entry.data.len = curPos - entry.data.start;
+        result.values.push_back(entry);
     }
+    throw createError("Invalid table");
+}
 
-    bool GameDataFile::load(const std::string& filepath)
+void GameDataFile::skipWhitespaceAndComments()
+{
+    size_t oldPos = curPos;
+    while(curPos < contents.size())
+    {
+        curPos = skipWhitespaces(contents, curPos);
+        if(curPos == std::string::npos)
+        {
+            curPos = oldPos;
+            throw createError("Did not find next text");
+        }
+        if(!isNext("--"))
+            break;
+        parseComment();
+    }
+}
+
+size_t GameDataFile::skipWhitespaceAndCommentsBackwards(size_t pos) const
+{
+    while(pos > 0u)
+    {
+        pos = skipWhitespaces(contents, pos, false);
+        if(pos == std::string::npos)
+            throw createError("Did not find previous text");
+        if(!isInComment(pos))
+            break;
+        pos = getStartOfComment(pos) - 1u;
+    }
+    return pos;
+}
+
+void GameDataFile::skipExpression()
+{
+    static boost::regex identifierRE("\\w+");
+    static boost::regex binOpsRE("(\\.\\.)|\\+|-|\\*|/|\\^|%|<|(<=)|>|(>=)|(==)|(~=)|(and)|(or)");
+    while(curPos < contents.size())
+    {
+        skipWhitespaceAndComments();
+        // Table? -> Just parse it and go
+        if(isNext('{'))
+        {
+            skipList();
+            return;
+        }
+        // Translated string? Skip "__"
+        if(isNext("__"))
+        {
+            curPos += 2;
+            if(!isNextString())
+                throw createError("String expected after translation function");
+        }
+        // String, variable or literal
+        boost::smatch match;
+        if(isNextString())
+            parseString();
+        else if(matchesNext(match, identifierRE))
+        {
+            curPos += match.length();
+            // Function call or table subscript?
+            skipWhitespaceAndComments();
+            if(isNext('{') || isNext('(') || isNext('['))
+                skipList();
+        }
+        skipWhitespaceAndComments();
+        // Possibly concatenated with a binary op?
+        if(matchesNext(match, binOpsRE))
+            curPos += match.length();
+        else if(isNext('.') || isNext(':')) // member access
+            curPos++;
+        else
+            return; // End of expression
+    }
+}
+
+boost::variant<simpleLuaData::StringRef, simpleLuaData::LuaTable> GameDataFile::parseValue(char endChar)
+{
+    curPos = skipWhitespaces(contents, curPos);
+    if(isNext("--"))
+        throw createError("Value expected but comment found");
+    if(isNext(','))
+        throw createError("Value expected but ',' found");
+    // Parse subtable
+    if(isNext('{'))
+        return parseTable();
+    // Table end
+    if(isNext(endChar))
+        return StringRef();
+    size_t startPos = curPos;
+    skipExpression();
+    curPos = skipWhitespaces(contents, curPos);
+    if(isNext("--"))
+        throw createError("Comments in values are not supported"); 
+    if(isNext(endChar) || isNext(','))
+    {
+        size_t endPos = skipWhitespaceAndCommentsBackwards(curPos - 1u);
+        if(isNext(','))
+            curPos++;
+        else
+            curPos = endPos + 1u; // Go to next after value which might be a comment
+        if(endPos < startPos)
+            return StringRef();
+        else
+            return StringRef(startPos, endPos - startPos + 1u);
+    }
+    throw createError("Invalid value");
+}
+
+bool GameDataFile::isNext(const std::string& toSearch) const
+{
+    return startsWith(contents, curPos, toSearch);
+}
+
+bool GameDataFile::isNext(char toSearch) const
+{
+    return getNext() == toSearch;
+}
+
+bool GameDataFile::matchesNext(boost::smatch& match, boost::regex& re) const
+{
+    return boost::regex_search(contents.begin() + curPos, contents.end(), match, re, boost::regex_constants::match_continuous);
+}
+
+char GameDataFile::getNext() const
+{
+    return contents[curPos];
+}
+
+void GameDataFile::setContents(const std::string& src)
+{
+    contents = src;
+    parse();
+}
+
+void GameDataFile::parse()
+{
+    tables.clear();
+    boost::regex re("\\w+:Add\\w+(\\{)");
+    boost::match_results<std::string::const_iterator> what;
+    boost::match_flag_type flags = boost::match_default;
+    curPos = 0;
+    std::string::const_iterator curIt = contents.begin();
+    std::string::const_iterator endPos = contents.end();
+    while(boost::regex_search(curIt, endPos, what, re, flags))
+    {
+        curPos += what.position(1);
+        if(!isInComment(curPos))
+            tables.push_back(parseTable());
+        curIt = contents.begin() + curPos;
+    }
+}
+
+bool GameDataFile::load(const std::string& filepath)
 {
     bnw::ifstream fs(filepath);
     if(!fs)
@@ -246,124 +353,30 @@ size_t find(const T_Str& str, const T_Str2& strToFind, size_t offset = 0)
     return (result != std::string::npos) ? result + offset : result;
 }
 
-boost::optional<LuaValueRef> GameDataFile::findTableByName(const std::string& name) const
+boost::optional<const LuaTable&> GameDataFile::findTableByName(const std::string& name) const
 {
-    // Find the first occurrence of a name declaration (possibly translated)
-    size_t namePos = 0;
-    while(true)
+    BOOST_FOREACH(const LuaTable& table, tables)
     {
-        size_t namePos2 = contents.find(" name = __\"" + name + "\"", namePos);
-        namePos = contents.find(" name = \"" + name + "\"", namePos);
-        if(namePos == std::string::npos)
-        {
-            if(namePos2 == std::string::npos)
-                return boost::none;
-            namePos = namePos2;
-        } else if(namePos2 < namePos && !isInComment(namePos2))
-            namePos = namePos2;
-        // If it is not in a comment -> OK
-        if(!isInComment(namePos))
-            break;
-        // Skip rest of line
-        namePos = contents.find('\n', namePos);
-        // Nothing more -> Go
-        if(namePos == std::string::npos)
-            return boost::none;
-    }
-    // Now go backwards to find the start of the table
-    boost::optional<size_t> tableStart;
-    int tableDepth = 0;
-    for(size_t i = namePos; i > 0; i--)
-    {
-        size_t cmtStart = getStartOfComment(i);
-        if(cmtStart != std::string::npos)
-        {
-            i = cmtStart;
-            if(i == 0)
-                break;
-        }
-        char cur = contents[i - 1];
-        if(cur == '{')
-        {
-            if(tableDepth == 0)
-            {
-                tableStart = i - 1;
-                break;
-            } else
-                tableDepth--;
-        } else if(cur == '}')
-            tableDepth++;
-    }
-    if(!tableStart)
-        return boost::none;
-    // And forwards to find the end
-    boost::optional<size_t> tableEnd;
-    tableDepth = 0;
-    for(size_t i = namePos; i < contents.length(); i++)
-    {
-        if(isInComment(i))
-        {
-            // Skip till line end. npos check omitted as continue is used which checks against len
-            i = contents.find('\n', i);
+        boost::optional<const LuaTableEntry&> entry = findNamedValue(table, "name");
+        if(!entry)
             continue;
-        }
-        char cur = contents[i];
-        if(cur == '}')
-        {
-            if(tableDepth == 0)
-            {
-                tableEnd = i;
-                break;
-            } else
-                tableDepth--;
-        } else if(cur == '{')
-            tableDepth++;
+        if(entry->value.type() != typeid(StringRef))
+            continue;
+        std::string value = boost::get<StringRef>(entry->value).get(contents);
+        if(value == "\"" + name + "\"" || value == "__\"" + name + "\"")
+            return table;
     }
-    if(!tableEnd)
-        return boost::none;
-    return LuaValueRef(StringRef(*tableStart, *tableEnd - *tableStart + 1));
+    return boost::none;
 }
 
-bool GameDataFile::findComment(LuaValueRef& valRef) const
+boost::optional<const LuaTableEntry&> GameDataFile::findNamedValue(const LuaTable& table, const std::string& name) const
 {
-    // Comment starts at data if no comment
-    size_t startCmt = valRef.data.start;
-    size_t endCmt = startCmt;
-    // Search previous lines for comments and add all found ones
-    while(startCmt > 0)
+    BOOST_FOREACH(const LuaTableEntry& entry, table.values)
     {
-        // Skip backwards to end of previous line
-        size_t endl = skipWhitespaces(contents, contents.rfind('\n', startCmt), false);
-        // If no previous (non-whitespace) line found -> stop
-        if(endl == std::string::npos)
-            break;
-        // Try to find a comment
-        size_t curCmtStart = getStartOfComment(endl);
-        if(curCmtStart == std::string::npos)
-            break;
-        // Check if is a trailing comment (anything except whitespace is in front of it)
-        size_t startLine = getStartOfLine(contents, curCmtStart);
-        if(skipWhitespaces(string_view(contents).substr(startLine, curCmtStart - startLine)) !=std::string::npos)
-            break;
-        // If first comment line, update end position
-        if(startCmt == endCmt)
-            endCmt = endl;
-        // Extent comment
-        startCmt = startLine;
+        if(entry.name.get(contents) == name)
+            return entry;
     }
-    if(startCmt == endCmt)
-    {
-        // We might have a trailing comment
-        string_view strEndLine = string_view(contents).substr(valRef.data.end());
-        strEndLine = strEndLine.substr(0, strEndLine.find('\n'));
-        size_t endVal = skipWhitespaces(strEndLine, 0);
-        if(endVal == std::string::npos || !strEndLine.substr(endVal).starts_with("--"))
-            return false;
-        startCmt = endVal + valRef.data.end();
-        endCmt = skipWhitespaces(strEndLine, strEndLine.size() - 1, false) + valRef.data.end();
-    }
-    valRef.comment = StringRef(startCmt, endCmt - startCmt + 1);
-    return true;
+    return boost::none;
 }
 
 size_t GameDataFile::getStartOfComment(size_t pos) const
@@ -380,6 +393,16 @@ size_t GameDataFile::getStartOfComment(size_t pos) const
     if(cmtStart == std::string::npos)
         return std::string::npos;
     return startLine + cmtStart;
+}
+
+bool GameDataFile::isNextString()
+{
+    return isNext("'") || isNext("\"");
+}
+
+const LuaTableEntry& LuaTable::operator[](const std::string& entryName) const
+{
+    return *gd->findNamedValue(*this, entryName);
 }
 
 } // namespace simpleLuaData

@@ -45,7 +45,6 @@ BOOST_AUTO_TEST_CASE(GetStartOfLine)
         BOOST_REQUIRE_EQUAL(getStartOfLine(str, i), 0u);
     for(unsigned i = 6; i < str.size(); i++)
         BOOST_REQUIRE_EQUAL(getStartOfLine(str, i), 6u);
-
 }
 
 BOOST_AUTO_TEST_CASE(FindTable)
@@ -55,14 +54,29 @@ BOOST_AUTO_TEST_CASE(FindTable)
     BOOST_REQUIRE(!gd.findTableByName("foo"));
     gd.setContents(" name = __\"foo\"");
     BOOST_REQUIRE(!gd.findTableByName("foo"));
-    gd.setContents("{ name = \"foo\"}");
-    boost::optional<LuaValueRef> pos = gd.findTableByName("foo");
+    gd.setContents("rttr:AddBld{name = \"foo\"}");
+    boost::optional<const LuaTable&> pos = gd.findTableByName("foo");
     BOOST_REQUIRE(pos);
-    BOOST_REQUIRE_EQUAL(pos->data.start, 0);
-    BOOST_REQUIRE_EQUAL(pos->data.len, gd.getContents().size());
-    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents());
+    BOOST_REQUIRE_EQUAL(pos->data.start, 11);
+    BOOST_REQUIRE_EQUAL(pos->data.len, gd.getContents().size() - 11);
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
 
-    gd.setContents("{ name = \"foo\" }\n{ name = \"foo2\" }\n{ name = \"foo3\" }\n");
+    // Test with different whitespace
+    gd.setContents("rttr:AddBld{ name = \"foo\"}");
+    pos = gd.findTableByName("foo");
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
+    gd.setContents("rttr:AddBld{name = \"foo\" }");
+    pos = gd.findTableByName("foo");
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
+    gd.setContents("rttr:AddBld{ name = \"foo\" }");
+    pos = gd.findTableByName("foo");
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
+
+    gd.setContents("rttr:AddBld{ name = \"foo\",1,2}");
+    pos = gd.findTableByName("foo");
+    BOOST_REQUIRE(pos);
+
+    gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo2\" }\nrttr:AddBld{ name = \"foo3\" }\n");
     pos = gd.findTableByName("foo");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(gd.getData(pos), "{ name = \"foo\" }");
@@ -75,68 +89,64 @@ BOOST_AUTO_TEST_CASE(FindTable)
     BOOST_REQUIRE(!gd.findTableByName("foo4"));
 
     // Same with translations
-    gd.setContents("{ name = __\"foo\"}");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), gd.getContents());
-    gd.setContents("{ name = __\"foo\" }\n{ name = __\"foo2\" }\n{ name = __\"foo3\" }");
+    gd.setContents("rttr:AddBld{ name = __\"foo\"}");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), gd.getContents().substr(11));
+    gd.setContents("rttr:AddBld{ name = __\"foo\" }\nrttr:AddBld{ name = __\"foo2\" }\nrttr:AddBld{ name = __\"foo3\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{ name = __\"foo\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo2")), "{ name = __\"foo2\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo3")), "{ name = __\"foo3\" }");
 
     // Find first
-    gd.setContents("{ name = \"foo\" }\n{ name = \"foo\", bar = \"foo\" }\n{ name = \"foo3\" }\n");
+    gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo\", bar = \"foo\" }\nrttr:AddBld{ name = \"foo3\" }\n");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{ name = \"foo\" }");
 
     // Skip comments
-    gd.setContents("--{\n name = \"foo\" --}\n{ --name = \"foo\" \n}\n{\n--name = \"foo\" \n}\n{name = \"foo\"}\n");
+    gd.setContents("--rttr:AddBld{\n name = \"foo\" --}\nrttr:AddBld{ --name = \"foo\" \n}\nrttr:AddBld{\n--name = \"foo\" "
+                   "\n}\nrttr:AddBld{name = \"foo\"}\n");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{name = \"foo\"}");
 }
 
 BOOST_AUTO_TEST_CASE(FindComment)
 {
     GameDataFile gd;
-    gd.setContents("--Foo\n{name = \"regular\"}\n"                // Regular comment
-                   " \t --Foo2  \t\n{name = \"whitespace\"}\n"    // whitespace around
-                   "--Foo3\n--Bar3\n{name = \"2line\"}\n"         // 2 lines
-                   "bar=2--Bar32\n--Foo32\n{name = \"2line2\"}\n" // 2nd belongs to other
-                   "{name = \"none\"}\n"                          // no comment
-                   "--Foo4\nbar=2\n{name = \"none2\"}\n"          // belongs to other
-                   "{name = \"trailing\"}--Foo5\n"                // trailing comment
-                   "bar=2 --Foo6\n{name = \"trailing2\"}\n"       // trailing comment to other
-                   "--Foo7\n{name = \"trailLead\"} --Foo8\n"      // trailing and leading
-    );
-    boost::optional<LuaValueRef> pos = gd.findTableByName("regular");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo");
 
-    pos = gd.findTableByName("whitespace");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo2");
+    gd.setContents("rttr:AddBld{--Foo\nname = \"table\"}\n"); // Regular comment
+    boost::optional<const LuaTable&> pos = gd.findTableByName("table");
+    boost::optional<const LuaTableEntry&> optEntry = gd.findNamedValue(*pos, "name");
+    BOOST_REQUIRE(optEntry);
+    BOOST_REQUIRE_EQUAL(gd.getComment(optEntry), "--Foo");
 
-    pos = gd.findTableByName("2line");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo3\n--Bar3");
+    gd.setContents("rttr:AddBld{ \t --Foo  \t\nname = \"table\"}\n"); // whitespace around
+    const LuaTableEntry* entry = &gd["table"]["name"];
+    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
 
-    pos = gd.findTableByName("2line2");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo32");
+    gd.setContents("rttr:AddBld{--Foo\n--Bar3\nname = \"table\"}\n"); // 2 lines
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo\n--Bar3");
 
-    pos = gd.findTableByName("none");
-    BOOST_REQUIRE(!gd.findComment(*pos));
-    BOOST_REQUIRE(gd.getComment(pos).empty());
+    gd.setContents("rttr:AddBld{bar=2,--Bar32\n--Foo\nname = \"table\"}\n"); // 2nd belongs to other
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
 
-    pos = gd.findTableByName("none2");
-    BOOST_REQUIRE(!gd.findComment(*pos));
+    gd.setContents("rttr:AddBld{name = \"table\"}\n"); // no comment
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE(gd.getComment(*entry).empty());
 
-    pos = gd.findTableByName("trailing");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo5");
+    gd.setContents("rttr:AddBld{--Foo\nbar=2,\nname = \"table\"}\n"); // belongs to other
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE(entry->comment.empty());
 
-    pos = gd.findTableByName("trailing2");
-    BOOST_REQUIRE(!gd.findComment(*pos));
+    gd.setContents("rttr:AddBld{name = \"table\"--Foo\n}"); // trailing comment
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
 
-    pos = gd.findTableByName("trailLead");
-    BOOST_REQUIRE(gd.findComment(*pos));
-    BOOST_REQUIRE_EQUAL(gd.getComment(pos), "--Foo7");
+    gd.setContents("rttr:AddBld{bar=2, --Foo\nname = \"table\"}\n"); // trailing comment to other
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE(entry->comment.empty());
+
+    gd.setContents("rttr:AddBld{--Foo\nname = \"table\" --Bar\n}\n"); // trailing and leading
+    entry = &gd["table"]["name"];
+    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Bar");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
