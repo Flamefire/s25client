@@ -158,7 +158,7 @@ LuaTable GameDataFile::parseTable()
             }
             continue;
         }
-        LuaTableEntry entry;
+        LuaTableEntry entry(*this);
         entry.data.start = curPos;
         if(isAdjacent(lastComment.end(), curPos))
             entry.comment = lastComment;
@@ -379,6 +379,49 @@ boost::optional<const LuaTableEntry&> GameDataFile::findNamedValue(const LuaTabl
     return boost::none;
 }
 
+void GameDataFile::insertData(const std::string& data, size_t position)
+{
+    contents.insert(position, data);
+    BOOST_FOREACH(LuaTable& table, tables)
+        updateAfterInsert(table, position, data.size());
+}
+
+bool updateStringRefAfterInsert(StringRef& ref, size_t position, size_t count)
+{
+    // Insert was before or at end of this
+    if(ref.end() >= position)
+    {
+        // Inside -> extent, else move
+        if(ref.start <= position)
+            ref.len += count;
+        else
+            ref.start += count;
+        return true;
+    } else
+        return false;
+}
+
+void GameDataFile::updateAfterInsert(LuaTable& table, size_t position, size_t count)
+{
+    // Table region not updated? -> No need to update member
+    if(!updateStringRefAfterInsert(table.data, position, count))
+        return;
+    BOOST_FOREACH(LuaTableEntry& entry, table.values)
+    {
+        // Update comment (possibly outside entry.data)
+        updateStringRefAfterInsert(entry.comment, position, count);
+        // Update data and if that changed, update rest
+        if(updateStringRefAfterInsert(entry.data, position, count))
+        {
+            updateStringRefAfterInsert(entry.name, position, count);
+            if(entry.value.type() == typeid(StringRef))
+                updateStringRefAfterInsert(boost::get<StringRef>(entry.value), position, count);
+            else
+                updateAfterInsert(boost::get<LuaTable>(entry.value), position, count);
+        }
+    }
+}
+
 size_t GameDataFile::getStartOfComment(size_t pos) const
 {
     if(pos == std::string::npos)
@@ -403,6 +446,11 @@ bool GameDataFile::isNextString()
 const LuaTableEntry& LuaTable::operator[](const std::string& entryName) const
 {
     return *gd->findNamedValue(*this, entryName);
+}
+
+const simpleLuaData::LuaTableEntry& LuaTableEntry::operator[](const std::string& entryName) const
+{
+    return *gd->findNamedValue(boost::get<LuaTable>(value), entryName);
 }
 
 } // namespace simpleLuaData
