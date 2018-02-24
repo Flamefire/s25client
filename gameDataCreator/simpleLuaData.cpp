@@ -17,23 +17,26 @@
 
 #include "commonDefines.h" // IWYU pragma: keep
 #include "simpleLuaData.h"
+#include "helpers/converters.h"
+#include "libutil/Tokenizer.h"
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>
 #include <boost/nowide/fstream.hpp>
+#include <algorithm>
 #include <stdexcept>
-#include "helpers/converters.h"
 
 namespace simpleLuaData {
-    struct GameDataFile::LuaDataError : public std::runtime_error
-    {
-        LuaDataError(const std::string& msg) : std::runtime_error(msg) {}
-    };
+struct GameDataFile::LuaDataError : public std::runtime_error
+{
+    LuaDataError(const std::string& msg) : std::runtime_error(msg) {}
+};
 
 bool startsWith(const std::string& txt, size_t offset, const std::string& toSearch)
 {
     return string_view(txt).substr(offset).starts_with(toSearch);
 }
 
-GameDataFile::LuaDataError GameDataFile::createError(const std::string & msg) const
+GameDataFile::LuaDataError GameDataFile::createError(const std::string& msg) const
 {
     return LuaDataError(msg + " at position " + helpers::toString(curPos) + "\n" + contents.substr(curPos, 40));
 }
@@ -66,7 +69,7 @@ bool GameDataFile::isTrailingComment(StringRef comment)
     if(skipWhitespaces(contents, getStartOfLine(contents, comment.start)) == comment.start)
         return false;
     // Comment after start of table or function -> not trailing
-    size_t pos = skipWhitespaces(contents, comment.start- 1u, false);
+    size_t pos = skipWhitespaces(contents, comment.start - 1u, false);
     RTTR_Assert(pos < contents.size());
     if(contents[pos] == '{' || contents[pos] == '(')
         return false;
@@ -91,9 +94,9 @@ void GameDataFile::parseString()
     }
 }
 
-const LuaTable& GameDataFile::operator[](const std::string& tableName)
+const LuaTable& GameDataFile::operator[](const std::string& tableName) const
 {
-    return *findTableByName(tableName);
+    return *findMainTable(tableName);
 }
 
 void GameDataFile::skipList()
@@ -266,7 +269,7 @@ boost::variant<simpleLuaData::StringRef, simpleLuaData::LuaTable> GameDataFile::
     skipExpression();
     curPos = skipWhitespaces(contents, curPos);
     if(isNext("--"))
-        throw createError("Comments in values are not supported"); 
+        throw createError("Comments in values are not supported");
     if(isNext(endChar) || isNext(','))
     {
         size_t endPos = skipWhitespaceAndCommentsBackwards(curPos - 1u);
@@ -353,20 +356,44 @@ size_t find(const T_Str& str, const T_Str2& strToFind, size_t offset = 0)
     return (result != std::string::npos) ? result + offset : result;
 }
 
-boost::optional<const LuaTable&> GameDataFile::findTableByName(const std::string& name) const
+boost::optional<const LuaTable&> GameDataFile::findMainTable(const std::string& name) const
 {
     BOOST_FOREACH(const LuaTable& table, tables)
     {
-        boost::optional<const LuaTableEntry&> entry = findNamedValue(table, "name");
+        OptTableEntry entry = findNamedValue(table, "name");
         if(!entry)
             continue;
         if(entry->value.type() != typeid(StringRef))
             continue;
-        std::string value = boost::get<StringRef>(entry->value).get(contents);
-        if(value == "\"" + name + "\"" || value == "__\"" + name + "\"")
+        std::string value = boost::get<StringRef>(entry->value).getStr(contents);
+        if(value.substr(0, 2) == "__")
+            value.erase(0, 2);
+        if(value.front() == value.back())
+            value = value.substr(1, value.size() - 2u);
+        if(value == name)
             return table;
     }
     return boost::none;
+}
+
+GameDataFile::OptLuaTable GameDataFile::findTable(const std::string& name) const
+{
+    std::vector<std::string> parts = Tokenizer(name, ":").explode();
+    RTTR_Assert(!parts.empty());
+    std::reverse(parts.begin(), parts.end());
+    OptLuaTable table = findMainTable(parts.back());
+    if(!table)
+        return boost::none;
+    parts.pop_back();
+    while(!parts.empty())
+    {
+        OptTableEntry entry = findNamedValue(*table, parts.back());
+        if(!entry || entry->value.type() != typeid(LuaTable))
+            return boost::none;
+        parts.pop_back();
+        table = boost::get<LuaTable>(entry->value);
+    }
+    return table;
 }
 
 boost::optional<const LuaTableEntry&> GameDataFile::findNamedValue(const LuaTable& table, const std::string& name) const
@@ -379,11 +406,112 @@ boost::optional<const LuaTableEntry&> GameDataFile::findNamedValue(const LuaTabl
     return boost::none;
 }
 
+std::string GameDataFile::getValue(const std::string& elName) const
+{
+    size_t pos = elName.find_last_of(':');
+    if(pos == std::string::npos)
+        throw std::runtime_error("Invalid value name " + elName);
+    std::string tableName = elName.substr(0, pos);
+    OptLuaTable table = findTable(tableName);
+    if(!table)
+        return "";
+    OptTableEntry entry = findNamedValue(*table, elName.substr(pos + 1u));
+    if(!entry)
+        return "";
+    if(entry->value.type() == typeid(StringRef))
+        return boost::get<StringRef>(entry->value).getStr(contents);
+    else
+        throw std::runtime_error(elName + " is a table, not a value");
+}
+
 void GameDataFile::insertData(const std::string& data, size_t position)
 {
     contents.insert(position, data);
     BOOST_FOREACH(LuaTable& table, tables)
         updateAfterInsert(table, position, data.size());
+}
+
+void GameDataFile::insertFieldAfter(const std::string& elName, std::string newField)
+{
+    const LuaTable* outerTable;
+    size_t pos = findPosition(elName, &outerTable);
+    bool isSingleLine = outerTable->data.get(contents).find('\n') == std::string::npos;
+    size_t lastCharPos = skipWhitespaceAndCommentsBackwards(pos - 1u);
+    RTTR_Assert(lastCharPos != std::string::npos);
+    char lastChar = contents[lastCharPos];
+    if(lastChar != ',' && lastChar != '{')
+    {
+        lastCharPos++;
+        insertData(",", lastCharPos);
+        lastChar = ',';
+        pos++;
+    }
+    if(!isSingleLine)
+    {
+        // Figure out indentation
+        size_t startLinePrev = getStartOfLine(contents, lastCharPos);
+        size_t startPrevVal = skipWhitespaces(contents, startLinePrev);
+        std::string indendation = contents.substr(startLinePrev, startPrevVal - startLinePrev);
+        if(lastChar == '{')
+            indendation = "\t" + indendation;
+        if(contents[pos] == '}')
+        {
+            while(contents[pos] != '\n')
+                pos--;
+        } else
+        {
+            while(contents[pos] != '\n')
+            {
+                if(contents[pos] == '}')
+                {
+                    insertData("\n", pos);
+                    break;
+                }
+                pos++;
+            }
+        }
+        newField.insert(newField.begin(), '\n');
+        boost::algorithm::replace_all(newField, "\n", "\n" + indendation);
+    } else if(!isWhitespace(contents[pos - 1]))
+        newField = " " + newField;
+    insertData(newField, pos);
+    // Check if we need a comma
+    pos += newField.size();
+    curPos = pos;
+    skipWhitespaceAndComments();
+    if(contents[curPos] != '}')
+    {
+        // Yes, need one. Insert if we don't have one
+        pos = skipWhitespaceAndCommentsBackwards(pos);
+        if(pos != ',')
+            insertData(",", pos + 1u);
+    }
+}
+
+size_t GameDataFile::findPosition(const std::string& elName, const LuaTable** outerTable)
+{
+    // Check if this is a table
+    OptLuaTable table = findTable(elName);
+    if(table)
+    {
+        if(outerTable)
+            *outerTable = table.get_ptr();
+        return table->data.end() - 1u;
+    }
+    size_t pos = elName.find_last_of(':');
+    if(pos == std::string::npos)
+        throw std::runtime_error("Table with name " + elName + " not found");
+    std::string parentName = elName.substr(0, pos);
+    table = findTable(parentName);
+    if(!table)
+        throw std::runtime_error("Subtable with name " + parentName + " not found");
+    if(outerTable)
+        *outerTable = table.get_ptr();
+    OptTableEntry entry = findNamedValue(*table, elName.substr(pos + 1));
+    if(entry)
+        return entry->data.end();
+    else
+        return table->data.end() - 1u;
 }
 
 bool updateStringRefAfterInsert(StringRef& ref, size_t position, size_t count)
@@ -440,7 +568,7 @@ size_t GameDataFile::getStartOfComment(size_t pos) const
 
 bool GameDataFile::isNextString()
 {
-    return isNext("'") || isNext("\"");
+    return isNext('\'') || isNext('"');
 }
 
 const LuaTableEntry& LuaTable::operator[](const std::string& entryName) const

@@ -44,7 +44,8 @@ struct StringRef
     explicit StringRef(size_t start = 0, size_t len = 0) : start(start), len(len) {}
     bool empty() const { return len == 0; }
     size_t end() const { return start + len; }
-    std::string get(const std::string& src) const { return empty() ? "" : src.substr(start, len); }
+    string_view get(const std::string& src) const { return string_view(src).substr(start, len); }
+    std::string getStr(const std::string& src) const { return get(src).to_string(); }
 };
 
 struct LuaTableEntry;
@@ -71,6 +72,7 @@ struct LuaTableEntry
 
     explicit LuaTableEntry(const GameDataFile& gd) : gd(&gd) {}
     const LuaTableEntry& operator[](const std::string& entryName) const;
+
 private:
     const GameDataFile* gd;
 };
@@ -91,6 +93,8 @@ class GameDataFile
 
 public:
     struct LuaDataError;
+    typedef boost::optional<const LuaTable&> OptLuaTable;
+    typedef boost::optional<const LuaTableEntry&> OptTableEntry;
 
     /// Replace the whole buffer invalidating all references
     void setContents(const std::string& src);
@@ -108,7 +112,7 @@ public:
     /// Get the start of the comment ("--" before a new line) or npos if not found
     size_t getStartOfComment(size_t pos) const;
     /// Get the comment of a given value
-    std::string getComment(const LuaTableEntry& valRef) const { return valRef.comment.get(contents); }
+    std::string getComment(const LuaTableEntry& valRef) const { return valRef.comment.getStr(contents); }
     template<class T>
     std::string getComment(const boost::optional<T>& ref) const
     {
@@ -116,7 +120,10 @@ public:
     }
     /// Get the data for a given value
     template<class T>
-    std::string getData(const T& ref) const { return ref.data.get(contents); }
+    std::string getData(const T& ref) const
+    {
+        return ref.data.getStr(contents);
+    }
     template<class T>
     std::string getData(const boost::optional<T>& ref) const
     {
@@ -124,14 +131,22 @@ public:
     }
 
     /// Find the first table that has the given name. Range includes { and }
-    const LuaTable& operator[](const std::string& tableName);
+    const LuaTable& operator[](const std::string& tableName) const;
     /// Find the first table that has the given name. Range includes { and }
-    boost::optional<const LuaTable&> findTableByName(const std::string& name) const;
+    OptLuaTable findMainTable(const std::string& name) const;
+    /// Find the table with the given qualified name (e.g. "foo:bar:baz")
+    OptLuaTable findTable(const std::string& name) const;
     /// Find the entry with the given name (table.name)
-    boost::optional<const LuaTableEntry&> findNamedValue(const LuaTable& table, const std::string& name) const;
+    OptTableEntry findNamedValue(const LuaTable& table, const std::string& name) const;
+    /// Get the value with the qualified name
+    std::string getValue(const std::string& elName) const;
 
     /// Insert data at the given position. Updates references but does not include the new data
     void insertData(const std::string& data, size_t position);
+    /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
+    /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
+    void insertFieldAfter(const std::string& elName, std::string newField);
+
 private:
     void skipList();
     bool isNextString();
@@ -143,6 +158,7 @@ private:
     LuaDataError createError(const std::string& msg) const;
 
     void updateAfterInsert(LuaTable& table, size_t position, size_t count);
+    size_t findPosition(const std::string& elName, const LuaTable** outerTable);
 };
 
 //////////////////////////////////////////////////////////////////////////

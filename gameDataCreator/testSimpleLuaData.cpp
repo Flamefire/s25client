@@ -53,11 +53,11 @@ BOOST_AUTO_TEST_CASE(FindTable)
 {
     GameDataFile gd;
     gd.setContents(" name = \"foo\"");
-    BOOST_REQUIRE(!gd.findTableByName("foo"));
+    BOOST_REQUIRE(!gd.findMainTable("foo"));
     gd.setContents(" name = __\"foo\"");
-    BOOST_REQUIRE(!gd.findTableByName("foo"));
+    BOOST_REQUIRE(!gd.findMainTable("foo"));
     gd.setContents("rttr:AddBld{name = \"foo\"}");
-    boost::optional<const LuaTable&> pos = gd.findTableByName("foo");
+    boost::optional<const LuaTable&> pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(pos->data.start, 11);
     BOOST_REQUIRE_EQUAL(pos->data.len, gd.getContents().size() - 11);
@@ -65,47 +65,47 @@ BOOST_AUTO_TEST_CASE(FindTable)
 
     // Test with different whitespace
     gd.setContents("rttr:AddBld{ name = \"foo\"}");
-    pos = gd.findTableByName("foo");
+    pos = gd.findMainTable("foo");
     BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
     gd.setContents("rttr:AddBld{name = \"foo\" }");
-    pos = gd.findTableByName("foo");
+    pos = gd.findMainTable("foo");
     BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
     gd.setContents("rttr:AddBld{ name = \"foo\" }");
-    pos = gd.findTableByName("foo");
+    pos = gd.findMainTable("foo");
     BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
 
     gd.setContents("rttr:AddBld{ name = \"foo\",1,2}");
-    pos = gd.findTableByName("foo");
+    pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
 
     gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo2\" }\nrttr:AddBld{ name = \"foo3\" }\n");
-    pos = gd.findTableByName("foo");
+    pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(gd.getData(pos), "{ name = \"foo\" }");
-    pos = gd.findTableByName("foo2");
+    pos = gd.findMainTable("foo2");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(gd.getData(pos), "{ name = \"foo2\" }");
-    pos = gd.findTableByName("foo3");
+    pos = gd.findMainTable("foo3");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(gd.getData(pos), "{ name = \"foo3\" }");
-    BOOST_REQUIRE(!gd.findTableByName("foo4"));
+    BOOST_REQUIRE(!gd.findMainTable("foo4"));
 
     // Same with translations
     gd.setContents("rttr:AddBld{ name = __\"foo\"}");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), gd.getContents().substr(11));
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), gd.getContents().substr(11));
     gd.setContents("rttr:AddBld{ name = __\"foo\" }\nrttr:AddBld{ name = __\"foo2\" }\nrttr:AddBld{ name = __\"foo3\" }");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{ name = __\"foo\" }");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo2")), "{ name = __\"foo2\" }");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo3")), "{ name = __\"foo3\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{ name = __\"foo\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo2")), "{ name = __\"foo2\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo3")), "{ name = __\"foo3\" }");
 
     // Find first
     gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo\", bar = \"foo\" }\nrttr:AddBld{ name = \"foo3\" }\n");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{ name = \"foo\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{ name = \"foo\" }");
 
     // Skip comments
     gd.setContents("--rttr:AddBld{\n name = \"foo\" --}\nrttr:AddBld{ --name = \"foo\" \n}\nrttr:AddBld{\n--name = \"foo\" "
                    "\n}\nrttr:AddBld{name = \"foo\"}\n");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findTableByName("foo")), "{name = \"foo\"}");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{name = \"foo\"}");
 }
 
 BOOST_AUTO_TEST_CASE(FindComment)
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(FindComment)
     GameDataFile gd;
 
     gd.setContents("rttr:AddBld{--Foo\nname = \"table\"}\n"); // Regular comment
-    boost::optional<const LuaTable&> pos = gd.findTableByName("table");
+    boost::optional<const LuaTable&> pos = gd.findMainTable("table");
     boost::optional<const LuaTableEntry&> optEntry = gd.findNamedValue(*pos, "name");
     BOOST_REQUIRE(optEntry);
     BOOST_REQUIRE_EQUAL(gd.getComment(optEntry), "--Foo");
@@ -156,7 +156,8 @@ struct ExpectedLuaTableEntry
     std::string comment, name, data;
 };
 
-void checkEntries(const GameDataFile& gd, const LuaTable& mainTable, const std::vector<ExpectedLuaTableEntry>& expectedEntries, const std::vector<const LuaTableEntry*>& entries)
+void checkEntries(const GameDataFile& gd, const LuaTable& mainTable, const std::vector<ExpectedLuaTableEntry>& expectedEntries,
+                  const std::vector<const LuaTableEntry*>& entries)
 {
     BOOST_REQUIRE_EQUAL(gd.getData(mainTable), gd.getContents().substr(tblOff));
     for(int i = 0; i < expectedEntries.size(); i++)
@@ -178,9 +179,9 @@ BOOST_AUTO_TEST_CASE(InsertAt)
     const LuaTableEntry& foo = mainTable["foo"];
     const LuaTableEntry& bar = foo["bar"];
     std::vector<ExpectedLuaTableEntry> expectedEntries;
-    expectedEntries.push_back(ExpectedLuaTableEntry{ "--Foo", "name", "name=\"table\"," });
-    expectedEntries.push_back(ExpectedLuaTableEntry{ "", "foo", "foo={bar = 42}" });
-    expectedEntries.push_back(ExpectedLuaTableEntry{ "", "bar", "bar = 42" });
+    expectedEntries.push_back(ExpectedLuaTableEntry{"--Foo", "name", "name=\"table\","});
+    expectedEntries.push_back(ExpectedLuaTableEntry{"", "foo", "foo={bar = 42}"});
+    expectedEntries.push_back(ExpectedLuaTableEntry{"", "bar", "bar = 42"});
     std::vector<const LuaTableEntry*> entries;
     entries.push_back(&name);
     entries.push_back(&foo);
@@ -218,6 +219,45 @@ BOOST_AUTO_TEST_CASE(InsertAt)
     gd.insertData("2", luaDef.find("--Foo") + 3u);
     expectedEntries[0].comment.insert(3u, "2");
     checkEntries(gd, mainTable, expectedEntries, entries);
+}
+
+BOOST_AUTO_TEST_CASE(InsertField)
+{
+    GameDataFile gd;
+
+    std::string expected = "rttr:AddBld{\n\tname='Foo',\n\tbar1=1\n}";
+    std::string contents = "rttr:AddBld{\n\tname='Foo'\n}";
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo", "bar1=1");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    gd.setContents("rttr:AddBld{\n\tname='Foo',\n}");
+    gd.insertFieldAfter("Foo", "bar1=1");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo:name", "bar1=1");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo:notExisting", "bar1=1");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo", "--Bar\nbar1=1");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), "rttr:AddBld{\n\tname='Foo',\n\t--Bar\n\tbar1=1\n}");
+
+    contents = expected;
+    std::string expAfterName = "rttr:AddBld{\n\tname='Foo',\n\tbar2=2,\n\tbar1=1\n}";
+    std::string expAtEnd = "rttr:AddBld{\n\tname='Foo',\n\tbar1=1,\n\tbar2=2\n}";
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo", "bar2=2");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo:bar1", "bar2=2");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo:notExisting", "bar2=2");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    gd.setContents(contents);
+    gd.insertFieldAfter("Foo:name", "bar2=2");
+    BOOST_REQUIRE_EQUAL(gd.getContents(), expAfterName);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
