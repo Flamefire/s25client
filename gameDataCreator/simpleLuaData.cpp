@@ -252,21 +252,23 @@ void GameDataFile::skipExpression()
     }
 }
 
-boost::variant<simpleLuaData::StringRef, simpleLuaData::LuaTable> GameDataFile::parseValue(char endChar)
+boost::variant<StringRef, LuaTable> GameDataFile::parseValue(char endChar)
 {
     curPos = skipWhitespaces(contents, curPos);
     if(isNext("--"))
         throw createError("Value expected but comment found");
     if(isNext(','))
         throw createError("Value expected but ',' found");
-    // Parse subtable
-    if(isNext('{'))
-        return parseTable();
     // Table end
     if(isNext(endChar))
         return StringRef();
     size_t startPos = curPos;
-    skipExpression();
+    // Parse subtable
+    LuaTable table(*this);
+    if(isNext('{'))
+        table = parseTable();
+    else
+        skipExpression();
     curPos = skipWhitespaces(contents, curPos);
     if(isNext("--"))
         throw createError("Comments in values are not supported");
@@ -279,8 +281,10 @@ boost::variant<simpleLuaData::StringRef, simpleLuaData::LuaTable> GameDataFile::
             curPos = endPos + 1u; // Go to next after value which might be a comment
         if(endPos < startPos)
             return StringRef();
-        else
+        else if(table.data.empty())
             return StringRef(startPos, endPos - startPos + 1u);
+        else
+            return table;
     }
     throw createError("Invalid value");
 }

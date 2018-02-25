@@ -16,8 +16,12 @@
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
 #include "commonDefines.h" // IWYU pragma: keep
+#include "RttrConfig.h"
 #include "simpleLuaData.h"
 #include <boost/test/unit_test.hpp>
+#ifndef BOOST_NO_CXX11_HDR_CHRONO
+#include <chrono>
+#endif
 
 using namespace simpleLuaData;
 
@@ -47,6 +51,13 @@ BOOST_AUTO_TEST_CASE(GetStartOfLine)
         BOOST_REQUIRE_EQUAL(getStartOfLine(str, i), 0u);
     for(unsigned i = 6; i < str.size(); i++)
         BOOST_REQUIRE_EQUAL(getStartOfLine(str, i), 6u);
+}
+
+BOOST_AUTO_TEST_CASE(ParseSubTable)
+{
+    GameDataFile gd;
+    gd.setContents("rttr:AddBld{ name = 'foo',\n--Comment\nbar={foo1=1, foo2=2},\n--Comment2\nbar2={1,2}}");
+    BOOST_REQUIRE(gd.findMainTable("foo"));
 }
 
 BOOST_AUTO_TEST_CASE(FindTable)
@@ -258,6 +269,28 @@ BOOST_AUTO_TEST_CASE(InsertField)
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:name", "bar2=2");
     BOOST_REQUIRE_EQUAL(gd.getContents(), expAfterName);
+}
+
+BOOST_AUTO_TEST_CASE(LoadRealFiles)
+{
+    const std::string nationPath = RTTRCONFIG.ExpandPath("<RTTR_RTTR>/gameData/nations");
+    GameDataFile gd;
+#ifndef BOOST_NO_CXX11_HDR_CHRONO
+    auto start = std::chrono::high_resolution_clock::now();
+#endif
+    for(int i = 0; i < 50; i++)
+    {
+        BOOST_REQUIRE(gd.load(nationPath + "/buildings.lua"));
+        BOOST_REQUIRE(gd.load(nationPath + "/africans/buildings.lua"));
+        BOOST_REQUIRE(gd.load(nationPath + "/romans/buildings.lua"));
+        BOOST_REQUIRE(gd.load(nationPath + "/babylonians/buildings.lua"));
+        BOOST_REQUIRE(gd.load(nationPath + "/japanese/buildings.lua"));
+        BOOST_REQUIRE(gd.load(nationPath + "/vikings/buildings.lua"));
+    }
+#ifndef BOOST_NO_CXX11_HDR_CHRONO
+    auto diff = std::chrono::high_resolution_clock::now() - start;
+    BOOST_TEST_MESSAGE("Duration: " << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << "ms");
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()
