@@ -147,128 +147,60 @@ BOOST_AUTO_TEST_CASE(FindComment)
 
     gd.setContents("rttr:AddBld{--Foo\nbar=2,\nname = \"table\"}\n"); // belongs to other
     entry = &gd["table"]["name"];
-    BOOST_REQUIRE(entry->comment.empty());
+    BOOST_REQUIRE(gd.getComment(*entry).empty());
 
     gd.setContents("rttr:AddBld{name = \"table\"--Foo\n}"); // trailing comment
     entry = &gd["table"]["name"];
-    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
+    BOOST_REQUIRE(entry->preComment.empty());
+    BOOST_REQUIRE_EQUAL(entry->postComment, "--Foo");
 
     gd.setContents("rttr:AddBld{bar=2, --Foo\nname = \"table\"}\n"); // trailing comment to other
     entry = &gd["table"]["name"];
-    BOOST_REQUIRE(entry->comment.empty());
+    BOOST_REQUIRE(gd.getComment(*entry).empty());
 
     gd.setContents("rttr:AddBld{--Foo\nname = \"table\" --Bar\n}\n"); // trailing and leading
     entry = &gd["table"]["name"];
-    BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Bar");
-}
-
-struct ExpectedLuaTableEntry
-{
-    std::string comment, name, data;
-};
-
-void checkEntries(const GameDataFile& gd, const LuaTable& mainTable, const std::vector<ExpectedLuaTableEntry>& expectedEntries,
-                  const std::vector<const LuaTableEntry*>& entries)
-{
-    BOOST_REQUIRE_EQUAL(gd.getData(mainTable), gd.getContents().substr(tblOff));
-    for(int i = 0; i < expectedEntries.size(); i++)
-    {
-        BOOST_REQUIRE_EQUAL(gd.getComment(*entries[i]), expectedEntries[i].comment);
-        BOOST_REQUIRE_EQUAL(entries[i]->name.get(gd.getContents()), expectedEntries[i].name);
-        BOOST_REQUIRE_EQUAL(gd.getData(*entries[i]), expectedEntries[i].data);
-    }
-}
-
-BOOST_AUTO_TEST_CASE(InsertAt)
-{
-    GameDataFile gd;
-
-    std::string luaDef = "rttr:AddBld{ --Foo\nname=\"table\", foo={bar = 42}\n}";
-    gd.setContents(luaDef);
-    const LuaTable& mainTable = gd["table"];
-    const LuaTableEntry& name = mainTable["name"];
-    const LuaTableEntry& foo = mainTable["foo"];
-    const LuaTableEntry& bar = foo["bar"];
-    std::vector<ExpectedLuaTableEntry> expectedEntries;
-    expectedEntries.push_back(ExpectedLuaTableEntry{"--Foo", "name", "name=\"table\","});
-    expectedEntries.push_back(ExpectedLuaTableEntry{"", "foo", "foo={bar = 42}"});
-    expectedEntries.push_back(ExpectedLuaTableEntry{"", "bar", "bar = 42"});
-    std::vector<const LuaTableEntry*> entries;
-    entries.push_back(&name);
-    entries.push_back(&foo);
-    entries.push_back(&bar);
-
-    // Add after last value
-    gd.insertData("--bar", luaDef.find_last_of('}'));
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add into last value
-    gd.insertData(",foo2=1", luaDef.find_last_of('}') - 1u);
-    expectedEntries[1].data += ",foo2=1";
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add onto last value
-    gd.insertData("42", luaDef.find("42"));
-    expectedEntries[1].data.insert(expectedEntries[1].data.find("42"), "42");
-    expectedEntries[2].data.insert(expectedEntries[2].data.find("42"), "42");
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add into last name
-    gd.insertData("2", luaDef.find("bar") + 1u);
-    expectedEntries[1].data.insert(expectedEntries[1].data.find("bar") + 1u, "2");
-    expectedEntries[2].data.insert(expectedEntries[2].data.find("bar") + 1u, "2");
-    expectedEntries[2].name.insert(1u, "2");
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add into name
-    gd.insertData("2", luaDef.find("foo") + 2u);
-    expectedEntries[1].data.insert(expectedEntries[1].data.find("foo") + 2u, "2");
-    expectedEntries[1].name.insert(2u, "2");
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add into name
-    gd.insertData("2", luaDef.find("name") + 3u);
-    expectedEntries[0].data.insert(expectedEntries[0].data.find("name") + 3u, "2");
-    expectedEntries[0].name.insert(3u, "2");
-    checkEntries(gd, mainTable, expectedEntries, entries);
-    // Add into comment
-    gd.insertData("2", luaDef.find("--Foo") + 3u);
-    expectedEntries[0].comment.insert(3u, "2");
-    checkEntries(gd, mainTable, expectedEntries, entries);
+    BOOST_REQUIRE_EQUAL(entry->preComment, "--Foo");
+    BOOST_REQUIRE_EQUAL(entry->postComment, "--Bar");
 }
 
 BOOST_AUTO_TEST_CASE(InsertField)
 {
     GameDataFile gd;
 
-    std::string expected = "rttr:AddBld{\n\tname='Foo',\n\tbar1=1\n}";
+    std::string expected = "rttr:AddBld{\n\tname = 'Foo',\n\tbar1 = 1\n}";
     std::string contents = "rttr:AddBld{\n\tname='Foo'\n}";
     gd.setContents(contents);
     gd.insertFieldAfter("Foo", "bar1=1");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
     gd.setContents("rttr:AddBld{\n\tname='Foo',\n}");
     gd.insertFieldAfter("Foo", "bar1=1");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:name", "bar1=1");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:notExisting", "bar1=1");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expected);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo", "--Bar\nbar1=1");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), "rttr:AddBld{\n\tname='Foo',\n\t--Bar\n\tbar1=1\n}");
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "rttr:AddBld{\n\tname = 'Foo',\n\t--Bar\n\tbar1 = 1\n}");
 
     contents = expected;
-    std::string expAfterName = "rttr:AddBld{\n\tname='Foo',\n\tbar2=2,\n\tbar1=1\n}";
-    std::string expAtEnd = "rttr:AddBld{\n\tname='Foo',\n\tbar1=1,\n\tbar2=2\n}";
+    std::string expAfterName = "rttr:AddBld{\n\tname = 'Foo',\n\tbar2 = 2,\n\tbar1 = 1\n}";
+    std::string expAtEnd = "rttr:AddBld{\n\tname = 'Foo',\n\tbar1 = 1,\n\tbar2 = 2\n}";
     gd.setContents(contents);
     gd.insertFieldAfter("Foo", "bar2=2");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:bar1", "bar2=2");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:notExisting", "bar2=2");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expAtEnd);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
     gd.setContents(contents);
     gd.insertFieldAfter("Foo:name", "bar2=2");
-    BOOST_REQUIRE_EQUAL(gd.getContents(), expAfterName);
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAfterName);
 }
 
 BOOST_AUTO_TEST_CASE(LoadRealFiles)

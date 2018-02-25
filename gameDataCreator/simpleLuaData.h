@@ -18,6 +18,7 @@
 #ifndef addNewData_h__
 #define addNewData_h__
 
+#include <boost/container/vector.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <boost/utility/string_ref.hpp>
@@ -53,34 +54,38 @@ class GameDataFile;
 
 struct LuaTable
 {
+    enum ESingleLine
+    {
+        SL_AUTO,
+        SL_YES,
+        SL_NO
+    };
+    ESingleLine isSingleLine_;
+    boost::container::vector<LuaTableEntry> values;
+    /// Data range in original data. Only required for main tables
     StringRef data;
-    std::vector<LuaTableEntry> values;
 
-    explicit LuaTable(const GameDataFile& gd) : gd(&gd) {}
+    LuaTable() : isSingleLine_(SL_AUTO) {}
     const LuaTableEntry& operator[](const std::string& entryName) const;
-
-private:
-    const GameDataFile* gd;
+    bool isSingleLine() const;
+    int indexOf(const std::string& name) const;
+    std::string toString(int indentAmount = 0) const;
 };
 
 struct LuaTableEntry
 {
-    StringRef data;
-    StringRef comment;
-    StringRef name;
-    boost::variant<StringRef, LuaTable> value;
+    std::string preComment, postComment;
+    std::string name;
+    boost::variant<std::string, LuaTable> value;
 
-    explicit LuaTableEntry(const GameDataFile& gd) : gd(&gd) {}
     const LuaTableEntry& operator[](const std::string& entryName) const;
-
-private:
-    const GameDataFile* gd;
+    std::string toString(int indentAmount = 0, bool includeComma = false) const;
 };
 
 class GameDataFile
 {
     std::string contents;
-    std::vector<LuaTable> tables;
+    boost::container::vector<LuaTable> tables;
     size_t curPos;
     bool isAdjacent(size_t pos1, size_t pos2);
     bool isTrailingComment(StringRef comment);
@@ -93,16 +98,18 @@ class GameDataFile
 
 public:
     struct LuaDataError;
-    typedef boost::optional<const LuaTable&> OptLuaTable;
+    typedef boost::optional<const LuaTable&> OptLuaTableC;
+    typedef boost::optional<LuaTable&> OptLuaTable;
     typedef boost::optional<const LuaTableEntry&> OptTableEntry;
 
     /// Replace the whole buffer invalidating all references
     void setContents(const std::string& src);
-    const std::string& getContents() const { return contents; }
+    const std::string& getContents() { return contents; }
+    std::string getUnparsedData() const;
     /// Reparse contents invalidating all references
     void parse();
     /// Get all main tables
-    const std::vector<LuaTable>& getTables() const { return tables; }
+    const boost::container::vector<LuaTable>& getTables() const { return tables; }
     /// Load from file
     bool load(const std::string& filepath);
     /// Save from file
@@ -112,7 +119,7 @@ public:
     /// Get the start of the comment ("--" before a new line) or npos if not found
     size_t getStartOfComment(size_t pos) const;
     /// Get the comment of a given value
-    std::string getComment(const LuaTableEntry& valRef) const { return valRef.comment.getStr(contents); }
+    std::string getComment(const LuaTableEntry& valRef) const { return valRef.preComment; }
     template<class T>
     std::string getComment(const boost::optional<T>& ref) const
     {
@@ -133,32 +140,32 @@ public:
     /// Find the first table that has the given name. Range includes { and }
     const LuaTable& operator[](const std::string& tableName) const;
     /// Find the first table that has the given name. Range includes { and }
-    OptLuaTable findMainTable(const std::string& name) const;
+    OptLuaTableC findMainTable(const std::string& name) const;
     /// Find the table with the given qualified name (e.g. "foo:bar:baz")
-    OptLuaTable findTable(const std::string& name) const;
+    OptLuaTable findTable(const std::string& name);
+    OptLuaTableC findTable(const std::string& name) const;
     /// Find the entry with the given name (table.name)
     OptTableEntry findNamedValue(const LuaTable& table, const std::string& name) const;
     /// Get the value with the qualified name
     std::string getValue(const std::string& elName) const;
 
-    /// Insert data at the given position. Updates references but does not include the new data
-    void insertData(const std::string& data, size_t position);
     /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
     /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
-    void insertFieldAfter(const std::string& elName, std::string newField);
+    void insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value, const std::string& comment = "");
+    void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
+    void insertFieldAfter(const std::string& elName, const std::string& entry);
 
 private:
     void skipList();
     bool isNextString();
     LuaTable parseTable();
-    boost::variant<StringRef, LuaTable> parseValue(char endChar);
+    boost::variant<std::string, LuaTable> parseValue(char endChar);
     void skipExpression();
     void skipWhitespaceAndComments();
     size_t skipWhitespaceAndCommentsBackwards(size_t pos) const;
     LuaDataError createError(const std::string& msg) const;
 
-    void updateAfterInsert(LuaTable& table, size_t position, size_t count);
-    size_t findPosition(const std::string& elName, const LuaTable** outerTable);
+    size_t findPosition(const std::string& elName, LuaTable** outerTable);
 };
 
 //////////////////////////////////////////////////////////////////////////
