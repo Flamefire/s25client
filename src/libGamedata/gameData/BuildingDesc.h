@@ -18,21 +18,21 @@
 #ifndef BuildingDesc_h__
 #define BuildingDesc_h__
 
-#include "gameTypes/BuildingQuality.h"
+#include "ArchiveEntryRef.h"
+#include "BuildingBPDesc.h"
 #include "gameTypes/BuildingTypes.h"
-#include <string>
+#include <vector>
 
 struct WorldDescription;
 class CheckedLuaTable;
 
-/// Nation independent description of a building
-struct BuildingDesc
+/// Nation dependent building data
+struct BuildingDesc : public BuildingBPDesc
 {
     std::string name;
-    std::string help;
-    BuildingCost costs;
-    BuildingQuality requiredSpace;
-    BldWorkDescription workDescr;
+    ArchiveEntryRef icon;
+    int8_t doorPosY;
+    SmokeConst smoke;
 
     BuildingDesc() {}
     BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc);

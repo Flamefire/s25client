@@ -17,7 +17,7 @@
 
 #include "commonDefines.h" // IWYU pragma: keep
 #include "NationDesc.h"
-#include "NatBuildingDesc.h"
+#include "BuildingDesc.h"
 #include "lua/CheckedLuaTable.h"
 
 NationDesc::NationDesc() {}

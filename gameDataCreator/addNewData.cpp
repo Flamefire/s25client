@@ -15,107 +15,121 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
+#define DEFINE_OldBuildingType
 #include "commonDefines.h" // IWYU pragma: keep
 #include "addNewData.h"
 #include "files.h"
-#include "gameTypes/BuildingType.h"
+#include "helpers/containerUtils.h"
+#include "simpleLuaData.h"
+#include "gameTypes/OldBuildingType.h"
+#include "gameData/BuildingBPDesc.h"
 #include "gameData/BuildingConsts.h"
 #include "gameData/BuildingDesc.h"
-#include "gameData/BuildingProperties.h"
-#include "gameData/NatBuildingDesc.h"
+#include "gameData/DoorConsts.h"
 #include "gameData/NationConsts.h"
 #include "gameData/NationDesc.h"
 #include "gameData/WorldDescription.h"
+#include "libutil/StringConversion.h"
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/array.hpp>
+#include <boost/foreach.hpp>
+#include <boost/nowide/fstream.hpp>
+#include <boost/utility/string_ref.hpp>
+#include <set>
 #include <stdexcept>
 
-unsigned GetNationIdx(const std::string& name)
+using namespace simpleLuaData;
+
+std::string capitalize(std::string str)
 {
-    unsigned i = 0;
-    for(; i < NUM_NATIONS; i++)
-    {
-        if(NationNames[i] == name)
-            return i;
-    }
-    throw std::runtime_error("Nat Not found");
+    boost::algorithm::to_lower(str);
+    if(!str.empty())
+        str[0] = toupper(str[0]);
+    return str;
 }
 
-unsigned GetBuildingIdx(const std::string& name)
+unsigned GetOldBuildingIdx(const std::string& name)
 {
-    unsigned i = 0;
-    for(; i < NUM_BUILDING_TYPES; i++)
+    for(unsigned i = 0; i < OldBuildingType::count_; i++)
     {
-        if(BUILDING_NAMES[i] == name)
+        std::string oldName = capitalize(OldBuildingType::names_[i]);
+        boost::algorithm::replace_all(oldName, "_", " ");
+        if(oldName == name)
             return i;
     }
     throw std::runtime_error("Bld Not found");
 }
 
-void AddNations(WorldDescription& worldDesc)
+bool IsBldUsed(OldBuildingType b)
 {
-    for(unsigned n = 0; n < NUM_NATIONS; n++)
-    {
-        NationDesc nat;
-        nat.name = NationNames[n];
-        nat.s2Id = NATION_RTTR_TO_S2[n];
-        if(!worldDesc.nations.getIndex(nat.name))
-            worldDesc.nations.add(nat);
-    }
+    return (std::string(OldBuildingType::names_[b]).find("Nothing") == std::string::npos);
 }
 
-void AddBuildings(WorldDescription& worldDesc)
+const boost::array<const std::string, NUM_NATS> NATION_ICON_FILES = {
+  {"<RTTR_GAME>/DATA/MBOB/AFR_ICON.LST", "<RTTR_GAME>/DATA/MBOB/JAP_ICON.LST.LST", "<RTTR_GAME>/DATA/MBOB/ROM_ICON",
+   "<RTTR_GAME>/DATA/MBOB/VIK_ICON.LST", "<RTTR_RTTR>/LSTS/GAME/Babylonier/bab_icon.lst"}};
+
+const helpers::SimpleMultiArray<const std::string, 2, NUM_NATS> NATION_GFXSET_Z = {
+  {{"afr_z", "jap_z", "rom_z", "vik_z", "bab_z"}, {"wafr_z", "wjap_z", "wrom_z", "wvik_z", "wbab_z"}}};
+
+void addNewData(const std::string& baseLuaPath)
 {
-    for(unsigned b = 0; b < NUM_BUILDING_TYPES; b++)
+    GameDataFile gdBuildings;
+    gdBuildings.load(baseLuaPath + "/buildings.lua");
+    std::vector<GameDataFile> gdNations(NUM_NATS);
+    std::vector<std::string> natTableName(NUM_NATS);
+    for(int i = 0; i < NUM_NATS; i++)
     {
-        BuildingType bld = BuildingType(b);
-        if(!BuildingProperties::IsValid(bld))
-            continue;
-        BuildingDesc dsc;
-        dsc.name = BUILDING_NAMES[b];
-        if(!worldDesc.buildings.getIndex(dsc.name))
-            worldDesc.buildings.add(dsc);
+        gdNations[i].load(baseLuaPath + "/" + boost::algorithm::to_lower_copy(std::string(NationNames[i])) + "/default.lua");
+        natTableName[i] = std::string(NationNames[i]) + ":";
     }
 
-    for(DescIdx<NationDesc> i(0); i.value < worldDesc.nations.size(); i.value++)
+    boost::array<unsigned, NUM_NATIVE_NATS> avatarIds = {{257, 253, 252, 256}};
+    for(int i = 0; i < NUM_NATIVE_NATS; ++i)
     {
-        NationDesc& nat = worldDesc.nations.getMutable(i);
+        std::string basePath = "<RTTR_GAME>/DATA/MBOB/";
+        std::string comment = "Texture file for summer textures";
+        gdNations[i].insertFieldAfter(":s2Id", "summerTexFile",
+                                      "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[0][i]) + ".LST\"", comment);
+        comment = "Texture file for winter textures";
+        gdNations[i].insertFieldAfter(":summerTexFile", "winterTexFile",
+                                      "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[0][i]) + ".LST\"", comment);
+        comment = "Default avatar texture";
+        gdNations[i].insertFieldAfter(":winterTexFile", "defaultAvatar", "\"io:" + s25util::toStringClassic(avatarIds[i]) + "\"", comment);
+    }
+    {
+        std::string basePath = "<RTTR_RTTR>/LSTS/GAME/Babylonier";
+        std::string comment = "Texture file for summer textures";
+        gdNations[NAT_BABYLONIANS].insertFieldAfter(":s2Id", "summerTexFile", "\"" + basePath + "/bab_z.lst\"", comment);
+        comment = "Texture file for winter textures";
+        gdNations[NAT_BABYLONIANS].insertFieldAfter(":summerTexFile", "winterTexFile", "\"" + basePath + "/wbab_z.lst\"", comment);
+        comment = "Default avatar texture";
+        gdNations[NAT_BABYLONIANS].insertFieldAfter(":winterTexFile", "defaultAvatar", "\"io_new:7\"", comment);
+    }
+    for(int natIdx = 0; natIdx < NUM_NATS; natIdx++)
+    {
+        GameDataFile gd;
+        gd.load((bfs::path(gdNations[natIdx].getFilepath()).parent_path() / "buildings.lua").string());
 
-        for(unsigned b = 0; b < NUM_BUILDING_TYPES; b++)
+        for(int i = 0; i < gd.getTables().size(); i++)
         {
-            BuildingType bld = BuildingType(b);
-            if(!BuildingProperties::IsValid(bld))
-                continue;
-            NatBuildingDesc dsc;
-            dsc.name = BUILDING_NAMES[b];
-            if(!nat.buildings.getIndex(dsc.name))
-                nat.buildings.add(dsc);
+            std::string bldName = gd.getTableName(i);
+            unsigned bld = GetOldBuildingIdx(bldName);
+            std::string comment = (i) ? "" : "Texture for the icon";
+            if(bld == OldBuildingType::CHARBURNER)
+                gd.insertFieldAfter(bldName + ":name", "icon", "\"charburner:" + s25util::toStringClassic((natIdx + 1) * 8) + "\"",
+                                    comment);
+            else
+                gd.insertFieldAfter(bldName + ":name", "icon",
+                                    "\"" + NATION_ICON_FILES[natIdx] + ":" + s25util::toStringClassic(bld) + "\"", comment);
+            comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
+            gd.insertFieldAfter(bldName + ":icon", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
         }
+        gd.save(gd.getFilepath());
     }
-}
-
-void addNewData(WorldDescription& worldDesc)
-{
-    AddNations(worldDesc);
-    AddBuildings(worldDesc);
-    for(DescIdx<BuildingDesc> b(0); b.value < worldDesc.buildings.size(); b.value++)
-    {
-        BuildingDesc& dsc = worldDesc.buildings.getMutable(b);
-        unsigned bld = GetBuildingIdx(dsc.name);
-        dsc.help = BUILDING_HELP_STRINGS[bld];
-        dsc.costs = BUILDING_COSTS[0][bld];
-        dsc.requiredSpace = BUILDING_SIZE[bld];
-        dsc.workDescr = BLD_WORK_DESC[bld];
-    }
-    for(DescIdx<NationDesc> i(0); i.value < worldDesc.nations.size(); i.value++)
-    {
-        NationDesc& nat = worldDesc.nations.getMutable(i);
-        unsigned natIdx = GetNationIdx(nat.name);
-
-        for(DescIdx<NatBuildingDesc> b(0); b.value < nat.buildings.size(); b.value++)
-        {
-            NatBuildingDesc& dsc = nat.buildings.getMutable(b);
-            unsigned bld = GetBuildingIdx(dsc.name);
-            dsc.smoke = BUILDING_SMOKE_CONSTS[natIdx][bld];
-        }
-    }
+    gdBuildings.save(gdBuildings.getFilepath());
+    for(int i = 0; i < NUM_NATS; i++)
+        gdNations[i].save(gdNations[i].getFilepath());
 }

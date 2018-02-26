@@ -56,8 +56,10 @@ BOOST_AUTO_TEST_CASE(GetStartOfLine)
 BOOST_AUTO_TEST_CASE(ParseSubTable)
 {
     GameDataFile gd;
-    gd.setContents("rttr:AddBld{ name = 'foo',\n--Comment\nbar={foo1=1, foo2=2},\n--Comment2\nbar2={1,2}}");
+    gd.setContents(
+      "rttr:AddBld{\n\tname = 'foo',\n\t--Comment\n\tbar = {\n\t\tfoo1 = 1,\n\t\tfoo2 = 2\n\t},\n\t--Comment2\n\tbar2 = {1, 2}\n}");
     BOOST_REQUIRE(gd.findMainTable("foo"));
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), gd.getContents());
 }
 
 BOOST_AUTO_TEST_CASE(FindTable)

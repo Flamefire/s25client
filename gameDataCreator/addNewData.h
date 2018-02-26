@@ -18,8 +18,13 @@
 #ifndef addNewData_h__
 #define addNewData_h__
 
-struct WorldDescription;
+#include <string>
 
-void addNewData(WorldDescription& worldDesc);
+// Make first char uppercase rest lowercase
+// TODO: Maybe move to helpers:: ?
+std::string capitalize(std::string str);
+unsigned GetOldBuildingIdx(const std::string& name);
+
+void addNewData(const std::string& basePath);
 
 #endif // addNewData_h__

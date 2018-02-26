@@ -1,4 +1,4 @@
-// Copyright (c) 2016 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2017 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -15,22 +15,28 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#include "commonDefines.h" // IWYU pragma: keep
-#include "WorldDescription.h"
-#include "BuildingBPDesc.h"
-#include "EdgeDesc.h"
-#include "LandscapeDesc.h"
-#include "NationDesc.h"
-#include "TerrainDesc.h"
+#ifndef BuildingBPDesc_h__
+#define BuildingBPDesc_h__
 
-WorldDescription::WorldDescription() {}
-WorldDescription::~WorldDescription() {}
+#include "gameTypes/BuildingQuality.h"
+#include "gameTypes/BuildingTypes.h"
+#include <string>
 
-WorldDescription& WorldDescription::operator=(const WorldDescription& other)
+struct WorldDescription;
+class CheckedLuaTable;
+
+/// Blueprint of a building (Nation independent)
+struct BuildingBPDesc
 {
-    landscapes = other.landscapes;
-    edges = other.edges;
-    terrain = other.terrain;
-    nations = other.nations;
-    return *this;
-}
+    std::string name;
+    std::string help;
+    uint8_t s2Id;
+    BuildingCost costs;
+    BuildingQuality requiredSpace;
+    BldWorkDescription workDescr;
+
+    BuildingBPDesc() {}
+    BuildingBPDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc);
+};
+
+#endif // BuildingBPDesc_h__

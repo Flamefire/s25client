@@ -53,18 +53,18 @@ const boost::array<const char*, 104> SUPPRESS_UNUSED FILE_PATHS = {{
   /* 24 */ "",
   /* 25 */ "",
   /* 26 */ "<RTTR_GAME>/DATA/CBOB/ROM_BOBS.LST",
-  /* 27 */ "<RTTR_GAME>/DATA/MBOB/AFR_Z.LST",  // Afrikaner
-  /* 28 */ "<RTTR_GAME>/DATA/MBOB/JAP_Z.LST",  // Japaner
-  /* 29 */ "<RTTR_GAME>/DATA/MBOB/ROM_Z.LST",  // Römer
-  /* 30 */ "<RTTR_GAME>/DATA/MBOB/VIK_Z.LST",  // Wikinger
-  /* 31 */ "<RTTR_GAME>/DATA/MBOB/WAFR_Z.LST", // Afrikaner Winter
-  /* 32 */ "<RTTR_GAME>/DATA/MBOB/WJAP_Z.LST", // Japaner Winter
-  /* 33 */ "<RTTR_GAME>/DATA/MBOB/WROM_Z.LST", // Römer Winter
-  /* 34 */ "<RTTR_GAME>/DATA/MBOB/WVIK_Z.LST", // Wikinger Winter
-  /* 35 */ "<RTTR_GAME>/DATA/MBOB/AFR_ICON.LST",
-  /* 36 */ "<RTTR_GAME>/DATA/MBOB/JAP_ICON.LST",
-  /* 37 */ "<RTTR_GAME>/DATA/MBOB/ROM_ICON.LST",
-  /* 38 */ "<RTTR_GAME>/DATA/MBOB/VIK_ICON.LST",
+  /* 27 */ "",
+  /* 28 */ "",
+  /* 29 */ "",
+  /* 30 */ "",
+  /* 31 */ "",
+  /* 32 */ "",
+  /* 33 */ "",
+  /* 34 */ "",
+  /* 35 */ "",
+  /* 36 */ "",
+  /* 37 */ "",
+  /* 38 */ "",
   /* 39 */ "<RTTR_GAME>/DATA/MAPS3",
   /* 40 */ "<RTTR_GAME>/DATA/MAPS4",
   /* 41 */ "<RTTR_USERDATA>/WORLDS",
@@ -140,13 +140,6 @@ const boost::array<const std::string, NUM_FILE_LOAD_IDS> SUPPRESS_UNUSED FILE_LO
    "setup896", "africa",   "austra",   "europe",   "green",    "japan",    "namerica", "nasia",    "samerica", "sasia"}};
 
 BOOST_CONSTEXPR_OR_CONST unsigned NUM_GFXSETS = 3;
-BOOST_CONSTEXPR_OR_CONST unsigned NUM_NATIONS = 5;
-
-const boost::array<const std::string, NUM_NATIONS> SUPPRESS_UNUSED NATION_ICON_IDS = {
-  {"afr_icon", "jap_icon", "rom_icon", "vik_icon", "bab_icon"}};
-
-const helpers::SimpleMultiArray<const std::string, 2, NUM_NATIONS> SUPPRESS_UNUSED NATION_GFXSET_Z = {
-  {{"afr_z", "jap_z", "rom_z", "vik_z", "bab_z"}, {"wafr_z", "wjap_z", "wrom_z", "wvik_z", "wbab_z"}}};
 
 const boost::array<const std::string, NUM_GFXSETS> SUPPRESS_UNUSED MAP_GFXSET_Z = {{"MAP_0_Z", "MAP_1_Z", "MAP_2_Z"}};
 

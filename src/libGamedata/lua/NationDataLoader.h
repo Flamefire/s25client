@@ -19,9 +19,11 @@
 #define NationDataLoader_h__
 
 #include "LuaInterfaceBase.h"
+#include "gameData/DescriptionContainer.h"
 
 struct WorldDescription;
 struct NationDesc;
+struct BuildingDesc;
 
 namespace kaguya {
 class State;
@@ -32,13 +34,16 @@ class NationDataLoader
 {
 public:
     NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc);
+    ~NationDataLoader();
     static void Register(kaguya::State& state);
+    void CopyBuildings();
 
 private:
     void AddBuilding(const kaguya::LuaTable& data);
 
     WorldDescription& worldDesc_;
     NationDesc& nationDesc_;
+    DescriptionContainer<BuildingDesc> buildings;
 };
 
 #endif // NationDataLoader_h__

@@ -18,14 +18,16 @@
 #ifndef NationDesc_h__
 #define NationDesc_h__
 
-#include "DescriptionContainer.h"
-#include "NatBuildingDesc.h" // TODO: How to get rid of this?
-#include "Rect.h"
+#include "ArchiveEntryRef.h"
+#include "BuildingDesc.h"
+#include "gameTypes/BuildingType.h"
+#include <boost/array.hpp>
 #include <string>
 
 struct WorldDescription;
 class CheckedLuaTable;
-struct NatBuildingDesc;
+struct BuildingDesc;
+struct BuildingBPDesc;
 
 struct NationDesc
 {
@@ -36,22 +38,13 @@ struct NationDesc
 
     std::string name;
     uint8_t s2Id;
-    DescriptionContainer<NatBuildingDesc> buildings;
-
-    // Convenience accessors
-    template<class T>
-    const T& get(DescIdx<T> idx) const
-    {
-        return getContainer<T>().get(idx);
-    }
-    template<class T>
-    const DescriptionContainer<T>& getContainer() const;
+    std::string texOverideFolder;
+    std::string summerTexFile, winterTexFile;
+    ArchiveEntryRef defaultAvatar;
+    /// Complete description of buildings.
+    /// TODO: Possibly make it a DescriptionContainer to be able to transparently add new buildings, but for now that seems to hard to teach
+    /// the AI
+    boost::array<BuildingDesc, NUM_BUILDING_TYPES> buildings;
 };
-
-template<>
-inline const DescriptionContainer<NatBuildingDesc>& NationDesc::getContainer() const
-{
-    return buildings;
-}
 
 #endif // NationDesc_h__

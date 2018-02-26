@@ -18,18 +18,33 @@
 #include "commonDefines.h" // IWYU pragma: keep
 #include "NationDataLoader.h"
 #include "CheckedLuaTable.h"
-#include "gameData/NatBuildingDesc.h"
+#include "gameData/BuildingDesc.h"
+#include "gameData/BuildingNames.h"
 #include "gameData/NationDesc.h"
 #include <kaguya/kaguya.hpp>
 
 NationDataLoader::NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc) : worldDesc_(worldDesc), nationDesc_(nationDesc) {}
+
+NationDataLoader::~NationDataLoader() {}
 
 void NationDataLoader::Register(kaguya::State& state)
 {
     state["RTTRNation"].setClass(kaguya::UserdataMetatable<NationDataLoader>().addFunction("AddBuilding", &NationDataLoader::AddBuilding));
 }
 
+void NationDataLoader::CopyBuildings()
+{
+    for(unsigned i = 0; i < NUM_BUILDING_TYPES; i++)
+    {
+        DescIdx<BuildingDesc> idx = buildings.getIndex(BUILDING_NAMES[i]);
+        if(!idx)
+            throw GameDataLoadError(std::string("Building with name '") + BUILDING_NAMES[i] + "' not found in nation description of "
+                                    + nationDesc_.name);
+        nationDesc_.buildings[i] = buildings[idx];
+    }
+}
+
 void NationDataLoader::AddBuilding(const kaguya::LuaTable& data)
 {
-    nationDesc_.buildings.add(NatBuildingDesc(data, worldDesc_));
+    buildings.add(BuildingDesc(data, worldDesc_));
 }

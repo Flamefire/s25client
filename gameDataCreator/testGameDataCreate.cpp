@@ -19,8 +19,13 @@
 #include "PointOutput.h"
 #include "addNewData.h"
 #include "lua/GameDataLoader.h"
+#include "gameTypes/OldBuildingType.h"
+#include "gameTypes/OldNation.h"
+#include "gameData/BuildingBPDesc.h"
+#include "gameData/BuildingConsts.h"
 #include "gameData/BuildingDesc.h"
-#include "gameData/NatBuildingDesc.h"
+#include "gameData/DoorConsts.h"
+#include "gameData/NationConsts.h"
 #include "gameData/NationDesc.h"
 #include "gameData/WorldDescription.h"
 #include <boost/test/unit_test.hpp>
@@ -30,14 +35,23 @@ std::ostream& operator<<(std::ostream& os, const WaresNeeded& wares)
     return os << wares.getNum() << "[" << unsigned(wares[0]) << "," << unsigned(wares[1]) << "," << unsigned(wares[2]) << "]";
 }
 
+unsigned GetNationIdx(const std::string& name)
+{
+    for(unsigned i = 0; i < NUM_NATS; i++)
+    {
+        if(NationNames[i] == name)
+            return i;
+    }
+    throw std::runtime_error("Nat Not found");
+}
+
 struct GameDataFixture
 {
-    WorldDescription worldDesc, newWorldDesc;
+    WorldDescription worldDesc;
     GameDataFixture()
     {
         GameDataLoader gdLoader(worldDesc);
         BOOST_REQUIRE(gdLoader.Load());
-        addNewData(newWorldDesc);
     }
 };
 
@@ -45,47 +59,43 @@ BOOST_FIXTURE_TEST_SUITE(GameData, GameDataFixture)
 
 BOOST_AUTO_TEST_CASE(NationTest)
 {
-    BOOST_REQUIRE_LE(newWorldDesc.nations.size(), worldDesc.nations.size());
-    for(DescIdx<NationDesc> i(0); i.value < newWorldDesc.nations.size(); i.value++)
+    BOOST_REQUIRE_LE(NUM_NATS, (int)worldDesc.nations.size());
+    for(DescIdx<NationDesc> i(0); i.value < NUM_NATS; i.value++)
     {
-        BOOST_REQUIRE_EQUAL(newWorldDesc.get(i).s2Id, worldDesc.get(i).s2Id);
+        const NationDesc& dsc = worldDesc.get(i);
+        BOOST_REQUIRE_LT(dsc.s2Id, NUM_NATS);
+        unsigned oldId = GetNationIdx(dsc.name);
+        BOOST_REQUIRE_EQUAL(dsc.texOverideFolder.empty(), oldId <= NUM_NATIVE_NATS);
     }
 }
 
 BOOST_AUTO_TEST_CASE(BuildingTest)
 {
-    BOOST_REQUIRE_LE(newWorldDesc.buildings.size(), worldDesc.buildings.size());
-    for(DescIdx<BuildingDesc> i(0); i.value < newWorldDesc.buildings.size(); i.value++)
+    BOOST_REQUIRE_LE(NUM_NATS, (int)worldDesc.nations.size());
+    for(DescIdx<NationDesc> i(0); i.value < worldDesc.nations.size(); i.value++)
     {
-        const BuildingDesc& newBld = newWorldDesc.get(i);
-        const BuildingDesc& bld = worldDesc.get(i);
-        BOOST_REQUIRE_EQUAL(newBld.help, bld.help);
-        BOOST_REQUIRE_EQUAL(newBld.costs.boards, bld.costs.boards);
-        BOOST_REQUIRE_EQUAL(newBld.costs.stones, bld.costs.stones);
-        BOOST_REQUIRE_EQUAL(newBld.requiredSpace, bld.requiredSpace);
-        BOOST_REQUIRE_EQUAL(newBld.workDescr.job, bld.workDescr.job);
-        BOOST_REQUIRE_EQUAL(newBld.workDescr.producedWare, bld.workDescr.producedWare);
-        BOOST_REQUIRE_EQUAL(newBld.workDescr.waresNeeded, bld.workDescr.waresNeeded);
-        BOOST_REQUIRE_EQUAL(newBld.workDescr.numSpacesPerWare, bld.workDescr.numSpacesPerWare);
-        BOOST_REQUIRE_EQUAL(newBld.workDescr.useOneWareEach, bld.workDescr.useOneWareEach);
-    }
-}
-
-BOOST_AUTO_TEST_CASE(NatBuildingTest)
-{
-    BOOST_REQUIRE_LE(newWorldDesc.nations.size(), worldDesc.nations.size());
-    for(DescIdx<NationDesc> i(0); i.value < newWorldDesc.nations.size(); i.value++)
-    {
-        const NationDesc& newNat = newWorldDesc.get(i);
         const NationDesc& nat = worldDesc.get(i);
-        BOOST_REQUIRE_LE(newNat.buildings.size(), nat.buildings.size());
-        for(DescIdx<NatBuildingDesc> j(0); j.value < newNat.buildings.size(); j.value++)
+        unsigned oldNat = GetNationIdx(nat.name);
+        BOOST_REQUIRE_LE(OLD_NUM_BUILDING_TYPES, (int)nat.buildings.size());
+        for(unsigned j = 0; j < nat.buildings.size(); j++)
         {
-            const NatBuildingDesc& newBld = newNat.get(j);
-            const NatBuildingDesc& bld = nat.get(j);
-            BOOST_REQUIRE_EQUAL(newBld.smoke.type, bld.smoke.type);
+            const BuildingDesc& bld = nat.buildings[j];
+            unsigned oldBld = GetOldBuildingIdx(bld.name);
+            BOOST_REQUIRE_EQUAL(BUILDING_HELP_STRINGS[oldBld], bld.help);
+            BOOST_REQUIRE_EQUAL(BUILDING_COSTS[oldNat][oldBld].boards, bld.costs.boards);
+            BOOST_REQUIRE_EQUAL(BUILDING_COSTS[oldNat][oldBld].stones, bld.costs.stones);
+            BOOST_REQUIRE_EQUAL(BUILDING_SIZE[oldBld], bld.requiredSpace);
+            BOOST_REQUIRE_EQUAL(BLD_WORK_DESC[oldBld].job, bld.workDescr.job);
+            BOOST_REQUIRE_EQUAL(BLD_WORK_DESC[oldBld].producedWare, bld.workDescr.producedWare);
+            BOOST_REQUIRE_EQUAL(BLD_WORK_DESC[oldBld].waresNeeded, bld.workDescr.waresNeeded);
+            BOOST_REQUIRE_EQUAL(BLD_WORK_DESC[oldBld].numSpacesPerWare, bld.workDescr.numSpacesPerWare);
+            BOOST_REQUIRE_EQUAL(BLD_WORK_DESC[oldBld].useOneWareEach, bld.workDescr.useOneWareEach);
+            BOOST_REQUIRE_EQUAL(DOOR_CONSTS[oldNat][oldBld], bld.doorPosY);
+            BOOST_REQUIRE_EQUAL(BUILDING_SMOKE_CONSTS[oldNat][oldBld].type, bld.smoke.type);
             if(bld.smoke.type)
-                BOOST_REQUIRE_EQUAL(newBld.smoke.offset, bld.smoke.offset);
+                BOOST_REQUIRE_EQUAL(BUILDING_SMOKE_CONSTS[oldNat][oldBld].offset, bld.smoke.offset);
+            BOOST_REQUIRE(!bld.icon.filepath.get().empty());
+            BOOST_REQUIRE_GT(bld.icon.index, 0u);
         }
     }
 }

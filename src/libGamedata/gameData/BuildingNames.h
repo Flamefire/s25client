@@ -1,4 +1,4 @@
-// Copyright (c) 2017 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2005 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -15,23 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef NatBuildingDesc_h__
-#define NatBuildingDesc_h__
+#ifndef BUILD_NAMES_H_
+#define BUILD_NAMES_H_
 
-#include "gameTypes/BuildingTypes.h"
-#include <string>
+#include "gameTypes/BuildingType.h"
+#include <boost/array.hpp>
 
-struct WorldDescription;
-class CheckedLuaTable;
+extern const boost::array<const char*, NUM_BUILDING_TYPES> BUILDING_NAMES;
 
-/// Nation dependent building data
-struct NatBuildingDesc
-{
-    std::string name;
-    SmokeConst smoke;
-
-    NatBuildingDesc() {}
-    NatBuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc);
-};
-
-#endif // NatBuildingDesc_h__
+#endif

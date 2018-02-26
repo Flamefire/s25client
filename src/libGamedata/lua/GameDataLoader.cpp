@@ -22,7 +22,7 @@
 #include "RttrConfig.h"
 #include "files.h"
 #include "helpers/containerUtils.h"
-#include "gameData/BuildingDesc.h"
+#include "gameData/BuildingBPDesc.h"
 #include "gameData/EdgeDesc.h"
 #include "gameData/LandscapeDesc.h"
 #include "gameData/NationDesc.h"
@@ -31,6 +31,7 @@
 #include "libutil/Log.h"
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 
 GameDataLoader::GameDataLoader(WorldDescription& worldDesc, const std::string& basePath)
     : worldDesc_(worldDesc), basePath_(bfs::canonical(basePath).make_preferred().string()), curIncludeDepth_(0), errorInIncludeFile_(false)
@@ -58,10 +59,13 @@ bool GameDataLoader::Load()
     curFile_ = (bfs::path(basePath_) / "default.lua").string();
     curIncludeDepth_ = 0;
     errorInIncludeFile_ = false;
+    nationLoaders.clear();
     try
     {
         if(!LoadScript(curFile_))
             return false;
+        BOOST_FOREACH(NationDataLoader& nationLoader, nationLoaders)
+            nationLoader.CopyBuildings();
     } catch(std::exception& e)
     {
         LOG.write("Failed to load game data!\nReason: %1%\nCurrent file being processed: %2%\n") % e.what() % curFile_;
@@ -120,13 +124,14 @@ void GameDataLoader::AddTerrain(const kaguya::LuaTable& data)
 
 void GameDataLoader::AddBuilding(const kaguya::LuaTable& data)
 {
-    worldDesc_.buildings.add(BuildingDesc(data, worldDesc_));
+    worldDesc_.buildingBlueprints.add(BuildingBPDesc(data, worldDesc_));
 }
 
-NationDataLoader GameDataLoader::AddNation(const kaguya::LuaTable& data)
+NationDataLoader& GameDataLoader::AddNation(const kaguya::LuaTable& data)
 {
     DescIdx<NationDesc> idx = worldDesc_.nations.add(NationDesc(data, worldDesc_));
-    return NationDataLoader(worldDesc_, worldDesc_.nations.getMutable(idx));
+    nationLoaders.push_back(NationDataLoader(worldDesc_, worldDesc_.nations.getMutable(idx)));
+    return nationLoaders.back();
 }
 
 WorldDescription& GameDataLoader::GetWorldDesc()

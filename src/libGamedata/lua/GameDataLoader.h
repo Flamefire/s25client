@@ -19,9 +19,10 @@
 #define GameDataLoader_h__
 
 #include "LuaInterfaceBase.h"
+#include "NationDataLoader.h"
+#include <boost/container/static_vector.hpp>
 
 struct WorldDescription;
-class NationDataLoader;
 
 class GameDataLoader : public LuaInterfaceBase
 {
@@ -40,11 +41,14 @@ private:
     void AddTerrainEdge(const kaguya::LuaTable& data);
     void AddTerrain(const kaguya::LuaTable& data);
     void AddBuilding(const kaguya::LuaTable& data);
-    NationDataLoader AddNation(const kaguya::LuaTable& data);
+    NationDataLoader& AddNation(const kaguya::LuaTable& data);
 
     WorldDescription& GetWorldDesc();
 
     WorldDescription& worldDesc_;
+    /// Nation loaders. Static vector so references stay valid. 50 nations max.
+    boost::container::static_vector<NationDataLoader, 50> nationLoaders;
+
     std::string basePath_, curFile_;
     int curIncludeDepth_;
     bool errorInIncludeFile_;

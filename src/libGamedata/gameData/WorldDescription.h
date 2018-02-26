@@ -19,6 +19,8 @@
 #define WorldDescription_h__
 
 #include "DescriptionContainer.h"
+#include <boost/core/enable_if.hpp>
+#include <boost/type_traits/is_same.hpp>
 #include <stdexcept>
 
 struct LandscapeDesc;
@@ -26,6 +28,7 @@ struct EdgeDesc;
 struct TerrainDesc;
 struct NationDesc;
 struct BuildingDesc;
+struct BuildingBPDesc;
 
 struct GameDataError : public std::runtime_error
 {
@@ -46,14 +49,21 @@ struct WorldDescription
     DescriptionContainer<EdgeDesc> edges;
     DescriptionContainer<TerrainDesc> terrain;
     DescriptionContainer<NationDesc> nations;
-    DescriptionContainer<BuildingDesc> buildings;
+    DescriptionContainer<BuildingBPDesc> buildingBlueprints;
 
     // Convenience accessors
+    // Allows access to buildingBlueprints with DescIdx<BuildingDesc>
     template<class T>
-    const T& get(DescIdx<T> idx) const
+    typename boost::disable_if<boost::is_same<T, BuildingDesc>, const T&>::type get(DescIdx<T> idx) const
     {
         return getContainer<T>().get(idx);
     }
+    template<class T>
+    typename boost::enable_if<boost::is_same<T, BuildingDesc>, const BuildingBPDesc&>::type get(DescIdx<T> idx) const
+    {
+        return getContainer<T>().get(DescIdx<BuildingBPDesc>(idx.value));
+    }
+
     template<class T>
     const DescriptionContainer<T>& getContainer() const;
 };
@@ -83,9 +93,9 @@ inline const DescriptionContainer<NationDesc>& WorldDescription::getContainer() 
 }
 
 template<>
-inline const DescriptionContainer<BuildingDesc>& WorldDescription::getContainer() const
+inline const DescriptionContainer<BuildingBPDesc>& WorldDescription::getContainer() const
 {
-    return buildings;
+    return buildingBlueprints;
 }
 
 #endif // WorldDescription_h__

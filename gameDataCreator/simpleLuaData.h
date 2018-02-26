@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef addNewData_h__
-#define addNewData_h__
+#ifndef simpleLuaData_h__
+#define simpleLuaData_h__
 
 #include <boost/container/vector.hpp>
 #include <boost/optional.hpp>
@@ -68,6 +68,7 @@ struct LuaTable
     LuaTable() : isSingleLine_(SL_AUTO) {}
     const LuaTableEntry& operator[](const std::string& entryName) const;
     bool isSingleLine() const;
+    bool needsSpaceInside() const;
     int indexOf(const std::string& name) const;
     std::string toString(int indentAmount = 0) const;
 };
@@ -84,7 +85,7 @@ struct LuaTableEntry
 
 class GameDataFile
 {
-    std::string contents;
+    std::string contents, filepath_;
     boost::container::vector<LuaTable> tables;
     size_t curPos;
     bool isAdjacent(size_t pos1, size_t pos2);
@@ -105,10 +106,12 @@ public:
     /// Replace the whole buffer invalidating all references
     void setContents(const std::string& src);
     const std::string& getContents() { return contents; }
+    const std::string& getFilepath() { return filepath_; }
     std::string getUnparsedData() const;
     /// Reparse contents invalidating all references
     void parse();
     /// Get all main tables
+    boost::container::vector<LuaTable>& getTables() { return tables; }
     const boost::container::vector<LuaTable>& getTables() const { return tables; }
     /// Load from file
     bool load(const std::string& filepath);
@@ -152,6 +155,7 @@ public:
     /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
     /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
     void insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value, const std::string& comment = "");
+    void insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
     void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
     void insertFieldAfter(const std::string& elName, const std::string& entry);
 
@@ -166,6 +170,9 @@ private:
     LuaDataError createError(const std::string& msg) const;
 
     size_t findPosition(const std::string& elName, LuaTable** outerTable);
+
+public:
+    std::string getTableName(unsigned idx) const;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -211,4 +218,4 @@ inline size_t getStartOfLine(const T_String& str, size_t pos)
 
 } // namespace simpleLuaData
 
-#endif // addNewData_h__
+#endif // simpleLuaData_h__

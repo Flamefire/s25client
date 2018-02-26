@@ -17,69 +17,26 @@
 
 #include "commonDefines.h" // IWYU pragma: keep
 #include "BuildingDesc.h"
+#include "WorldDescription.h"
 #include "lua/CheckedLuaTable.h"
 #include "lua/LuaHelpers.h"
-#include "gameTypes/GoodTypes.h"
-
-BuildingQuality strToBq(const std::string& bq)
-{
-    if(bq == "hut")
-        return BQ_HUT;
-    if(bq == "house")
-        return BQ_HOUSE;
-    if(bq == "castle")
-        return BQ_CASTLE;
-    if(bq == "mine")
-        return BQ_MINE;
-    if(bq == "harbor")
-        return BQ_HARBOR;
-    throw GameDataError("Invalid space size: " + bq);
-}
-
-Job strToJob(const std::string& job)
-{
-    if(job == "none")
-        return JOB_NOTHING;
-    for(unsigned i = 0; i < NUM_JOB_TYPES; i++)
-    {
-        if(JOB_NAMES[i] == job)
-            return Job(i);
-    }
-    throw GameDataError("Invalid job: " + job);
-}
-
-GoodType strToWare(const std::string& gd)
-{
-    if(gd == "none")
-        return GD_NOTHING;
-    if(gd == "invalid")
-        return GD_INVALID;
-    for(unsigned i = 0; i < NUM_WARE_TYPES; i++)
-    {
-        if(WARE_NAMES[i] == gd)
-            return GoodType(i);
-    }
-    throw GameDataError("Invalid ware: " + gd);
-}
+#include <kaguya/kaguya.hpp>
 
 BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc)
 {
     luaData.getOrThrow(name, "name");
-    luaData.getOrThrow(help, "help");
-    CheckedLuaTable costsData = luaData.getOrThrow<CheckedLuaTable>("costs");
-    costs.boards = costsData.getOrDefault("boards", 0);
-    costs.stones = costsData.getOrDefault("stones", 0);
-    requiredSpace = strToBq(luaData.getOrThrow<std::string>("size"));
-    CheckedLuaTable workData = luaData.getOrThrow<CheckedLuaTable>("work");
-    workDescr.job = strToJob(workData.getOrDefault<std::string>("worker", "none"));
-    workDescr.producedWare = strToWare(workData.getOrDefault<std::string>("producedWare", "none"));
-    std::vector<std::string> waresNeededData = workData.getOrDefault("waresNeeded", std::vector<std::string>());
-    for(unsigned i = 0; i < waresNeededData.size(); i++)
-        workDescr.waresNeeded[i] = strToWare(waresNeededData[i]);
-    workDescr.numSpacesPerWare = workData.getOrDefault("numSpacesPerWare", workDescr.numSpacesPerWare);
-    workDescr.useOneWareEach = workData.getOrDefault("useOneWareEach", workDescr.useOneWareEach);
+    DescIdx<BuildingBPDesc> idx = worldDesc.buildingBlueprints.getIndex(name);
+    lua::assertTrue(!!idx, "Building blueprint with name '" + name + "' not found in world");
+    // Assign blueprint
+    static_cast<BuildingBPDesc&>(*this) = worldDesc.get(idx);
 
-    costsData.checkUnused();
-    workData.checkUnused();
+    luaData.getOrThrow(icon, "icon");
+    luaData.getOrThrow(doorPosY, "doorPosY");
+
+    CheckedLuaTable smokeData =
+      luaData.getOrDefault("smoke", CheckedLuaTable(kaguya::LuaTable(luaData.getBaseTable().state(), kaguya::NewTable())));
+    smoke.type = smokeData.getOrDefault("type", 0);
+    smoke.offset = smokeData.getOrDefault("offset", Point<int8_t>(0, 0));
+    smokeData.checkUnused();
     luaData.checkUnused();
 }
