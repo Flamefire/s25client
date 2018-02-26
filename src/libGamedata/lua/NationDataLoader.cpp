@@ -23,7 +23,7 @@
 #include "gameData/NationDesc.h"
 #include <kaguya/kaguya.hpp>
 
-NationDataLoader::NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc) : worldDesc_(worldDesc), nationDesc_(nationDesc) {}
+NationDataLoader::NationDataLoader(WorldDescription& worldDesc, DescIdx<NationDesc> nation) : worldDesc_(worldDesc), nation_(nation) {}
 
 NationDataLoader::~NationDataLoader() {}
 
@@ -34,13 +34,14 @@ void NationDataLoader::Register(kaguya::State& state)
 
 void NationDataLoader::CopyBuildings()
 {
+    NationDesc& natDesc = worldDesc_.nations.getMutable(nation_);
     for(unsigned i = 0; i < NUM_BUILDING_TYPES; i++)
     {
         DescIdx<BuildingDesc> idx = buildings.getIndex(BUILDING_NAMES[i]);
         if(!idx)
             throw GameDataLoadError(std::string("Building with name '") + BUILDING_NAMES[i] + "' not found in nation description of "
-                                    + nationDesc_.name);
-        nationDesc_.buildings[i] = buildings[idx];
+                                    + natDesc.name);
+        natDesc.buildings[i] = buildings[idx];
     }
 }
 

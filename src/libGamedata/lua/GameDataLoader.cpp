@@ -127,11 +127,11 @@ void GameDataLoader::AddBuilding(const kaguya::LuaTable& data)
     worldDesc_.buildingBlueprints.add(BuildingBPDesc(data, worldDesc_));
 }
 
-NationDataLoader& GameDataLoader::AddNation(const kaguya::LuaTable& data)
+NationDataLoader* GameDataLoader::AddNation(const kaguya::LuaTable& data)
 {
     DescIdx<NationDesc> idx = worldDesc_.nations.add(NationDesc(data, worldDesc_));
-    nationLoaders.push_back(NationDataLoader(worldDesc_, worldDesc_.nations.getMutable(idx)));
-    return nationLoaders.back();
+    nationLoaders.push_back(NationDataLoader(worldDesc_, idx));
+    return &nationLoaders.back();
 }
 
 WorldDescription& GameDataLoader::GetWorldDesc()

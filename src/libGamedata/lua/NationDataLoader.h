@@ -33,7 +33,7 @@ class LuaTable;
 class NationDataLoader
 {
 public:
-    NationDataLoader(WorldDescription& worldDesc, NationDesc& nationDesc);
+    NationDataLoader(WorldDescription& worldDesc, DescIdx<NationDesc> nation);
     ~NationDataLoader();
     static void Register(kaguya::State& state);
     void CopyBuildings();
@@ -42,7 +42,7 @@ private:
     void AddBuilding(const kaguya::LuaTable& data);
 
     WorldDescription& worldDesc_;
-    NationDesc& nationDesc_;
+    DescIdx<NationDesc> nation_;
     DescriptionContainer<BuildingDesc> buildings;
 };
 

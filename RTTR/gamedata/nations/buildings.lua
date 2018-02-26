@@ -19,7 +19,7 @@ rttr:AddBuilding{
 		numSpacesPerWare = 6,
 		-- true (default) if one of each waresNeeded is used per production cycle
 		-- false if the ware type is used, that the building has the most of
-		useOneWareEach = true,
+		useOneWareEach = true
 	}
 }
 rttr:AddBuilding{
@@ -30,7 +30,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Private",
 		waresNeeded = {"Coins"},
-		numSpacesPerWare = 1,
+		numSpacesPerWare = 1
 	}
 }
 rttr:AddBuilding{
@@ -41,7 +41,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Private",
 		waresNeeded = {"Coins"},
-		numSpacesPerWare = 2,
+		numSpacesPerWare = 2
 	}
 }
 rttr:AddBuilding{
@@ -52,7 +52,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Private",
 		waresNeeded = {"Coins"},
-		numSpacesPerWare = 4,
+		numSpacesPerWare = 4
 	}
 }
 rttr:AddBuilding{
@@ -62,7 +62,7 @@ rttr:AddBuilding{
 	size = "castle",
 	work = {
 		worker = "Private",
-		waresNeeded = {"Coins"},
+		waresNeeded = {"Coins"}
 	}
 }
 rttr:AddBuilding{
@@ -75,7 +75,7 @@ rttr:AddBuilding{
 		producedWare = "Stones",
 		waresNeeded = {"Fish", "Meat", "Bread"},
 		numSpacesPerWare = 2,
-		useOneWareEach = false,
+		useOneWareEach = false
 	}
 }
 rttr:AddBuilding{
@@ -88,7 +88,7 @@ rttr:AddBuilding{
 		producedWare = "Coal",
 		waresNeeded = {"Fish", "Meat", "Bread"},
 		numSpacesPerWare = 2,
-		useOneWareEach = false,
+		useOneWareEach = false
 	}
 }
 rttr:AddBuilding{
@@ -101,7 +101,7 @@ rttr:AddBuilding{
 		producedWare = "Iron",
 		waresNeeded = {"Fish", "Meat", "Bread"},
 		numSpacesPerWare = 2,
-		useOneWareEach = false,
+		useOneWareEach = false
 	}
 }
 rttr:AddBuilding{
@@ -114,7 +114,7 @@ rttr:AddBuilding{
 		producedWare = "Gold",
 		waresNeeded = {"Fish", "Meat", "Bread"},
 		numSpacesPerWare = 2,
-		useOneWareEach = false,
+		useOneWareEach = false
 	}
 }
 rttr:AddBuilding{
@@ -123,7 +123,7 @@ rttr:AddBuilding{
 	costs = { boards = 4 },
 	size = "hut",
 	work = {
-		worker = "Scout",
+		worker = "Scout"
 	}
 }
 rttr:AddBuilding{
@@ -134,7 +134,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Helper",
 		waresNeeded = {"Stones"},
-		numSpacesPerWare = 4,
+		numSpacesPerWare = 4
 	}
 }
 rttr:AddBuilding{
@@ -144,7 +144,7 @@ rttr:AddBuilding{
 	size = "hut",
 	work = {
 		worker = "Woodchopper",
-		producedWare = "Wood",
+		producedWare = "Wood"
 	}
 }
 rttr:AddBuilding{
@@ -154,7 +154,7 @@ rttr:AddBuilding{
 	size = "hut",
 	work = {
 		worker = "Fisher",
-		producedWare = "Fish",
+		producedWare = "Fish"
 	}
 }
 rttr:AddBuilding{
@@ -164,7 +164,7 @@ rttr:AddBuilding{
 	size = "hut",
 	work = {
 		worker = "Stonemason",
-		producedWare = "Stones",
+		producedWare = "Stones"
 	}
 }
 rttr:AddBuilding{
@@ -173,7 +173,7 @@ rttr:AddBuilding{
 	costs = { boards = 2 },
 	size = "hut",
 	work = {
-		worker = "Ranger",
+		worker = "Ranger"
 	}
 }
 rttr:AddBuilding{
@@ -184,7 +184,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Butcher",
 		producedWare = "Meat",
-		waresNeeded = {"Ham"},
+		waresNeeded = {"Ham"}
 	}
 }
 rttr:AddBuilding{
@@ -194,7 +194,7 @@ rttr:AddBuilding{
 	size = "hut",
 	work = {
 		worker = "Huntsman",
-		producedWare = "Meat",
+		producedWare = "Meat"
 	}
 }
 rttr:AddBuilding{
@@ -205,7 +205,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Brewer",
 		producedWare = "Beer",
-		waresNeeded = {"Grain", "Water"},
+		waresNeeded = {"Grain", "Water"}
 	}
 }
 rttr:AddBuilding{
@@ -216,7 +216,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Armorer",
 		producedWare = "Sword",
-		waresNeeded = {"Iron", "Coal"},
+		waresNeeded = {"Iron", "Coal"}
 	}
 }
 rttr:AddBuilding{
@@ -227,7 +227,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Metalworker",
 		producedWare = "Tongs",
-		waresNeeded = {"Iron", "Boards"},
+		waresNeeded = {"Iron", "Boards"}
 	}
 }
 rttr:AddBuilding{
@@ -238,7 +238,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Iron founder",
 		producedWare = "Iron",
-		waresNeeded = {"Iron ore", "Coal"},
+		waresNeeded = {"Iron ore", "Coal"}
 	}
 }
 rttr:AddBuilding{
@@ -249,7 +249,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Charburner",
 		producedWare = "Coal",
-		waresNeeded = {"Wood", "Grain"},
+		waresNeeded = {"Wood", "Grain"}
 	}
 }
 rttr:AddBuilding{
@@ -260,7 +260,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Pig breeder",
 		producedWare = "Ham",
-		waresNeeded = {"Grain", "Water"},
+		waresNeeded = {"Grain", "Water"}
 	}
 }
 rttr:AddBuilding{
@@ -279,7 +279,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Miller",
 		producedWare = "Flour",
-		waresNeeded = {"Grain"},
+		waresNeeded = {"Grain"}
 	}
 }
 rttr:AddBuilding{
@@ -290,7 +290,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Baker",
 		producedWare = "Bread",
-		waresNeeded = {"Flour", "Water"},
+		waresNeeded = {"Flour", "Water"}
 	}
 }
 rttr:AddBuilding{
@@ -301,7 +301,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Carpenter",
 		producedWare = "Boards",
-		waresNeeded = {"Wood"},
+		waresNeeded = {"Wood"}
 	}
 }
 rttr:AddBuilding{
@@ -312,7 +312,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Minter",
 		producedWare = "Coins",
-		waresNeeded = {"Gold", "Coal"},
+		waresNeeded = {"Gold", "Coal"}
 	}
 }
 rttr:AddBuilding{
@@ -322,7 +322,7 @@ rttr:AddBuilding{
 	size = "hut",
 	work = {
 		worker = "Helper",
-		producedWare = "Water",
+		producedWare = "Water"
 	}
 }
 rttr:AddBuilding{
@@ -333,7 +333,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Shipwright",
 		producedWare = "Boat",
-		waresNeeded = {"Boards"},
+		waresNeeded = {"Boards"}
 	}
 }
 rttr:AddBuilding{
@@ -343,7 +343,7 @@ rttr:AddBuilding{
 	size = "castle",
 	work = {
 		worker = "Farmer",
-		producedWare = "Grain",
+		producedWare = "Grain"
 	}
 }
 rttr:AddBuilding{
@@ -354,7 +354,7 @@ rttr:AddBuilding{
 	work = {
 		worker = "Donkey breeder",
 		producedWare = "invalid",
-		waresNeeded = {"Grain", "Water"},
+		waresNeeded = {"Grain", "Water"}
 	}
 }
 rttr:AddBuilding{

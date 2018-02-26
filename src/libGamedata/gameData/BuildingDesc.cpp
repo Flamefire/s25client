@@ -20,6 +20,7 @@
 #include "WorldDescription.h"
 #include "lua/CheckedLuaTable.h"
 #include "lua/LuaHelpers.h"
+#include "lua/PointTraits.h"
 #include <kaguya/kaguya.hpp>
 
 BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc)

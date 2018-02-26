@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(BuildingTest)
     {
         const NationDesc& nat = worldDesc.get(i);
         unsigned oldNat = GetNationIdx(nat.name);
-        BOOST_REQUIRE_LE(OLD_NUM_BUILDING_TYPES, (int)nat.buildings.size());
+        BOOST_REQUIRE_EQUAL(NUM_BUILDING_TYPES, (int)nat.buildings.size());
         for(unsigned j = 0; j < nat.buildings.size(); j++)
         {
             const BuildingDesc& bld = nat.buildings[j];
@@ -95,7 +95,6 @@ BOOST_AUTO_TEST_CASE(BuildingTest)
             if(bld.smoke.type)
                 BOOST_REQUIRE_EQUAL(BUILDING_SMOKE_CONSTS[oldNat][oldBld].offset, bld.smoke.offset);
             BOOST_REQUIRE(!bld.icon.filepath.get().empty());
-            BOOST_REQUIRE_GT(bld.icon.index, 0u);
         }
     }
 }

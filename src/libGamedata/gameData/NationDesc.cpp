@@ -19,6 +19,7 @@
 #include "NationDesc.h"
 #include "BuildingDesc.h"
 #include "lua/CheckedLuaTable.h"
+#include "lua/PointTraits.h"
 
 NationDesc::NationDesc() {}
 
@@ -26,6 +27,10 @@ NationDesc::NationDesc(CheckedLuaTable luaData, const WorldDescription&)
 {
     luaData.getOrThrow(name, "name");
     s2Id = luaData.getOrDefault("s2Id", 0);
+    texOverideFolder = luaData.getOrDefault<std::string>("texOverideFolder", "");
+    luaData.getOrThrow(summerTexFile, "summerTexFile");
+    luaData.getOrThrow(winterTexFile, "winterTexFile");
+    luaData.getOrThrow(defaultAvatar, "defaultAvatar");
     luaData.checkUnused();
 }
 

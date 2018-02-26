@@ -95,9 +95,10 @@ void addNewData(const std::string& baseLuaPath)
                                       "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[0][i]) + ".LST\"", comment);
         comment = "Texture file for winter textures";
         gdNations[i].insertFieldAfter(":summerTexFile", "winterTexFile",
-                                      "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[0][i]) + ".LST\"", comment);
+                                      "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[1][i]) + ".LST\"", comment);
         comment = "Default avatar texture";
-        gdNations[i].insertFieldAfter(":winterTexFile", "defaultAvatar", "\"io:" + s25util::toStringClassic(avatarIds[i]) + "\"", comment);
+        gdNations[i].insertFieldAfter(":winterTexFile", "defaultAvatar",
+                                      "{ filepath = \"io\", idx = " + s25util::toStringClassic(avatarIds[i]) + " }", comment);
     }
     {
         std::string basePath = "<RTTR_RTTR>/LSTS/GAME/Babylonier";
@@ -106,7 +107,7 @@ void addNewData(const std::string& baseLuaPath)
         comment = "Texture file for winter textures";
         gdNations[NAT_BABYLONIANS].insertFieldAfter(":summerTexFile", "winterTexFile", "\"" + basePath + "/wbab_z.lst\"", comment);
         comment = "Default avatar texture";
-        gdNations[NAT_BABYLONIANS].insertFieldAfter(":winterTexFile", "defaultAvatar", "\"io_new:7\"", comment);
+        gdNations[NAT_BABYLONIANS].insertFieldAfter(":winterTexFile", "defaultAvatar", "{ filepath = \"io_new\", idx = 7 }", comment);
     }
     for(int natIdx = 0; natIdx < NUM_NATS; natIdx++)
     {
@@ -119,11 +120,12 @@ void addNewData(const std::string& baseLuaPath)
             unsigned bld = GetOldBuildingIdx(bldName);
             std::string comment = (i) ? "" : "Texture for the icon";
             if(bld == OldBuildingType::CHARBURNER)
-                gd.insertFieldAfter(bldName + ":name", "icon", "\"charburner:" + s25util::toStringClassic((natIdx + 1) * 8) + "\"",
-                                    comment);
+                gd.insertFieldAfter(bldName + ":name", "icon",
+                                    "{ filepath = \"charburner\", idx = " + s25util::toStringClassic((natIdx + 1) * 8) + " }", comment);
             else
                 gd.insertFieldAfter(bldName + ":name", "icon",
-                                    "\"" + NATION_ICON_FILES[natIdx] + ":" + s25util::toStringClassic(bld) + "\"", comment);
+                                    "{ filepath = \"" + NATION_ICON_FILES[natIdx] + "\", idx = " + s25util::toStringClassic(bld) + " }",
+                                    comment);
             comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
             gd.insertFieldAfter(bldName + ":icon", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
         }

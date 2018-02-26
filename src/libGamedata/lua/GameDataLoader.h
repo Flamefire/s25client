@@ -41,7 +41,7 @@ private:
     void AddTerrainEdge(const kaguya::LuaTable& data);
     void AddTerrain(const kaguya::LuaTable& data);
     void AddBuilding(const kaguya::LuaTable& data);
-    NationDataLoader& AddNation(const kaguya::LuaTable& data);
+    NationDataLoader* AddNation(const kaguya::LuaTable& data);
 
     WorldDescription& GetWorldDesc();
 
