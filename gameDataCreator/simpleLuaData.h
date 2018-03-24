@@ -56,17 +56,18 @@ struct LuaTable
 {
     enum ESingleLine
     {
-        SL_AUTO,
         SL_YES,
-        SL_NO
+        SL_NO,
+        SL_VALUE
     };
     ESingleLine isSingleLine_;
     boost::container::vector<LuaTableEntry> values;
     /// Data range in original data. Only required for main tables
     StringRef data;
 
-    LuaTable() : isSingleLine_(SL_AUTO) {}
+    LuaTable() : isSingleLine_(SL_YES) {}
     const LuaTableEntry& operator[](const std::string& entryName) const;
+    LuaTableEntry& operator[](const std::string& entryName);
     bool isSingleLine() const;
     bool needsSpaceInside() const;
     int indexOf(const std::string& name) const;
@@ -158,6 +159,8 @@ public:
     void insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
     void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
     void insertFieldAfter(const std::string& elName, const std::string& entry);
+
+    void setNameValue(const std::string& name, const std::string& value);
 
 private:
     void skipList();

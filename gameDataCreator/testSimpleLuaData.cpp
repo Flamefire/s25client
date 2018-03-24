@@ -205,26 +205,35 @@ BOOST_AUTO_TEST_CASE(InsertField)
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAfterName);
 }
 
+BOOST_AUTO_TEST_CASE(ChangeValues)
+{
+    GameDataFile gd;
+    gd.setContents("foo=bar\nfoo2 = bar2\nrttr:AddBld{}");
+    BOOST_REQUIRE(gd.findMainTable("foo"));
+    BOOST_REQUIRE(gd.findMainTable("foo2"));
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nrttr:AddBld{\n}");
+    gd.setNameValue("foz", "baz");
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nfoz = baz\nrttr:AddBld{\n}");
+    gd.setNameValue("foo", "baz2");
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = baz2\nfoo2 = bar2\nfoz = baz\nrttr:AddBld{\n}");
+    gd.setContents("rttr:AddBld{}");
+    gd.setNameValue("foo", "bar");
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nrttr:AddBld{\n}");
+    gd.setContents("");
+    gd.setNameValue("foo", "bar");
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\n");
+}
+
 BOOST_AUTO_TEST_CASE(LoadRealFiles)
 {
     const std::string nationPath = RTTRCONFIG.ExpandPath("<RTTR_RTTR>/gameData/nations");
     GameDataFile gd;
-#ifndef BOOST_NO_CXX11_HDR_CHRONO
-    auto start = std::chrono::high_resolution_clock::now();
-#endif
-    for(int i = 0; i < 50; i++)
-    {
-        BOOST_REQUIRE(gd.load(nationPath + "/buildings.lua"));
-        BOOST_REQUIRE(gd.load(nationPath + "/africans/buildings.lua"));
-        BOOST_REQUIRE(gd.load(nationPath + "/romans/buildings.lua"));
-        BOOST_REQUIRE(gd.load(nationPath + "/babylonians/buildings.lua"));
-        BOOST_REQUIRE(gd.load(nationPath + "/japanese/buildings.lua"));
-        BOOST_REQUIRE(gd.load(nationPath + "/vikings/buildings.lua"));
-    }
-#ifndef BOOST_NO_CXX11_HDR_CHRONO
-    auto diff = std::chrono::high_resolution_clock::now() - start;
-    BOOST_TEST_MESSAGE("Duration: " << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << "ms");
-#endif
+    BOOST_REQUIRE(gd.load(nationPath + "/buildings.lua"));
+    BOOST_REQUIRE(gd.load(nationPath + "/africans/buildings.lua"));
+    BOOST_REQUIRE(gd.load(nationPath + "/romans/buildings.lua"));
+    BOOST_REQUIRE(gd.load(nationPath + "/babylonians/buildings.lua"));
+    BOOST_REQUIRE(gd.load(nationPath + "/japanese/buildings.lua"));
+    BOOST_REQUIRE(gd.load(nationPath + "/vikings/buildings.lua"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
