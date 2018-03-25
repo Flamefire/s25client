@@ -57,8 +57,7 @@ struct LuaTable
     enum ESingleLine
     {
         SL_YES,
-        SL_NO,
-        SL_VALUE
+        SL_NO
     };
     ESingleLine isSingleLine_;
     boost::container::vector<LuaTableEntry> values;
@@ -84,10 +83,17 @@ struct LuaTableEntry
     std::string toString(int indentAmount = 0, bool includeComma = false) const;
 };
 
+struct LuaNamedValue : LuaTableEntry
+{
+    /// Data range in original data.
+    StringRef data;
+};
+
 class GameDataFile
 {
-    std::string contents, filepath_;
+    std::string contents, filepath_, lastInsertedField;
     boost::container::vector<LuaTable> tables;
+    boost::container::vector<LuaNamedValue> namedValues;
     size_t curPos;
     bool isAdjacent(size_t pos1, size_t pos2);
     bool isTrailingComment(StringRef comment);
@@ -103,6 +109,7 @@ public:
     typedef boost::optional<const LuaTable&> OptLuaTableC;
     typedef boost::optional<LuaTable&> OptLuaTable;
     typedef boost::optional<const LuaTableEntry&> OptTableEntry;
+    typedef boost::optional<LuaNamedValue&> OptNamedValue;
 
     /// Replace the whole buffer invalidating all references
     void setContents(const std::string& src);
@@ -118,6 +125,8 @@ public:
     bool load(const std::string& filepath);
     /// Save from file
     bool save(const std::string& filepath) const;
+    /// Reset everything
+    void clear();
     /// Return true, if the position is part of a comment (has "--" before a new line)
     bool isInComment(size_t pos) const { return getStartOfComment(pos) != std::string::npos; }
     /// Get the start of the comment ("--" before a new line) or npos if not found
@@ -149,9 +158,10 @@ public:
     OptLuaTable findTable(const std::string& name);
     OptLuaTableC findTable(const std::string& name) const;
     /// Find the entry with the given name (table.name)
-    OptTableEntry findNamedValue(const LuaTable& table, const std::string& name) const;
+    OptTableEntry findTableEntry(const LuaTable& table, const std::string& name) const;
     /// Get the value with the qualified name
     std::string getValue(const std::string& elName) const;
+    OptNamedValue findNamedValue(const std::string& name);
 
     /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
     /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
@@ -159,6 +169,9 @@ public:
     void insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
     void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
     void insertFieldAfter(const std::string& elName, const std::string& entry);
+    /// Adds a field after the last inserted field
+    void insertField(const std::string& name, const std::string& value, const std::string& comment = "");
+    void insertField(const std::string& name, int value, const std::string& comment = "");
 
     void setNameValue(const std::string& name, const std::string& value);
 

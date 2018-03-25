@@ -318,7 +318,6 @@ char GameDataFile::getNext() const
 
 void GameDataFile::setContents(const std::string& src)
 {
-    filepath_.clear();
     contents = src;
     parse();
 }
@@ -327,6 +326,25 @@ std::string GameDataFile::getUnparsedData() const
 {
     std::stringstream result;
     size_t curPos = 0;
+    BOOST_FOREACH(const LuaNamedValue& namedValue, namedValues)
+    {
+        if(namedValue.data.empty())
+        {
+            // Insert new element before next non-whitespace char
+            if(curPos != std::string::npos)
+            {
+                size_t endPos = skipWhitespaces(contents, curPos);
+                result << contents.substr(curPos, endPos - curPos);
+                curPos = endPos;
+            }
+        } else
+            result << contents.substr(curPos, namedValue.data.start - curPos);
+        result << namedValue.toString();
+        if(namedValue.data.empty())
+            result << '\n';
+        else
+            curPos = namedValue.data.end();
+    }
     BOOST_FOREACH(const LuaTable& table, tables)
     {
         if(table.data.empty())
@@ -353,7 +371,7 @@ std::string GameDataFile::getUnparsedData() const
 
 void GameDataFile::parse()
 {
-    tables.clear();
+    clear();
     boost::regex re("\\w+:Add\\w+(\\{)");
     boost::match_results<std::string::const_iterator> match;
     curPos = 0;
@@ -365,23 +383,19 @@ void GameDataFile::parse()
     while(boost::regex_search(curIt, endPos, match, reValue))
     {
         curPos += match.position();
-        LuaTable table;
-        table.data.start = curPos;
-        table.isSingleLine_ = LuaTable::SL_VALUE;
-
-        LuaTableEntry name;
-        name.name = "name";
-        name.value = match.str(1);
-        table.values.push_back(name);
+        LuaNamedValue namedValue;
+        namedValue.data.start = curPos;
+        namedValue.name = match.str(1);
 
         curPos += match.length();
-        name.name = match.str(1);
-        name.value = parseValue(' ');
-        table.values.push_back(name);
-        table.data.len = curPos - table.data.start;
+        namedValue.value = parseValue(' ');
+        namedValue.data.len = curPos - namedValue.data.start;
 
-        tables.push_back(table);
         curIt = contents.begin() + curPos;
+        // Catch e.g. "nation = rttr:AddNation..."
+        if(curIt > endPos)
+            break;
+        namedValues.push_back(namedValue);
     }
 
     curIt = contents.begin();
@@ -421,6 +435,14 @@ bool GameDataFile::save(const std::string& filepath) const
     return true;
 }
 
+void GameDataFile::clear()
+{
+    namedValues.clear();
+    tables.clear();
+    lastInsertedField.clear();
+    filepath_.clear();
+}
+
 template<class T_Str, class T_Str2>
 size_t find(const T_Str& str, const T_Str2& strToFind, size_t offset = 0)
 {
@@ -433,7 +455,7 @@ std::string GameDataFile::getTableName(unsigned idx) const
 {
     if(idx >= tables.size())
         return "";
-    OptTableEntry entry = findNamedValue(tables[idx], "name");
+    OptTableEntry entry = findTableEntry(tables[idx], "name");
     if(!entry)
         return "";
     if(entry->value.type() != typeid(std::string))
@@ -473,7 +495,7 @@ GameDataFile::OptLuaTableC GameDataFile::findTable(const std::string& name) cons
     parts.pop_back();
     while(!parts.empty())
     {
-        OptTableEntry entry = findNamedValue(*table, parts.back());
+        OptTableEntry entry = findTableEntry(*table, parts.back());
         if(!entry || entry->value.type() != typeid(LuaTable))
             return boost::none;
         parts.pop_back();
@@ -491,7 +513,7 @@ GameDataFile::OptLuaTable GameDataFile::findTable(const std::string& name)
         return boost::none;
 }
 
-boost::optional<const LuaTableEntry&> GameDataFile::findNamedValue(const LuaTable& table, const std::string& name) const
+boost::optional<const LuaTableEntry&> GameDataFile::findTableEntry(const LuaTable& table, const std::string& name) const
 {
     int index = table.indexOf(name);
     if(index < 0)
@@ -509,13 +531,23 @@ std::string GameDataFile::getValue(const std::string& elName) const
     OptLuaTableC table = findTable(tableName);
     if(!table)
         return "";
-    OptTableEntry entry = findNamedValue(*table, elName.substr(pos + 1u));
+    OptTableEntry entry = findTableEntry(*table, elName.substr(pos + 1u));
     if(!entry)
         return "";
     if(entry->value.type() == typeid(LuaTable))
         throw std::runtime_error(elName + " is a table, not a value");
     else
         return boost::get<std::string>(entry->value);
+}
+
+GameDataFile::OptNamedValue GameDataFile::findNamedValue(const std::string& name)
+{
+    BOOST_FOREACH(LuaNamedValue& namedValue, namedValues)
+    {
+        if(namedValue.name == name)
+            return namedValue;
+    }
+    return boost::none;
 }
 
 void GameDataFile::insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value,
@@ -532,19 +564,30 @@ void GameDataFile::insertFieldAfter(const std::string& elName, const LuaTableEnt
 {
     LuaTable* outerTable;
     size_t pos = findPosition(elName, &outerTable);
+    bool inserted = false;
     if(!entry.name.empty())
     {
         int index = outerTable->indexOf(entry.name);
         if(index >= 0)
         {
             outerTable->values[index] = entry;
-            return;
+            inserted = true;
         }
     }
-    if(outerTable->values.size() < pos)
-        outerTable->values.push_back(entry);
+    if(!inserted)
+    {
+        if(outerTable->values.size() < pos)
+            outerTable->values.push_back(entry);
+        else
+            outerTable->values.insert(outerTable->values.begin() + pos, entry);
+    }
+    if(entry.name.empty())
+        lastInsertedField.clear();
     else
-        outerTable->values.insert(outerTable->values.begin() + pos, entry);
+    {
+        size_t pos = elName.find_last_of(':');
+        lastInsertedField = elName.substr(0, pos) + ":" + entry.name;
+    }
 }
 
 void GameDataFile::insertFieldAfter(const std::string& elName, const std::string& entry)
@@ -556,31 +599,29 @@ void GameDataFile::insertFieldAfter(const std::string& elName, const std::string
     insertFieldAfter(elName, match[4], match[5], match[1]);
 }
 
+void GameDataFile::insertField(const std::string& name, const std::string& value, const std::string& comment)
+{
+    if(lastInsertedField.empty())
+        throw std::runtime_error("Did not find previously inserted field. Insert one first!");
+    insertFieldAfter(lastInsertedField, name, value, comment);
+}
+
+void GameDataFile::insertField(const std::string& name, int value, const std::string& comment)
+{
+    insertField(name, s25util::toStringClassic(value), comment);
+}
+
 void GameDataFile::setNameValue(const std::string& name, const std::string& value)
 {
-    OptLuaTable old = findTable(name);
+    OptNamedValue old = findNamedValue(name);
     if(old)
+        old->value = value;
+    else
     {
-        if(old->isSingleLine_ != LuaTable::SL_VALUE || old->values.size() != 2u)
-            throw std::runtime_error("Expected value, found table");
-        RTTR_Assert(old->values[1].name == name);
-        old->values[1].value = value;
-    } else
-    {
-        LuaTable newTable;
-        newTable.isSingleLine_ = LuaTable::SL_VALUE;
-        LuaTableEntry entry;
-        entry.name = "name";
-        entry.value = name;
-        newTable.values.push_back(entry);
-        entry.name = name;
-        entry.value = value;
-        newTable.values.push_back(entry);
-        boost::container::vector<LuaTable>::iterator it =
-          std::find_if(tables.begin(), tables.end(), boost::bind(&LuaTable::isSingleLine_, _1) != LuaTable::SL_VALUE);
-        if(it == tables.end())
-            it = tables.begin();
-        tables.insert(it, newTable);
+        LuaNamedValue newValue;
+        newValue.name = name;
+        newValue.value = value;
+        namedValues.push_back(newValue);
     }
 }
 
@@ -657,8 +698,6 @@ bool LuaTable::isSingleLine() const
 {
     if(isSingleLine_ == SL_NO)
         return false;
-    if(isSingleLine_ == SL_VALUE)
-        return true;
     BOOST_FOREACH(const LuaTableEntry& entry, values)
     {
         // Any comment -> not single line
@@ -695,13 +734,6 @@ int LuaTable::indexOf(const std::string& name) const
 std::string LuaTable::toString(int indentAmount) const
 {
     std::stringstream result;
-    if(isSingleLine_ == SL_VALUE)
-    {
-        RTTR_Assert(values.size() == 2u);
-        RTTR_Assert(values[0].name == "name");
-        result << values[1].toString();
-        return result.str();
-    }
     bool singleLine = isSingleLine();
     if(singleLine)
         indentAmount = 0;

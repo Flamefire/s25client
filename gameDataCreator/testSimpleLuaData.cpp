@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(FindComment)
 
     gd.setContents("rttr:AddBld{--Foo\nname = \"table\"}\n"); // Regular comment
     boost::optional<const LuaTable&> pos = gd.findMainTable("table");
-    boost::optional<const LuaTableEntry&> optEntry = gd.findNamedValue(*pos, "name");
+    boost::optional<const LuaTableEntry&> optEntry = gd.findTableEntry(*pos, "name");
     BOOST_REQUIRE(optEntry);
     BOOST_REQUIRE_EQUAL(gd.getComment(optEntry), "--Foo");
 
@@ -209,8 +209,8 @@ BOOST_AUTO_TEST_CASE(ChangeValues)
 {
     GameDataFile gd;
     gd.setContents("foo=bar\nfoo2 = bar2\nrttr:AddBld{}");
-    BOOST_REQUIRE(gd.findMainTable("foo"));
-    BOOST_REQUIRE(gd.findMainTable("foo2"));
+    BOOST_REQUIRE(gd.findNamedValue("foo"));
+    BOOST_REQUIRE(gd.findNamedValue("foo2"));
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nrttr:AddBld{\n}");
     gd.setNameValue("foz", "baz");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nfoz = baz\nrttr:AddBld{\n}");
