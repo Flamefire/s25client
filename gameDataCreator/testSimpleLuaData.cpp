@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(SkipWhitespaces)
     for(unsigned i = 0; i <= 4; i++)
         BOOST_REQUIRE_EQUAL(skipWhitespaces(str, i), 4u);
     for(unsigned i = 5; i <= str.size(); i++)
-        BOOST_REQUIRE_EQUAL(skipWhitespaces(str, i), std::string::npos);
+        BOOST_REQUIRE_EQUAL(skipWhitespaces(str, i), str.size());
     BOOST_REQUIRE_EQUAL(skipWhitespaces(str, std::string::npos), std::string::npos);
     for(unsigned i = 0; i < 4; i++)
         BOOST_REQUIRE_EQUAL(skipWhitespaces(str, i, false), std::string::npos);

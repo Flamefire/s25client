@@ -146,7 +146,6 @@ inline size_t skipWhitespaces(const T_String& str, size_t pos, bool forward)
                 return pos;
             pos++;
         }
-
     } else if(pos < str.size())
     {
         while(pos > 0)
@@ -155,8 +154,9 @@ inline size_t skipWhitespaces(const T_String& str, size_t pos, bool forward)
                 return pos;
             pos--;
         }
+        return std::string::npos;
     }
-    return std::string::npos;
+    return pos;
 }
 
 template<typename T_String>

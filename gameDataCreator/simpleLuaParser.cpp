@@ -266,7 +266,7 @@ boost::variant<std::string, simpleLuaData::LuaTable> SimpleLuaParser::parseValue
             throw createError("Comments in values are not supported");
     } else
         endChar = getNext();
-    if(isNext(endChar) || isNext(','))
+    if(curPos >= content_.size() || isNext(endChar) || isNext(','))
     {
         size_t endPos = skipWhitespaceAndCommentsBackwards(curPos - 1u);
         if(isNext(','))

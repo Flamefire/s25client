@@ -261,7 +261,8 @@ void GameDataFile::insertFieldAfter(const std::string& elName, const std::string
 {
     LuaTableEntry entry;
     entry.name = name;
-    entry.value = value;
+    SimpleLuaParser parser(value);
+    entry.value = parser.parseValue('\0');
     entry.preComment = comment;
     insertFieldAfter(elName, entry);
 }
@@ -321,13 +322,7 @@ void GameDataFile::insertTable(const std::string& name, const std::string& comme
 {
     if(findTable(name))
         return;
-    if(lastInsertedField.empty())
-        throw std::runtime_error("Did not find previously inserted field. Insert one first!");
-    LuaTableEntry entry;
-    entry.name = name;
-    entry.value = LuaTable();
-    entry.preComment = comment;
-    insertFieldAfter(lastInsertedField, entry);
+    insertField(name, "{}", comment);
 }
 
 void GameDataFile::setNameValue(const std::string& name, const std::string& value)
