@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef simpleLuaData_h__
-#define simpleLuaData_h__
+#ifndef simpleLuaParser_h__
+#define simpleLuaParser_h__
 
 #include <boost/container/vector.hpp>
-#include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <boost/variant.hpp>
@@ -50,7 +49,6 @@ struct StringRef
 };
 
 struct LuaTableEntry;
-class GameDataFile;
 
 struct LuaTable
 {
@@ -89,12 +87,11 @@ struct LuaNamedValue : LuaTableEntry
     StringRef data;
 };
 
-class GameDataFile
+class SimpleLuaParser
 {
-    std::string contents, filepath_, lastInsertedField;
-    boost::container::vector<LuaTable> tables;
-    boost::container::vector<LuaNamedValue> namedValues;
-    size_t curPos;
+    struct LuaDataError;
+    
+    std::string content_;
     bool isAdjacent(size_t pos1, size_t pos2);
     bool isTrailingComment(StringRef comment);
     StringRef parseComment(StringRef lastComment = StringRef());
@@ -103,95 +100,35 @@ class GameDataFile
     bool isNext(char toSearch) const;
     bool matchesNext(boost::smatch& match, boost::regex& re) const;
     char getNext() const;
-
-public:
-    struct LuaDataError;
-    typedef boost::optional<const LuaTable&> OptLuaTableC;
-    typedef boost::optional<LuaTable&> OptLuaTable;
-    typedef boost::optional<const LuaTableEntry&> OptTableEntry;
-    typedef boost::optional<LuaNamedValue&> OptNamedValue;
-
-    /// Replace the whole buffer invalidating all references
-    void setContents(const std::string& src);
-    const std::string& getContents() { return contents; }
-    const std::string& getFilepath() { return filepath_; }
-    std::string getUnparsedData() const;
-    /// Reparse contents invalidating all references
-    void parse();
-    /// Get all main tables
-    boost::container::vector<LuaTable>& getTables() { return tables; }
-    const boost::container::vector<LuaTable>& getTables() const { return tables; }
-    /// Load from file
-    bool load(const std::string& filepath);
-    /// Save from file
-    bool save(const std::string& filepath) const;
-    /// Reset everything
-    void clear();
-    /// Return true, if the position is part of a comment (has "--" before a new line)
-    bool isInComment(size_t pos) const { return getStartOfComment(pos) != std::string::npos; }
-    /// Get the start of the comment ("--" before a new line) or npos if not found
-    size_t getStartOfComment(size_t pos) const;
-    /// Get the comment of a given value
-    std::string getComment(const LuaTableEntry& valRef) const { return valRef.preComment; }
-    template<class T>
-    std::string getComment(const boost::optional<T>& ref) const
-    {
-        return ref ? getComment(*ref) : "";
-    }
-    /// Get the data for a given value
-    template<class T>
-    std::string getData(const T& ref) const
-    {
-        return ref.data.getStr(contents);
-    }
-    template<class T>
-    std::string getData(const boost::optional<T>& ref) const
-    {
-        return ref ? getData(*ref) : "";
-    }
-
-    /// Find the first table that has the given name. Range includes { and }
-    const LuaTable& operator[](const std::string& tableName) const;
-    /// Find the first table that has the given name. Range includes { and }
-    OptLuaTableC findMainTable(const std::string& name) const;
-    /// Find the table with the given qualified name (e.g. "foo:bar:baz")
-    OptLuaTable findTable(const std::string& name);
-    OptLuaTableC findTable(const std::string& name) const;
-    /// Find the entry with the given name (table.name)
-    OptTableEntry findTableEntry(const LuaTable& table, const std::string& name) const;
-    /// Get the value with the qualified name
-    std::string getValue(const std::string& elName) const;
-    OptNamedValue findNamedValue(const std::string& name);
-
-    /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
-    /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
-    void insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value, const std::string& comment = "");
-    void insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
-    void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
-    void insertFieldAfter(const std::string& elName, const std::string& entry);
-    /// Adds a field after the last inserted field
-    void insertField(const std::string& name, const std::string& value, const std::string& comment = "");
-    void insertField(const std::string& name, int value, const std::string& comment = "");
-
-    void setNameValue(const std::string& name, const std::string& value);
-
-private:
     void skipList();
     bool isNextString();
-    LuaTable parseTable();
-    boost::variant<std::string, LuaTable> parseValue(char endChar);
     void skipExpression();
     void skipWhitespaceAndComments();
     size_t skipWhitespaceAndCommentsBackwards(size_t pos) const;
     LuaDataError createError(const std::string& msg) const;
 
-    size_t findPosition(const std::string& elName, LuaTable** outerTable);
-
 public:
-    std::string getTableName(unsigned idx) const;
+    size_t curPos;
+    
+    SimpleLuaParser(const std::string& content);
+    void setContent(const std::string& content);
+    const std::string& getContent() { return content_; }
+    /// Return true, if the position is part of a comment (has "--" before a new line)
+    bool isInComment(size_t pos) const { return getStartOfComment(pos) != std::string::npos; }
+    bool isInComment() const { return isInComment(curPos); }
+    /// Get the start of the comment ("--" before a new line) or npos if not found
+    size_t getStartOfComment(size_t pos) const;
+
+    LuaTable parseTable();
+    boost::variant<std::string, LuaTable> parseValue(char endChar);
 };
 
 //////////////////////////////////////////////////////////////////////////
+
+inline bool startsWith(const std::string& txt, size_t offset, const std::string& toSearch)
+{
+    return string_view(txt).substr(offset).starts_with(toSearch);
+}
 
 inline bool isWhitespace(char c)
 {
@@ -234,4 +171,4 @@ inline size_t getStartOfLine(const T_String& str, size_t pos)
 
 } // namespace simpleLuaData
 
-#endif // simpleLuaData_h__
+#endif // simpleLuaParser_h__

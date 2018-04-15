@@ -23,7 +23,7 @@ SOURCE_GROUP(other FILES ${SOURCES_OTHER})
 AddDirectory(gameData)
 AddDirectory(gameTypes)
 
-add_library(gdCreator STATIC addNewData.h addNewData.cpp simpleLuaData.h simpleLuaData.cpp  ${SOURCES_SUBDIRS})
+add_library(gdCreator STATIC addNewData.h addNewData.cpp simpleLuaParser.h simpleLuaParser.cpp GameDataFile.h GameDataFile.cpp  ${SOURCES_SUBDIRS})
 add_executable(gameDataCreator gameDataCreator.cpp)
 add_executable(gameDataTest gameDataTest.cpp testGameDataCreate.cpp testSimpleLuaData.cpp)
 target_link_libraries(gdCreator

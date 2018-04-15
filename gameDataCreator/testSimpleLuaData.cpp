@@ -17,11 +17,9 @@
 
 #include "commonDefines.h" // IWYU pragma: keep
 #include "RttrConfig.h"
-#include "simpleLuaData.h"
+#include "simpleLuaParser.h"
+#include "GameDataFile.h"
 #include <boost/test/unit_test.hpp>
-#ifndef BOOST_NO_CXX11_HDR_CHRONO
-#include <chrono>
-#endif
 
 using namespace simpleLuaData;
 
@@ -56,42 +54,42 @@ BOOST_AUTO_TEST_CASE(GetStartOfLine)
 BOOST_AUTO_TEST_CASE(ParseSubTable)
 {
     GameDataFile gd;
-    gd.setContents(
+    gd.setContent(
       "rttr:AddBld{\n\tname = 'foo',\n\t--Comment\n\tbar = {\n\t\tfoo1 = 1,\n\t\tfoo2 = 2\n\t},\n\t--Comment2\n\tbar2 = {1, 2}\n}");
     BOOST_REQUIRE(gd.findMainTable("foo"));
-    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), gd.getContents());
+    BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), gd.getContent());
 }
 
 BOOST_AUTO_TEST_CASE(FindTable)
 {
     GameDataFile gd;
-    gd.setContents(" name = \"foo\"");
+    gd.setContent(" name = \"foo\"");
     BOOST_REQUIRE(!gd.findMainTable("foo"));
-    gd.setContents(" name = __\"foo\"");
+    gd.setContent(" name = __\"foo\"");
     BOOST_REQUIRE(!gd.findMainTable("foo"));
-    gd.setContents("rttr:AddBld{name = \"foo\"}");
+    gd.setContent("rttr:AddBld{name = \"foo\"}");
     boost::optional<const LuaTable&> pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(pos->data.start, 11);
-    BOOST_REQUIRE_EQUAL(pos->data.len, gd.getContents().size() - 11);
-    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
+    BOOST_REQUIRE_EQUAL(pos->data.len, gd.getContent().size() - 11);
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContent().substr(11));
 
     // Test with different whitespace
-    gd.setContents("rttr:AddBld{ name = \"foo\"}");
+    gd.setContent("rttr:AddBld{ name = \"foo\"}");
     pos = gd.findMainTable("foo");
-    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
-    gd.setContents("rttr:AddBld{name = \"foo\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContent().substr(11));
+    gd.setContent("rttr:AddBld{name = \"foo\" }");
     pos = gd.findMainTable("foo");
-    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
-    gd.setContents("rttr:AddBld{ name = \"foo\" }");
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContent().substr(11));
+    gd.setContent("rttr:AddBld{ name = \"foo\" }");
     pos = gd.findMainTable("foo");
-    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContents().substr(11));
+    BOOST_REQUIRE_EQUAL(gd.getData(pos), gd.getContent().substr(11));
 
-    gd.setContents("rttr:AddBld{ name = \"foo\",1,2}");
+    gd.setContent("rttr:AddBld{ name = \"foo\",1,2}");
     pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
 
-    gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo2\" }\nrttr:AddBld{ name = \"foo3\" }\n");
+    gd.setContent("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo2\" }\nrttr:AddBld{ name = \"foo3\" }\n");
     pos = gd.findMainTable("foo");
     BOOST_REQUIRE(pos);
     BOOST_REQUIRE_EQUAL(gd.getData(pos), "{ name = \"foo\" }");
@@ -104,19 +102,19 @@ BOOST_AUTO_TEST_CASE(FindTable)
     BOOST_REQUIRE(!gd.findMainTable("foo4"));
 
     // Same with translations
-    gd.setContents("rttr:AddBld{ name = __\"foo\"}");
-    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), gd.getContents().substr(11));
-    gd.setContents("rttr:AddBld{ name = __\"foo\" }\nrttr:AddBld{ name = __\"foo2\" }\nrttr:AddBld{ name = __\"foo3\" }");
+    gd.setContent("rttr:AddBld{ name = __\"foo\"}");
+    BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), gd.getContent().substr(11));
+    gd.setContent("rttr:AddBld{ name = __\"foo\" }\nrttr:AddBld{ name = __\"foo2\" }\nrttr:AddBld{ name = __\"foo3\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{ name = __\"foo\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo2")), "{ name = __\"foo2\" }");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo3")), "{ name = __\"foo3\" }");
 
     // Find first
-    gd.setContents("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo\", bar = \"foo\" }\nrttr:AddBld{ name = \"foo3\" }\n");
+    gd.setContent("rttr:AddBld{ name = \"foo\" }\nrttr:AddBld{ name = \"foo\", bar = \"foo\" }\nrttr:AddBld{ name = \"foo3\" }\n");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{ name = \"foo\" }");
 
     // Skip comments
-    gd.setContents("--rttr:AddBld{\n name = \"foo\" --}\nrttr:AddBld{ --name = \"foo\" \n}\nrttr:AddBld{\n--name = \"foo\" "
+    gd.setContent("--rttr:AddBld{\n name = \"foo\" --}\nrttr:AddBld{ --name = \"foo\" \n}\nrttr:AddBld{\n--name = \"foo\" "
                    "\n}\nrttr:AddBld{name = \"foo\"}\n");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{name = \"foo\"}");
 }
@@ -125,42 +123,42 @@ BOOST_AUTO_TEST_CASE(FindComment)
 {
     GameDataFile gd;
 
-    gd.setContents("rttr:AddBld{--Foo\nname = \"table\"}\n"); // Regular comment
+    gd.setContent("rttr:AddBld{--Foo\nname = \"table\"}\n"); // Regular comment
     boost::optional<const LuaTable&> pos = gd.findMainTable("table");
     boost::optional<const LuaTableEntry&> optEntry = gd.findTableEntry(*pos, "name");
     BOOST_REQUIRE(optEntry);
     BOOST_REQUIRE_EQUAL(gd.getComment(optEntry), "--Foo");
 
-    gd.setContents("rttr:AddBld{ \t --Foo  \t\nname = \"table\"}\n"); // whitespace around
+    gd.setContent("rttr:AddBld{ \t --Foo  \t\nname = \"table\"}\n"); // whitespace around
     const LuaTableEntry* entry = &gd["table"]["name"];
     BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
 
-    gd.setContents("rttr:AddBld{--Foo\n--Bar3\nname = \"table\"}\n"); // 2 lines
+    gd.setContent("rttr:AddBld{--Foo\n--Bar3\nname = \"table\"}\n"); // 2 lines
     entry = &gd["table"]["name"];
     BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo\n--Bar3");
 
-    gd.setContents("rttr:AddBld{bar=2,--Bar32\n--Foo\nname = \"table\"}\n"); // 2nd belongs to other
+    gd.setContent("rttr:AddBld{bar=2,--Bar32\n--Foo\nname = \"table\"}\n"); // 2nd belongs to other
     entry = &gd["table"]["name"];
     BOOST_REQUIRE_EQUAL(gd.getComment(*entry), "--Foo");
 
-    gd.setContents("rttr:AddBld{name = \"table\"}\n"); // no comment
+    gd.setContent("rttr:AddBld{name = \"table\"}\n"); // no comment
     entry = &gd["table"]["name"];
     BOOST_REQUIRE(gd.getComment(*entry).empty());
 
-    gd.setContents("rttr:AddBld{--Foo\nbar=2,\nname = \"table\"}\n"); // belongs to other
+    gd.setContent("rttr:AddBld{--Foo\nbar=2,\nname = \"table\"}\n"); // belongs to other
     entry = &gd["table"]["name"];
     BOOST_REQUIRE(gd.getComment(*entry).empty());
 
-    gd.setContents("rttr:AddBld{name = \"table\"--Foo\n}"); // trailing comment
+    gd.setContent("rttr:AddBld{name = \"table\"--Foo\n}"); // trailing comment
     entry = &gd["table"]["name"];
     BOOST_REQUIRE(entry->preComment.empty());
     BOOST_REQUIRE_EQUAL(entry->postComment, "--Foo");
 
-    gd.setContents("rttr:AddBld{bar=2, --Foo\nname = \"table\"}\n"); // trailing comment to other
+    gd.setContent("rttr:AddBld{bar=2, --Foo\nname = \"table\"}\n"); // trailing comment to other
     entry = &gd["table"]["name"];
     BOOST_REQUIRE(gd.getComment(*entry).empty());
 
-    gd.setContents("rttr:AddBld{--Foo\nname = \"table\" --Bar\n}\n"); // trailing and leading
+    gd.setContent("rttr:AddBld{--Foo\nname = \"table\" --Bar\n}\n"); // trailing and leading
     entry = &gd["table"]["name"];
     BOOST_REQUIRE_EQUAL(entry->preComment, "--Foo");
     BOOST_REQUIRE_EQUAL(entry->postComment, "--Bar");
@@ -172,35 +170,35 @@ BOOST_AUTO_TEST_CASE(InsertField)
 
     std::string expected = "rttr:AddBld{\n\tname = 'Foo',\n\tbar1 = 1\n}";
     std::string contents = "rttr:AddBld{\n\tname='Foo'\n}";
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo", "bar1=1");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
-    gd.setContents("rttr:AddBld{\n\tname='Foo',\n}");
+    gd.setContent("rttr:AddBld{\n\tname='Foo',\n}");
     gd.insertFieldAfter("Foo", "bar1=1");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo:name", "bar1=1");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo:notExisting", "bar1=1");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expected);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo", "--Bar\nbar1=1");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "rttr:AddBld{\n\tname = 'Foo',\n\t--Bar\n\tbar1 = 1\n}");
 
     contents = expected;
     std::string expAfterName = "rttr:AddBld{\n\tname = 'Foo',\n\tbar2 = 2,\n\tbar1 = 1\n}";
     std::string expAtEnd = "rttr:AddBld{\n\tname = 'Foo',\n\tbar1 = 1,\n\tbar2 = 2\n}";
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo", "bar2=2");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo:bar1", "bar2=2");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo:notExisting", "bar2=2");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAtEnd);
-    gd.setContents(contents);
+    gd.setContent(contents);
     gd.insertFieldAfter("Foo:name", "bar2=2");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), expAfterName);
 }
@@ -208,7 +206,7 @@ BOOST_AUTO_TEST_CASE(InsertField)
 BOOST_AUTO_TEST_CASE(ChangeValues)
 {
     GameDataFile gd;
-    gd.setContents("foo=bar\nfoo2 = bar2\nrttr:AddBld{}");
+    gd.setContent("foo=bar\nfoo2 = bar2\nrttr:AddBld{}");
     BOOST_REQUIRE(gd.findNamedValue("foo"));
     BOOST_REQUIRE(gd.findNamedValue("foo2"));
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nrttr:AddBld{\n}");
@@ -216,10 +214,10 @@ BOOST_AUTO_TEST_CASE(ChangeValues)
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nfoo2 = bar2\nfoz = baz\nrttr:AddBld{\n}");
     gd.setNameValue("foo", "baz2");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = baz2\nfoo2 = bar2\nfoz = baz\nrttr:AddBld{\n}");
-    gd.setContents("rttr:AddBld{}");
+    gd.setContent("rttr:AddBld{}");
     gd.setNameValue("foo", "bar");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\nrttr:AddBld{\n}");
-    gd.setContents("");
+    gd.setContent("");
     gd.setNameValue("foo", "bar");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\n");
 }
