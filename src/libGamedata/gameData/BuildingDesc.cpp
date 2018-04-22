@@ -20,8 +20,52 @@
 #include "WorldDescription.h"
 #include "lua/CheckedLuaTable.h"
 #include "lua/LuaHelpers.h"
-#include "lua/PointTraits.h"
+#include "lua/LuaTraits.h"
 #include <kaguya/kaguya.hpp>
+
+namespace kaguya {
+template<>
+struct lua_type_traits<BuildingDesc::SummerWinterTex, void>
+{
+    typedef BuildingDesc::SummerWinterTex get_type;
+
+    static bool checkType(lua_State* l, int index)
+    {
+        const LuaStackRef table(l, index);
+        // We can have 1 value or a table with 1 or 2 values
+        if(table.isConvertible<ArchiveEntryRef>())
+            return true;
+        if(table.type() != LUA_TTABLE || table.size() == 0u || table.size() > 2u)
+            return false;
+        if(!table[1].isConvertible<ArchiveEntryRef>())
+            return false;
+        if(table.size() == 2u && !table[2].isConvertible<ArchiveEntryRef>())
+            return false;
+        return true;
+    }
+    static bool strictCheckType(lua_State* l, int index)
+    {
+        // Don't care about exact type, convertible is enough
+        checkType(l, index);
+    }
+    static get_type get(lua_State* l, int index)
+    {
+        const LuaStackRef table(l, index);
+        get_type result;
+        if(table.isConvertible<ArchiveEntryRef>())
+            result.summer = result.winter = table;
+        else
+        {
+            result.summer = table[1];
+            if(table.size() == 2u)
+                result.winter = table[2];
+            else
+                result.winter = result.summer;
+        }
+        return result;
+    }
+};
+} // namespace kaguya
 
 BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc)
 {
@@ -32,12 +76,22 @@ BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worl
     static_cast<BuildingBPDesc&>(*this) = worldDesc.get(idx);
 
     luaData.getOrThrow(icon, "icon");
+
+    CheckedLuaTable textureData = luaData.getOrThrow<CheckedLuaTable>("texture");
+    textures.main = textureData.getOrThrow<SummerWinterTex>("main");
+    textures.skeleton = textureData.getOrThrow<SummerWinterTex>("skeleton");
+    textures.door = textureData.getOrThrow<SummerWinterTex>("door");
+    textures.shadow = textureData.getOrDefault("shadow", textures.shadow);
+    textures.skeletonShadow = textureData.getOrDefault("skeletonShadow", textures.skeletonShadow);
+
     luaData.getOrThrow(doorPosY, "doorPosY");
 
     CheckedLuaTable smokeData =
       luaData.getOrDefault("smoke", CheckedLuaTable(kaguya::LuaTable(luaData.getBaseTable().state(), kaguya::NewTable())));
     smoke.type = smokeData.getOrDefault("type", 0);
     smoke.offset = smokeData.getOrDefault("offset", Point<int8_t>(0, 0));
+
+    textureData.checkUnused();
     smokeData.checkUnused();
     luaData.checkUnused();
 }

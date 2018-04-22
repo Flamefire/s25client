@@ -18,9 +18,9 @@
 #define DEFINE_OldBuildingType
 #include "commonDefines.h" // IWYU pragma: keep
 #include "addNewData.h"
+#include "GameDataFile.h"
 #include "files.h"
 #include "helpers/containerUtils.h"
-#include "simpleLuaData.h"
 #include "gameTypes/OldBuildingType.h"
 #include "gameData/BuildingBPDesc.h"
 #include "gameData/BuildingConsts.h"
@@ -113,21 +113,65 @@ void addNewData(const std::string& baseLuaPath)
     {
         GameDataFile gd;
         gd.load((bfs::path(gdNations[natIdx].getFilepath()).parent_path() / "buildings.lua").string());
-
+        gd.setNameValue("iconFile", "\"" + NATION_ICON_FILES[natIdx] + "\"");
+        if(natIdx == NAT_BABYLONIANS)
+        {
+            std::string basePath = "<RTTR_RTTR>/LSTS/GAME/Babylonier";
+            gd.setNameValue("summerTexFile", "\"" + basePath + "/bab_z.lst\"");
+            gd.setNameValue("winterTexFile", "\"" + basePath + "/wbab_z.lst\"");
+        } else
+        {
+            std::string basePath = "<RTTR_GAME>/DATA/MBOB/";
+            gd.setNameValue("summerTexFile", "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[0][natIdx]) + ".LST\"");
+            gd.setNameValue("winterTexFile", "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[1][natIdx]) + ".LST\"");
+        }
         for(int i = 0; i < gd.getTables().size(); i++)
         {
             std::string bldName = gd.getTableName(i);
             unsigned bld = GetOldBuildingIdx(bldName);
-            std::string comment = (i) ? "" : "Texture for the icon";
             if(bld == OldBuildingType::CHARBURNER)
+            {
                 gd.insertFieldAfter(bldName + ":name", "icon",
-                                    "{ filepath = \"charburner\", idx = " + s25util::toStringClassic((natIdx + 1) * 8) + " }", comment);
-            else
-                gd.insertFieldAfter(bldName + ":name", "icon",
-                                    "{ filepath = \"" + NATION_ICON_FILES[natIdx] + "\", idx = " + s25util::toStringClassic(bld) + " }",
+                                    "{ filepath = \"charburner\", idx = " + s25util::toStringClassic(natIdx * 8 + 8) + " }");
+                gd.insertTable("texture");
+                gd.insertFieldAfter(bldName + ":texture:", "main",
+                                    "{{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 1) + " }, { \"charburner\", "
+                                      + s25util::toStringClassic(natIdx * 8 + 6) + " }}");
+                gd.insertField("shadow", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 2) + " }");
+                gd.insertField("skeleton", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 3) + " }");
+                gd.insertField("skeletonShadow", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 4) + " }");
+                gd.insertField("door", "{{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 5) + " }, { \"charburner\", "
+                                         + s25util::toStringClassic(natIdx * 8 + 7) + " }}");
+
+            } else
+            {
+                std::string comment = (i) ? "" : "Texture for the icon";
+                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic(bld) + " }",
                                     comment);
-            comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
-            gd.insertFieldAfter(bldName + ":icon", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
+                comment = (i) ? "" :
+                                "Textures for the building. Required: main, skeleton, door. Optional: shadow, skeletonShadow. Multiple "
+                                "values: 0 = summer, 1 = winter";
+                gd.insertTable("texture", comment);
+                gd.insertFieldAfter(bldName + ":texture:", "main", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld) + ")",
+                                    comment);
+                comment = (i) ? "" : "Shadow texture";
+                gd.insertField("shadow", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 1) + ")", comment);
+                comment = (i) ? "" : "Skeleton (in construction) texture and its shadow";
+                if(bld == OldBuildingType::HEADQUARTERS)
+                {
+                    // HQ has no skeleton, but we have a tent that can act as an HQ
+                    gd.insertField("skeleton", "{ filepath = \"mis0bobs\", idx = 6 }", comment);
+                    gd.insertField("skeletonShadow", "{ filepath = \"mis0bobs\", idx = 7 }", comment);
+                } else
+                {
+                    gd.insertField("skeleton", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 2) + ")", comment);
+                    gd.insertField("skeletonShadow", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 3) + ")", comment);
+                }
+                comment = (i) ? "" : "Texture of the (closed) door";
+                gd.insertField("door", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 4) + ")", comment);
+            }
+            std::string comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
+            gd.insertFieldAfter(bldName + ":texture", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
         }
         gd.save(gd.getFilepath());
     }

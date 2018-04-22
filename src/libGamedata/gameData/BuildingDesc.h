@@ -29,8 +29,18 @@ class CheckedLuaTable;
 /// Nation dependent building data
 struct BuildingDesc : public BuildingBPDesc
 {
+    struct SummerWinterTex
+    {
+        ArchiveEntryRef summer, winter;
+    };
+
     std::string name;
     ArchiveEntryRef icon;
+    struct
+    {
+        SummerWinterTex main, skeleton, door;
+        SummerWinterTex shadow, skeletonShadow;
+    } textures;
     int8_t doorPosY;
     SmokeConst smoke;
 
