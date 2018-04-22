@@ -22,6 +22,7 @@
 #include "libutil/Log.h"
 #include "libutil/NullWriter.h"
 #include <boost/filesystem.hpp>
+#include <build_paths.h>
 
 void copyDir(const bfs::path& source, const bfs::path& destination)
 {
@@ -47,9 +48,9 @@ int main(int argc, char** argv)
         return 1;
     LOG.setWriter(new NullWriter, LogTarget::File);
 
-    std::string newPath = "newGameData/nations";
-    if(bfs::exists(newPath))
+    std::string newPath = RTTR_SRCDIR "/RTTR/gamedata/nations";
+    /*if(bfs::exists(newPath))
         bfs::remove_all(newPath);
-    copyDir(RTTRCONFIG.ExpandPath("<RTTR_RTTR>/gamedata/nations"), newPath);
-    addNewData(newPath);
+    copyDir(RTTRCONFIG.ExpandPath("<RTTR_RTTR>/gamedata/nations"), newPath);*/
+    addNewData(RTTRCONFIG.ExpandPath(newPath));
 }

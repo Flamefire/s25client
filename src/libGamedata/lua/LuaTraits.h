@@ -53,11 +53,8 @@ struct lua_type_traits<Point<T> >
 
     static bool checkType(lua_State* l, int index)
     {
-        if(lua_type(l, index) != LUA_TTABLE)
-            return false;
-
-        LuaStackRef table(l, index);
-        if(table.size() != 2)
+        const LuaStackRef table(l, index);
+        if(table.type() != LUA_TTABLE || table.size() != 2)
             return false;
         bool valid = true;
         table.foreach_table_breakable<LuaStackRef, LuaStackRef>(checkTypeForEach(valid));
@@ -65,11 +62,8 @@ struct lua_type_traits<Point<T> >
     }
     static bool strictCheckType(lua_State* l, int index)
     {
-        if(lua_type(l, index) != LUA_TTABLE)
-            return false;
-
-        LuaStackRef table(l, index);
-        if(table.size() != 2)
+        const LuaStackRef table(l, index);
+        if(table.type() != LUA_TTABLE || table.size() != 2)
             return false;
         bool valid = true;
         table.foreach_table_breakable<LuaStackRef, LuaStackRef>(strictCheckTypeForEach(valid));
@@ -77,18 +71,10 @@ struct lua_type_traits<Point<T> >
     }
     static get_type get(lua_State* l, int index)
     {
-        if(lua_type(l, index) != LUA_TTABLE)
-        {
-            except::typeMismatchError(l, std::string("type mismatch"));
-            return get_type();
-        }
-        LuaStackRef t(l, index);
-        if(t.size() != 2)
-        {
-            except::typeMismatchError(l, std::string("type mismatch"));
-            return get_type();
-        }
-        return get_type(t[1], t[2]);
+        const LuaStackRef table(l, index);
+        if(table.type() != LUA_TTABLE || table.size() != 2)
+            throw LuaTypeMismatch();
+        return get_type(table[1], table[2]);
     }
     static int push(lua_State* l, push_type v)
     {
@@ -107,26 +93,40 @@ struct lua_type_traits<ArchiveEntryRef>
     typedef const ArchiveEntryRef& push_type;
     static bool checkType(lua_State* l, int index)
     {
-        LuaStackRef t(l, index);
-        if(!t.getField<optional<std::string> >("filepath"))
+        const LuaStackRef t(l, index);
+        const std::vector<LuaRef> keys = t.keys();
+        if(keys.empty() || keys.size() > 2)
             return false;
-        optional<LuaRef> idx = t.getField<optional<LuaRef> >("idx");
-        return !idx || idx->isConvertible<unsigned>();
+        bool namedValues = keys[0].isType<std::string>();
+        const optional<std::string> filepath = namedValues ? t["filepath"] : t[1];
+        if(!filepath)
+            return false;
+        const LuaRef idx = namedValues ? t["idx"] : t[2];
+        return idx.isNilref() || idx.isConvertible<unsigned>();
     }
     static bool strictCheckType(lua_State* l, int index)
     {
-        LuaStackRef t(l, index);
-        if(!t.getField<optional<std::string> >("filepath"))
+        const LuaStackRef t(l, index);
+        const std::vector<LuaRef> keys = t.keys();
+        if(keys.empty() || keys.size() > 2)
             return false;
-        optional<LuaRef> idx = t.getField<optional<LuaRef> >("idx");
-        return !idx || idx->isType<unsigned>();
+        bool namedValues = keys[0].isType<std::string>();
+        const LuaRef filepath = namedValues ? t["filepath"] : t[1];
+        if(filepath.isNilref() || !filepath.isType<std::string>())
+            return false;
+        const LuaRef idx = namedValues ? t["idx"] : t[2];
+        return idx.isNilref() || idx.isType<unsigned>();
     }
 
     static get_type get(lua_State* l, int index)
     {
-        LuaStackRef t(l, index);
-        optional<LuaRef> idx = t.getField<optional<LuaRef> >("idx");
-        return get_type(t["filepath"], idx ? *idx : 0u);
+        const LuaStackRef t(l, index);
+        const std::vector<LuaRef> keys = t.keys();
+        if(keys.empty() || keys.size() > 2)
+            throw LuaTypeMismatch();
+        bool namedValues = keys[0].isType<std::string>();
+        const LuaRef idx = namedValues ? t["idx"] : t[2];
+        return get_type(namedValues ? t["filepath"] : t[1], idx.isNilref() ? 0u : static_cast<unsigned>(idx));
     }
 
     static int push(lua_State* l, push_type v)

@@ -28,4 +28,11 @@ struct ArchiveEntryRef
     ArchiveEntryRef(const std::string& filepath = "", unsigned index = 0) : filepath(filepath), index(index) {}
 };
 
+namespace kaguya {
+template<class T, typename Enable>
+struct lua_type_traits;
+template<>
+struct lua_type_traits<ArchiveEntryRef, void>;
+} // namespace kaguya
+
 #endif // ArchiveEntryRef_h__

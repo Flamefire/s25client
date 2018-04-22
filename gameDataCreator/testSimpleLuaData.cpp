@@ -16,9 +16,13 @@
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
 #include "commonDefines.h" // IWYU pragma: keep
-#include "RttrConfig.h"
-#include "simpleLuaParser.h"
 #include "GameDataFile.h"
+#include "RttrConfig.h"
+#include "lua/LuaInterfaceBase.h"
+#include "lua/LuaTraits.h"
+#include "simpleLuaParser.h"
+#include "gameData/ArchiveEntryRef.h"
+#include <boost/foreach.hpp>
 #include <boost/test/unit_test.hpp>
 
 using namespace simpleLuaData;
@@ -115,7 +119,7 @@ BOOST_AUTO_TEST_CASE(FindTable)
 
     // Skip comments
     gd.setContent("--rttr:AddBld{\n name = \"foo\" --}\nrttr:AddBld{ --name = \"foo\" \n}\nrttr:AddBld{\n--name = \"foo\" "
-                   "\n}\nrttr:AddBld{name = \"foo\"}\n");
+                  "\n}\nrttr:AddBld{name = \"foo\"}\n");
     BOOST_REQUIRE_EQUAL(gd.getData(gd.findMainTable("foo")), "{name = \"foo\"}");
 }
 
@@ -220,6 +224,46 @@ BOOST_AUTO_TEST_CASE(ChangeValues)
     gd.setContent("");
     gd.setNameValue("foo", "bar");
     BOOST_REQUIRE_EQUAL(gd.getUnparsedData(), "foo = bar\n");
+}
+
+BOOST_AUTO_TEST_CASE(ArchiveEntryRefConversions)
+{
+    LuaInterfaceBase lua;
+    std::vector<std::string> validStrings;
+    validStrings.push_back("value = {filepath='foo', idx=2}");
+    validStrings.push_back("value = {'foo', 2}");
+    validStrings.push_back("value = {idx=2, filepath='foo'}");
+    validStrings.push_back("value = {filepath='foo', idx='2'}");
+    validStrings.push_back("value = {'foo', '2'}");
+    validStrings.push_back("value = {idx='2', filepath='foo'}");
+    validStrings.push_back("value = {filepath='foo'}");
+    validStrings.push_back("value = {'foo'}");
+    for(unsigned i = 0; i < validStrings.size(); i++)
+    {
+        BOOST_TEST_CHECKPOINT(validStrings[i]);
+        lua.LoadScriptString(validStrings[i]);
+        kaguya::LuaRef value = lua.GetState()["value"];
+        BOOST_REQUIRE(value.isConvertible<ArchiveEntryRef>());
+        BOOST_REQUIRE_EQUAL(value.isType<ArchiveEntryRef>(), i <= 2 || i >= 6);
+        ArchiveEntryRef ref = value;
+        BOOST_REQUIRE_EQUAL(ref.filepath, "foo");
+        BOOST_REQUIRE_EQUAL(ref.index, i <= 5 ? 2u : 0u);
+    }
+    std::vector<std::string> invalidStrings;
+    invalidStrings.push_back("value = {}");
+    invalidStrings.push_back("value = {idx = 2}");
+    invalidStrings.push_back("value = {foopath = 'foo', idx = 2}");
+    invalidStrings.push_back("value = {foopath = 'foo', idx = '2f'}");
+    invalidStrings.push_back("value = {filepath='foo', foopath = 'foo', idx=2}");
+    invalidStrings.push_back("value = {2, 'foo'}");
+    BOOST_FOREACH(const std::string& invalidString, invalidStrings)
+    {
+        lua.LoadScriptString(invalidString);
+        kaguya::LuaRef value = lua.GetState()["value"];
+        BOOST_REQUIRE(!value.isConvertible<ArchiveEntryRef>());
+        BOOST_REQUIRE(!value.isType<ArchiveEntryRef>());
+        BOOST_REQUIRE_THROW(ArchiveEntryRef ref = value, kaguya::LuaTypeMismatch);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(LoadRealFiles)

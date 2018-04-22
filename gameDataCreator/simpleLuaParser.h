@@ -90,7 +90,7 @@ struct LuaNamedValue : LuaTableEntry
 class SimpleLuaParser
 {
     struct LuaDataError;
-    
+
     std::string content_;
     bool isAdjacent(size_t pos1, size_t pos2);
     bool isTrailingComment(StringRef comment);
@@ -109,7 +109,7 @@ class SimpleLuaParser
 
 public:
     size_t curPos;
-    
+
     SimpleLuaParser(const std::string& content);
     void setContent(const std::string& content);
     const std::string& getContent() { return content_; }

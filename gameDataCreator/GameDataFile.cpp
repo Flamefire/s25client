@@ -19,9 +19,9 @@
 #include "GameDataFile.h"
 #include "libutil/StringConversion.h"
 #include "libutil/Tokenizer.h"
-#include <boost/nowide/fstream.hpp>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/foreach.hpp>
+#include <boost/nowide/fstream.hpp>
 
 namespace simpleLuaData {
 

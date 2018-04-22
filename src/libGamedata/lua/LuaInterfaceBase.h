@@ -35,6 +35,9 @@ class LuaInterfaceBase
 public:
     static void Register(kaguya::State& state);
 
+    LuaInterfaceBase();
+    virtual ~LuaInterfaceBase();
+
     bool LoadScript(const std::string& scriptPath);
     bool LoadScriptString(const std::string& script, bool rethrowError = false);
     const std::string& GetScript() const { return script_; }
@@ -47,9 +50,6 @@ public:
     kaguya::State& GetState() { return lua; }
 
 protected:
-    LuaInterfaceBase();
-    virtual ~LuaInterfaceBase();
-
     kaguya::State lua;
     std::string script_;
 

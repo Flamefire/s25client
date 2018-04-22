@@ -19,7 +19,7 @@
 #include "NationDesc.h"
 #include "BuildingDesc.h"
 #include "lua/CheckedLuaTable.h"
-#include "lua/PointTraits.h"
+#include "lua/LuaTraits.h"
 
 NationDesc::NationDesc() {}
 

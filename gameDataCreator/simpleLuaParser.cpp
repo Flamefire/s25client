@@ -17,13 +17,13 @@
 
 #include "commonDefines.h" // IWYU pragma: keep
 #include "simpleLuaParser.h"
+#include "helpers/converters.h"
+#include "libutil/Tokenizer.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/foreach.hpp>
 #include <algorithm>
 #include <stdexcept>
-#include "helpers/converters.h"
-#include "libutil/Tokenizer.h"
 
 namespace simpleLuaData {
 struct SimpleLuaParser::LuaDataError : public std::runtime_error
