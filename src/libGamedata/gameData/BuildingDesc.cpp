@@ -111,6 +111,7 @@ BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worl
     workOffsets = luaData.getOrDefault("workOffsets", workOffsets);
 
     luaData.getOrThrow(doorPosY, "doorPosY");
+    luaData.getOrThrow(signPos, "signPos");
 
     CheckedLuaTable smokeData =
       luaData.getOrDefault("smoke", CheckedLuaTable(kaguya::LuaTable(luaData.getBaseTable().state(), kaguya::NewTable())));

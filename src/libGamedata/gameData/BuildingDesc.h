@@ -23,8 +23,8 @@
 #include "BuildingBPDesc.h"
 #include "gameTypes/BuildingTypes.h"
 #include <map>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 struct WorldDescription;
 class CheckedLuaTable;
@@ -46,8 +46,9 @@ struct BuildingDesc : public BuildingBPDesc
     ArchiveEntryRef icon;
     Textures textures;
     std::map<std::string, AnimationDesc> animations;
-    std::map<std::string, Point<int8_t>> workOffsets;
+    std::map<std::string, Point<int8_t> > workOffsets;
     int8_t doorPosY;
+    Point<int8_t> signPos;
     SmokeConst smoke;
 
     BuildingDesc() {}
@@ -63,10 +64,10 @@ struct BuildingDesc : public BuildingBPDesc
     }
     Point<int8_t> getWorkOffset(const std::string& name) const
     {
-        std::map<std::string, Point<int8_t>>::const_iterator it = workOffsets.find(name);
+        std::map<std::string, Point<int8_t> >::const_iterator it = workOffsets.find(name);
         if(it == workOffsets.end())
             throw std::runtime_error("Missing work offset '" + name + "'");
-         return it->second;
+        return it->second;
     }
 };
 

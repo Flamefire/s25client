@@ -57,25 +57,37 @@ nation:AddBuilding{
 	name = "Granite mine",
 	icon = { filepath = iconFile, idx = 10 },
 	texture = { main = getSummerAndWinterTex(300), shadow = getSummerAndWinterTex(301), skeleton = getSummerAndWinterTex(302), skeletonShadow = getSummerAndWinterTex(303), door = getSummerAndWinterTex(304) },
-	doorPosY = 8
+	doorPosY = 8,
+	animations = {
+		occupied = { filepath = "<Map>", frames = range(740, 748), offset = {31, -18}, msPerFrame = 197 }
+	}
 }
 nation:AddBuilding{
 	name = "Coal mine",
 	icon = { filepath = iconFile, idx = 11 },
 	texture = { main = getSummerAndWinterTex(305), shadow = getSummerAndWinterTex(306), skeleton = getSummerAndWinterTex(307), skeletonShadow = getSummerAndWinterTex(308), door = getSummerAndWinterTex(309) },
-	doorPosY = 8
+	doorPosY = 8,
+	animations = {
+		occupied = { filepath = "<Map>", frames = range(740, 748), offset = {34, -10}, msPerFrame = 197 }
+	}
 }
 nation:AddBuilding{
 	name = "Iron mine",
 	icon = { filepath = iconFile, idx = 12 },
 	texture = { main = getSummerAndWinterTex(310), shadow = getSummerAndWinterTex(311), skeleton = getSummerAndWinterTex(312), skeletonShadow = getSummerAndWinterTex(313), door = getSummerAndWinterTex(314) },
-	doorPosY = 8
+	doorPosY = 8,
+	animations = {
+		occupied = { filepath = "<Map>", frames = range(740, 748), offset = {30, -11}, msPerFrame = 197 }
+	}
 }
 nation:AddBuilding{
 	name = "Gold mine",
 	icon = { filepath = iconFile, idx = 13 },
 	texture = { main = getSummerAndWinterTex(315), shadow = getSummerAndWinterTex(316), skeleton = getSummerAndWinterTex(317), skeletonShadow = getSummerAndWinterTex(318), door = getSummerAndWinterTex(319) },
-	doorPosY = 8
+	doorPosY = 8,
+	animations = {
+		occupied = { filepath = "<Map>", frames = range(740, 748), offset = {32, -10}, msPerFrame = 197 }
+	}
 }
 nation:AddBuilding{
 	name = "Lookout tower",
@@ -227,7 +239,7 @@ nation:AddBuilding{
 	icon = { filepath = iconFile, idx = 39 },
 	texture = { main = getSummerAndWinterTex(445), shadow = getSummerAndWinterTex(446), skeleton = getSummerAndWinterTex(447), skeletonShadow = getSummerAndWinterTex(448), door = getSummerAndWinterTex(449) },
 	animations = {
-		idle = { filepath = "<Africans>", frames = range(500, 540, 5), msPerFrame = 158 },
+		occupied = { filepath = "<Africans>", frames = range(500, 540, 5), msPerFrame = 158 },
 		work = { filepath = "<Map>", frames = range(740, 748), offset = {36, -51}, msPerFrame = 197 }
 	},
 	workOffsets = {

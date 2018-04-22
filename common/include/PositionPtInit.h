@@ -33,15 +33,17 @@ struct PositionPtInit
 };
 
 // Helper for defining the operations
-#define DEF_DRAWPOINT_OP(OP)                                                                                     \
-    inline Position operator OP(const Position& lhs, const PositionPtInit& rhs) { return lhs OP Position(rhs); } \
-    inline Position operator OP(const PositionPtInit& lhs, const Position& rhs) { return Position(lhs) OP rhs; } \
-    inline Position operator OP(const PositionPtInit& lhs, const PositionPtInit& rhs) { return Position(lhs) OP rhs; }
+#define DEF_DRAWPOINT_OP(OP, RESULT)                                                                           \
+    inline RESULT operator OP(const Position& lhs, const PositionPtInit& rhs) { return lhs OP Position(rhs); } \
+    inline RESULT operator OP(const PositionPtInit& lhs, const Position& rhs) { return Position(lhs) OP rhs; } \
+    inline RESULT operator OP(const PositionPtInit& lhs, const PositionPtInit& rhs) { return Position(lhs) OP rhs; }
 
-DEF_DRAWPOINT_OP(+)
-DEF_DRAWPOINT_OP(-)
-DEF_DRAWPOINT_OP(*)
-DEF_DRAWPOINT_OP(/)
+DEF_DRAWPOINT_OP(+, Position)
+DEF_DRAWPOINT_OP(-, Position)
+DEF_DRAWPOINT_OP(*, Position)
+DEF_DRAWPOINT_OP(/, Position)
+DEF_DRAWPOINT_OP(==, bool)
+DEF_DRAWPOINT_OP(!=, bool)
 
 #undef DEF_DRAWPOINT_OP
 

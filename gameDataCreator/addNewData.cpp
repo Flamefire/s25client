@@ -165,7 +165,7 @@ void addNewData(const std::string& baseLuaPath)
             } else
             {
                 std::string comment = (i) ? "" : "Texture for the icon";
-                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic((int) bld) + " }",
+                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic((int)bld) + " }",
                                     comment);
                 comment = (i) ? "" :
                                 "Textures for the building. Required: main, skeleton, door. Optional: shadow, skeletonShadow. Multiple "
@@ -194,8 +194,9 @@ void addNewData(const std::string& baseLuaPath)
                 gd.insertTableAfter(bldName + ":texture", "animations").isSingleLine_ = LuaTable::SL_NO;
                 if(harbor::FIRE_POS[natIdx].isValid())
                 {
-                    gd.insertFieldAfter(bldName + ":animations:", "idle",
-                                        "{ filepath = \"<" + std::string(NationNames[natIdx]) + ">\", frames=range(500, 540, 5), msPerFrame = 158}");
+                    gd.insertFieldAfter(bldName + ":animations:", "occupied",
+                                        "{ filepath = \"<" + std::string(NationNames[natIdx])
+                                          + ">\", frames=range(500, 540, 5), msPerFrame = 158}");
                 }
                 if(harbor::EXTRAFIRE_POS[natIdx].isValid())
                 {
@@ -211,6 +212,8 @@ void addNewData(const std::string& baseLuaPath)
 
             std::string comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
             gd.insertFieldAfter(bldName + ":texture", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
+            comment = (i) ? "" : "(Relative) position of the sign (production stop, gold stop, ...)";
+            gd.insertField("signPos", toString(Position(BUILDING_SIGN_CONSTS[natIdx][bld])));
         }
         gd.save(gd.getFilepath());
     }
