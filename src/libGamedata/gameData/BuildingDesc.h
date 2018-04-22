@@ -18,10 +18,13 @@
 #ifndef BuildingDesc_h__
 #define BuildingDesc_h__
 
+#include "AnimationDesc.h"
 #include "ArchiveEntryRef.h"
 #include "BuildingBPDesc.h"
 #include "gameTypes/BuildingTypes.h"
+#include <map>
 #include <vector>
+#include <stdexcept>
 
 struct WorldDescription;
 class CheckedLuaTable;
@@ -33,19 +36,38 @@ struct BuildingDesc : public BuildingBPDesc
     {
         ArchiveEntryRef summer, winter;
     };
-
-    std::string name;
-    ArchiveEntryRef icon;
-    struct
+    struct Textures
     {
         SummerWinterTex main, skeleton, door;
         SummerWinterTex shadow, skeletonShadow;
-    } textures;
+    };
+
+    std::string name;
+    ArchiveEntryRef icon;
+    Textures textures;
+    std::map<std::string, AnimationDesc> animations;
+    std::map<std::string, Point<int8_t>> workOffsets;
     int8_t doorPosY;
     SmokeConst smoke;
 
     BuildingDesc() {}
     BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc);
+
+    const AnimationDesc* getAnimation(const std::string& name) const
+    {
+        std::map<std::string, AnimationDesc>::const_iterator it = animations.find(name);
+        if(it != animations.end())
+            return &it->second;
+        else
+            return NULL;
+    }
+    Point<int8_t> getWorkOffset(const std::string& name) const
+    {
+        std::map<std::string, Point<int8_t>>::const_iterator it = workOffsets.find(name);
+        if(it == workOffsets.end())
+            throw std::runtime_error("Missing work offset '" + name + "'");
+         return it->second;
+    }
 };
 
 #endif // BuildingDesc_h__

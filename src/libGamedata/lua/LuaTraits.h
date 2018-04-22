@@ -139,6 +139,13 @@ struct lua_type_traits<ArchiveEntryRef>
         return 1;
     }
 };
+
+template<class T>
+struct lua_type_traits<boost::flyweight<T> > : lua_type_traits<T>
+{
+    typedef boost::flyweight<T> get_type;
+    static get_type get(lua_State* l, int index) { return get_type(lua_type_traits<T>::get(l, index)); }
+};
 } // namespace kaguya
 
 #endif // PointTraits_h__

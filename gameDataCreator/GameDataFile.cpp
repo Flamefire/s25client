@@ -256,18 +256,23 @@ GameDataFile::OptNamedValue GameDataFile::findNamedValue(const std::string& name
     return boost::none;
 }
 
-void GameDataFile::insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value,
-                                    const std::string& comment)
+LuaTableEntry& GameDataFile::insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value,
+                                              const std::string& comment)
 {
     LuaTableEntry entry;
     entry.name = name;
     SimpleLuaParser parser(value);
     entry.value = parser.parseValue('\0');
     entry.preComment = comment;
-    insertFieldAfter(elName, entry);
+    return insertFieldAfter(elName, entry);
 }
 
-void GameDataFile::insertFieldAfter(const std::string& elName, const LuaTableEntry& entry)
+LuaTableEntry& GameDataFile::insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment)
+{
+    return insertFieldAfter(elName, name, s25util::toStringClassic(value), comment);
+}
+
+LuaTableEntry& GameDataFile::insertFieldAfter(const std::string& elName, const LuaTableEntry& entry)
 {
     LuaTable* outerTable;
     size_t pos = findPosition(elName, &outerTable);
@@ -278,6 +283,7 @@ void GameDataFile::insertFieldAfter(const std::string& elName, const LuaTableEnt
         if(index >= 0)
         {
             outerTable->values[index] = entry;
+            pos = index;
             inserted = true;
         }
     }
@@ -295,34 +301,47 @@ void GameDataFile::insertFieldAfter(const std::string& elName, const LuaTableEnt
         size_t pos = elName.find_last_of(':');
         lastInsertedField = elName.substr(0, pos) + ":" + entry.name;
     }
+    return outerTable->values[pos];
 }
 
-void GameDataFile::insertFieldAfter(const std::string& elName, const std::string& entry)
+LuaTableEntry& GameDataFile::insertFieldAfter(const std::string& elName, const std::string& entry)
 {
     static boost::regex elRE("((--.*?\\n)*)\\s*((\\w+)\\s*=\\s*)?(.+)");
     boost::smatch match;
     if(!boost::regex_match(entry, match, elRE))
         throw std::runtime_error("Invalid name-value-pair" + entry);
-    insertFieldAfter(elName, match[4], match[5], match[1]);
+    return insertFieldAfter(elName, match[4], match[5], match[1]);
 }
 
-void GameDataFile::insertField(const std::string& name, const std::string& value, const std::string& comment)
+LuaTableEntry& GameDataFile::insertField(const std::string& name, const std::string& value, const std::string& comment)
 {
     if(lastInsertedField.empty())
         throw std::runtime_error("Did not find previously inserted field. Insert one first!");
-    insertFieldAfter(lastInsertedField, name, value, comment);
+    return insertFieldAfter(lastInsertedField, name, value, comment);
 }
 
-void GameDataFile::insertField(const std::string& name, int value, const std::string& comment)
+LuaTableEntry& GameDataFile::insertField(const std::string& name, int value, const std::string& comment)
 {
-    insertField(name, s25util::toStringClassic(value), comment);
+    return insertField(name, s25util::toStringClassic(value), comment);
 }
 
-void GameDataFile::insertTable(const std::string& name, const std::string& comment)
+LuaTable& GameDataFile::insertTable(const std::string& name, const std::string& comment)
 {
-    if(findTable(name))
-        return;
-    insertField(name, "{}", comment);
+    return insertTableAfter(lastInsertedField, name, comment);
+}
+
+LuaTable& GameDataFile::insertTableAfter(const std::string& elName, const std::string& name, const std::string& comment)
+{
+    LuaTable* outerTable;
+    findPosition(elName, &outerTable);
+    int idx = outerTable->indexOf(name);
+    if(idx < 0)
+        return boost::get<LuaTable>(insertFieldAfter(elName, name, "{}", comment).value);
+    else
+    {
+        lastInsertedField = elName.substr(0, elName.find_last_of(':')) + ":" + name;
+        return boost::get<LuaTable>(outerTable->values[idx].value);
+    }
 }
 
 void GameDataFile::setNameValue(const std::string& name, const std::string& value)
@@ -337,11 +356,6 @@ void GameDataFile::setNameValue(const std::string& name, const std::string& valu
         newValue.value = value;
         namedValues.push_back(newValue);
     }
-}
-
-void GameDataFile::insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment)
-{
-    insertFieldAfter(elName, name, s25util::toStringClassic(value), comment);
 }
 
 size_t GameDataFile::findPosition(const std::string& elName, LuaTable** outerTable)

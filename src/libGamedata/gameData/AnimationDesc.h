@@ -1,4 +1,4 @@
-// Copyright (c) 2005 - 2017 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (c) 2017 - 2017 Settlers Freaks (sf-team at siedler25.org)
 //
 // This file is part of Return To The Roots.
 //
@@ -15,18 +15,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef addNewData_h__
-#define addNewData_h__
+#ifndef AnimationDesc_h__
+#define AnimationDesc_h__
 
+#include "ArchiveEntryRef.h"
+#include "Point.h"
+#include <boost/flyweight.hpp>
 #include <string>
+#include <vector>
 
-struct OldBuildingType;
+class CheckedLuaTable;
 
-// Make first char uppercase rest lowercase
-// TODO: Maybe move to helpers:: ?
-std::string capitalize(std::string str);
-OldBuildingType GetOldBuildingIdx(const std::string& name);
+/// Describe an animation
+struct AnimationDesc
+{
+    boost::flyweight<std::string> filepath;
+    std::vector<unsigned> frameIdxs;
+    Point<int8_t> offset;
+    uint8_t msPerFrame;
 
-void addNewData(const std::string& basePath);
+    AnimationDesc() {}
+    AnimationDesc(CheckedLuaTable luaData);
+};
 
-#endif // addNewData_h__
+#endif // AnimationDesc_h__

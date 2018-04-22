@@ -35,6 +35,7 @@ void NationDataLoader::Register(kaguya::State& state)
 void NationDataLoader::CopyBuildings()
 {
     NationDesc& natDesc = worldDesc_.nations.getMutable(nation_);
+    // Ensure that The index is always the same as the building type
     for(unsigned i = 0; i < NUM_BUILDING_TYPES; i++)
     {
         DescIdx<BuildingDesc> idx = buildings.getIndex(BUILDING_NAMES[i]);

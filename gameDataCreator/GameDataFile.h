@@ -27,7 +27,7 @@ namespace simpleLuaData {
 
 class GameDataFile
 {
-    std::string content, filepath_, lastInsertedField;
+    std::string content, filepath_;
     boost::container::vector<LuaTable> tables;
     boost::container::vector<LuaNamedValue> namedValues;
 
@@ -38,6 +38,8 @@ public:
     typedef boost::optional<LuaTable&> OptLuaTable;
     typedef boost::optional<const LuaTableEntry&> OptTableEntry;
     typedef boost::optional<LuaNamedValue&> OptNamedValue;
+
+    std::string lastInsertedField;
 
     /// Replace the whole buffer invalidating all references
     void setContent(const std::string& src);
@@ -89,15 +91,17 @@ public:
 
     /// Insert the given field (e.g. "foo = bar") after the named field which may be nested (e.g. "foo:bar") or at the end of the parent
     /// table if field does not exist Will add a comma to the previous field if required and the same indentation as the previous field
-    void insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value, const std::string& comment = "");
-    void insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
-    void insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
-    void insertFieldAfter(const std::string& elName, const std::string& entry);
+    LuaTableEntry& insertFieldAfter(const std::string& elName, const std::string& name, const std::string& value,
+                                    const std::string& comment = "");
+    LuaTableEntry& insertFieldAfter(const std::string& elName, const std::string& name, int value, const std::string& comment = "");
+    LuaTableEntry& insertFieldAfter(const std::string& elName, const LuaTableEntry& entry);
+    LuaTableEntry& insertFieldAfter(const std::string& elName, const std::string& entry);
     /// Adds a field after the last inserted field
-    void insertField(const std::string& name, const std::string& value, const std::string& comment = "");
-    void insertField(const std::string& name, int value, const std::string& comment = "");
+    LuaTableEntry& insertField(const std::string& name, const std::string& value, const std::string& comment = "");
+    LuaTableEntry& insertField(const std::string& name, int value, const std::string& comment = "");
     /// Add a new table after the last inserted field (if it doesn't exist yet)
-    void insertTable(const std::string& name, const std::string& comment = "");
+    LuaTable& insertTable(const std::string& name, const std::string& comment = "");
+    LuaTable& insertTableAfter(const std::string& elName, const std::string& name, const std::string& comment = "");
 
     void setNameValue(const std::string& name, const std::string& value);
 

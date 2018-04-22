@@ -50,14 +50,14 @@ std::string capitalize(std::string str)
     return str;
 }
 
-unsigned GetOldBuildingIdx(const std::string& name)
+OldBuildingType GetOldBuildingIdx(const std::string& name)
 {
     for(unsigned i = 0; i < OldBuildingType::count_; i++)
     {
         std::string oldName = capitalize(OldBuildingType::names_[i]);
         boost::algorithm::replace_all(oldName, "_", " ");
         if(oldName == name)
-            return i;
+            return OldBuildingType::type_(i);
     }
     throw std::runtime_error("Bld Not found");
 }
@@ -73,6 +73,25 @@ const boost::array<const std::string, NUM_NATS> NATION_ICON_FILES = {
 
 const helpers::SimpleMultiArray<const std::string, 2, NUM_NATS> NATION_GFXSET_Z = {
   {{"afr_z", "jap_z", "rom_z", "vik_z", "bab_z"}, {"wafr_z", "wjap_z", "wrom_z", "wvik_z", "wbab_z"}}};
+
+namespace harbor {
+// Relative Position des Bauarbeiters
+const Position BUILDER_POS[NUM_NATS] = {Position(-20, 18), Position(-28, 17), Position(-20, 15), Position(-38, 17), Position(-38, 17)};
+/// Relative Position der Brettertürme
+const Position BOARDS_POS[NUM_NATS] = {Position(-75, -5), Position(-60, -5), Position(-55, -5), Position(-65, -5), Position(-65, -5)};
+/// Relative Position der Steintürme
+const Position STONES_POS[NUM_NATS] = {Position(-65, 10), Position(-52, 10), Position(-42, 10), Position(-52, 10), Position(-52, 10)};
+/// Relative Postion der inneren Hafenfeuer
+const Position FIRE_POS[NUM_NATS] = {Position(), Position(0, 0), Position(0, 0), Position(), Position(0, 0)};
+/// Relative Postion der äußeren Hafenfeuer
+const Position EXTRAFIRE_POS[NUM_NATS] = {Position(36, -51), Position(), Position(8, -115), Position(5, -80), Position()};
+} // namespace harbor
+
+template<typename T>
+std::string toString(const Point<T>& pt)
+{
+    return std::string("{") + s25util::toStringClassic(pt.x) + "," + s25util::toStringClassic(pt.y) + "}";
+}
 
 void addNewData(const std::string& baseLuaPath)
 {
@@ -128,7 +147,7 @@ void addNewData(const std::string& baseLuaPath)
         for(int i = 0; i < gd.getTables().size(); i++)
         {
             std::string bldName = gd.getTableName(i);
-            unsigned bld = GetOldBuildingIdx(bldName);
+            OldBuildingType bld = GetOldBuildingIdx(bldName);
             if(bld == OldBuildingType::CHARBURNER)
             {
                 gd.insertFieldAfter(bldName + ":name", "icon",
@@ -146,7 +165,7 @@ void addNewData(const std::string& baseLuaPath)
             } else
             {
                 std::string comment = (i) ? "" : "Texture for the icon";
-                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic(bld) + " }",
+                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic((int) bld) + " }",
                                     comment);
                 comment = (i) ? "" :
                                 "Textures for the building. Required: main, skeleton, door. Optional: shadow, skeletonShadow. Multiple "
@@ -170,6 +189,26 @@ void addNewData(const std::string& baseLuaPath)
                 comment = (i) ? "" : "Texture of the (closed) door";
                 gd.insertField("door", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 4) + ")", comment);
             }
+            if(bld == OldBuildingType::HARBOR_BUILDING)
+            {
+                gd.insertTableAfter(bldName + ":texture", "animations").isSingleLine_ = LuaTable::SL_NO;
+                if(harbor::FIRE_POS[natIdx].isValid())
+                {
+                    gd.insertFieldAfter(bldName + ":animations:", "idle",
+                                        "{ filepath = \"<" + std::string(NationNames[natIdx]) + ">\", frames=range(500, 540, 5), msPerFrame = 158}");
+                }
+                if(harbor::EXTRAFIRE_POS[natIdx].isValid())
+                {
+                    gd.insertFieldAfter(bldName + ":animations:", "work",
+                                        "{ filepath = \"<Map>\", frames=range(740, 748), offset=" + toString(harbor::EXTRAFIRE_POS[natIdx])
+                                          + ", msPerFrame = 197}");
+                }
+                gd.insertTableAfter(bldName + ":animations", "workOffsets").isSingleLine_ = LuaTable::SL_NO;
+                gd.insertFieldAfter(bldName + ":workOffsets:", "builder", toString(harbor::BUILDER_POS[natIdx]));
+                gd.insertField("boards", toString(harbor::BOARDS_POS[natIdx]));
+                gd.insertField("stones", toString(harbor::STONES_POS[natIdx]));
+            }
+
             std::string comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";
             gd.insertFieldAfter(bldName + ":texture", "doorPosY", DOOR_CONSTS[natIdx][bld], comment);
         }

@@ -18,9 +18,11 @@
 #include "commonDefines.h" // IWYU pragma: keep
 #include "BuildingDesc.h"
 #include "WorldDescription.h"
+#include "helpers/containerUtils.h"
 #include "lua/CheckedLuaTable.h"
 #include "lua/LuaHelpers.h"
 #include "lua/LuaTraits.h"
+#include <boost/foreach.hpp>
 #include <kaguya/kaguya.hpp>
 
 namespace kaguya {
@@ -65,6 +67,27 @@ struct lua_type_traits<BuildingDesc::SummerWinterTex, void>
         return result;
     }
 };
+
+template<>
+struct lua_type_traits<AnimationDesc, void>
+{
+    typedef AnimationDesc get_type;
+
+    static bool checkType(lua_State* l, int index)
+    {
+        const LuaStackRef table(l, index);
+        std::vector<std::string> keys = table.keys<std::string>();
+        return (keys.size() >= 3 && keys.size() <= 4)
+               && (helpers::contains(keys, "filepath") && helpers::contains(keys, "frames") && helpers::contains(keys, "msPerFrame"));
+    }
+
+    static get_type get(lua_State* l, int index)
+    {
+        const LuaStackRef ref(l, index);
+        const LuaTable table = ref;
+        return AnimationDesc(table);
+    }
+};
 } // namespace kaguya
 
 BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worldDesc)
@@ -83,6 +106,9 @@ BuildingDesc::BuildingDesc(CheckedLuaTable luaData, const WorldDescription& worl
     textures.door = textureData.getOrThrow<SummerWinterTex>("door");
     textures.shadow = textureData.getOrDefault("shadow", textures.shadow);
     textures.skeletonShadow = textureData.getOrDefault("skeletonShadow", textures.skeletonShadow);
+
+    animations = luaData.getOrDefault("animations", animations);
+    workOffsets = luaData.getOrDefault("workOffsets", workOffsets);
 
     luaData.getOrThrow(doorPosY, "doorPosY");
 

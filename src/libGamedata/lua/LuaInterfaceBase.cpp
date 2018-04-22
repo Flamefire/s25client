@@ -26,6 +26,18 @@
 #include <boost/nowide/fstream.hpp>
 #include <algorithm>
 
+namespace {
+std::vector<int> range(int start, int stop, int step = 1)
+{
+    std::vector<int> result;
+    result.reserve((stop - start) / step);
+    for(int i = start; start < stop; start += step)
+        result.push_back(i);
+    return result;
+}
+KAGUYA_FUNCTION_OVERLOADS(range_wrapper, range, 2, 3);
+} // namespace
+
 LuaInterfaceBase::LuaInterfaceBase() : lua(kaguya::NoLoadLib()), errorOccured_(false)
 {
     lua.openlib("base", luaopen_base);
@@ -40,6 +52,7 @@ LuaInterfaceBase::LuaInterfaceBase() : lua(kaguya::NoLoadLib()), errorOccured_(f
     lua["_"] = kaguya::function<std::string(const std::string&)>(boost::bind(&LuaInterfaceBase::Translate, this, _1));
     // No-op translate (translated later)
     lua["__"] = gettext_noop;
+    lua["range"] = kaguya::function(range_wrapper());
 }
 
 LuaInterfaceBase::~LuaInterfaceBase() {}

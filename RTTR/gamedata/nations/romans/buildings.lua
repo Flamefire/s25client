@@ -225,5 +225,14 @@ nation:AddBuilding{
 	name = "Harbor building",
 	icon = { filepath = iconFile, idx = 39 },
 	texture = { main = getSummerAndWinterTex(445), shadow = getSummerAndWinterTex(446), skeleton = getSummerAndWinterTex(447), skeletonShadow = getSummerAndWinterTex(448), door = getSummerAndWinterTex(449) },
+	animations = {
+		idle = { filepath = "<Romans>", frames = range(500, 540, 5), msPerFrame = 158 },
+		work = { filepath = "<Map>", frames = range(740, 748), offset = {8, -115}, msPerFrame = 197 }
+	},
+	workOffsets = {
+		builder = {-20, 15},
+		boards = {-55, -5},
+		stones = {-42, 10}
+	},
 	doorPosY = 2
 }

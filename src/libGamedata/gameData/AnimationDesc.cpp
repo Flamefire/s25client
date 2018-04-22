@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef addNewData_h__
-#define addNewData_h__
+#include "commonDefines.h" // IWYU pragma: keep
+#include "AnimationDesc.h"
+#include "lua/CheckedLuaTable.h"
+#include "lua/LuaHelpers.h"
+#include "lua/LuaTraits.h"
+#include <kaguya/kaguya.hpp>
 
-#include <string>
-
-struct OldBuildingType;
-
-// Make first char uppercase rest lowercase
-// TODO: Maybe move to helpers:: ?
-std::string capitalize(std::string str);
-OldBuildingType GetOldBuildingIdx(const std::string& name);
-
-void addNewData(const std::string& basePath);
-
-#endif // addNewData_h__
+AnimationDesc::AnimationDesc(CheckedLuaTable luaData)
+{
+    offset = luaData.getOrDefault("offset", Point<int8_t>(0, 0));
+    luaData.getOrThrow(filepath, "filepath");
+    luaData.getOrThrow(frameIdxs, "frames");
+    luaData.getOrThrow(msPerFrame, "msPerFrame");
+    luaData.checkUnused();
+}
