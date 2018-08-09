@@ -44,9 +44,10 @@
 #include "nodeObjs/noFlag.h"
 #include "nodeObjs/noShip.h"
 #include "nodeObjs/noTree.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/GameConsts.h"
+#include "gameData/NationDesc.h"
 #include "gameData/TerrainDesc.h"
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
@@ -157,6 +158,11 @@ AIPlayerJH::~AIPlayerJH()
 {
     delete construction;
     delete bldPlanner;
+}
+
+const NationDesc& AIPlayerJH::GetNationDesc() const
+{
+    return gwb.GetDescription().get(player.GetNation());
 }
 
 /// Wird jeden GF aufgerufen und die KI kann hier entsprechende Handlungen vollziehen
@@ -1042,29 +1048,30 @@ MapPoint AIPlayerJH::SimpleFindPosition(const MapPoint& pt, BuildingQuality size
 MapPoint AIPlayerJH::FindPositionForBuildingAround(BuildingType type, const MapPoint& around)
 {
     MapPoint foundPos = MapPoint::Invalid();
+    const BuildingDesc& bldDesc = GetNationDesc().buildings[type];
     switch(type)
     {
         case BLD_WOODCUTTER:
         {
-            foundPos = FindBestPosition(around, AIResource::WOOD, BUILDING_SIZE[type], 20, 11);
+            foundPos = FindBestPosition(around, AIResource::WOOD, bldDesc.requiredSpace, 20, 11);
             break;
         }
         case BLD_FORESTER:
             // ensure some distance to other foresters and an minimal amount of plantspace
             if(!construction->OtherUsualBuildingInRadius(around, 12, BLD_FORESTER) && (GetDensity(around, AIResource::PLANTSPACE, 7) > 15))
-                foundPos = FindBestPosition(around, AIResource::WOOD, BUILDING_SIZE[type], 0, 11);
+                foundPos = FindBestPosition(around, AIResource::WOOD, bldDesc.requiredSpace, 0, 11);
             break;
         case BLD_HUNTER:
         {
             // check if there are any animals in range
             if(HuntablesinRange(around, (2 << GetBldPlanner().GetNumBuildings(BLD_HUNTER))))
-                foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11);
+                foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11);
             break;
         }
         case BLD_QUARRY:
         {
             unsigned numQuarries = GetBldPlanner().GetNumBuildings(BLD_QUARRY);
-            foundPos = FindBestPosition(around, AIResource::STONES, BUILDING_SIZE[type], std::min(40u, 1 + numQuarries * 10), 11);
+            foundPos = FindBestPosition(around, AIResource::STONES, bldDesc.requiredSpace, std::min(40u, 1 + numQuarries * 10), 11);
             if(foundPos.isValid() && !ValidStoneinRange(foundPos))
             {
                 SetResourceMap(AIResource::STONES, foundPos, 0);
@@ -1075,7 +1082,7 @@ MapPoint AIPlayerJH::FindPositionForBuildingAround(BuildingType type, const MapP
         case BLD_BARRACKS:
         case BLD_GUARDHOUSE:
         case BLD_WATCHTOWER:
-        case BLD_FORTRESS: foundPos = FindBestPosition(around, AIResource::BORDERLAND, BUILDING_SIZE[type], 1, 11, true); break;
+        case BLD_FORTRESS: foundPos = FindBestPosition(around, AIResource::BORDERLAND, bldDesc.requiredSpace, 1, 11, true); break;
         case BLD_GOLDMINE: foundPos = FindBestPosition(around, AIResource::GOLD, BQ_MINE, 11, true); break;
         case BLD_COALMINE: foundPos = FindBestPosition(around, AIResource::COAL, BQ_MINE, 11, true); break;
         case BLD_IRONMINE: foundPos = FindBestPosition(around, AIResource::IRONORE, BQ_MINE, 11, true); break;
@@ -1087,7 +1094,7 @@ MapPoint AIPlayerJH::FindPositionForBuildingAround(BuildingType type, const MapP
             break;
 
         case BLD_FISHERY:
-            foundPos = FindBestPosition(around, AIResource::FISH, BUILDING_SIZE[type], 11, true);
+            foundPos = FindBestPosition(around, AIResource::FISH, bldDesc.requiredSpace, 11, true);
             if(foundPos.isValid() && !ValidFishInRange(foundPos))
             {
                 SetResourceMap(AIResource::FISH, foundPos, 0);
@@ -1096,25 +1103,25 @@ MapPoint AIPlayerJH::FindPositionForBuildingAround(BuildingType type, const MapP
             break;
         case BLD_STOREHOUSE:
             if(!construction->OtherStoreInRadius(around, 15))
-                foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11);
+                foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11);
             break;
         case BLD_HARBORBUILDING:
-            foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11);
+            foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11);
             if(foundPos.isValid() && !HarborPosRelevant(GetWorld().GetHarborPointID(foundPos))) // bad harborspot detected DO NOT USE
                 foundPos = MapPoint::Invalid();
             break;
         case BLD_SHIPYARD:
-            foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11);
+            foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11);
             if(foundPos.isValid() && IsInvalidShipyardPosition(foundPos))
                 foundPos = MapPoint::Invalid();
             break;
-        case BLD_FARM: foundPos = FindBestPosition(around, AIResource::PLANTSPACE, BUILDING_SIZE[type], 85, 11, true); break;
+        case BLD_FARM: foundPos = FindBestPosition(around, AIResource::PLANTSPACE, bldDesc.requiredSpace, 85, 11, true); break;
         case BLD_CATAPULT:
-            foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11);
+            foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11);
             if(foundPos.isValid() && BuildingNearby(foundPos, BLD_CATAPULT, 8))
                 foundPos = MapPoint::Invalid();
             break;
-        default: foundPos = SimpleFindPosition(around, BUILDING_SIZE[type], 11); break;
+        default: foundPos = SimpleFindPosition(around, bldDesc.requiredSpace, 11); break;
     }
     return foundPos;
 }
@@ -2288,7 +2295,7 @@ void AIPlayerJH::ExecuteLuaConstructionOrder(const MapPoint pt, BuildingType bt,
 bool AIPlayerJH::BuildingNearby(const MapPoint pt, BuildingType bldType, unsigned min)
 {
     // assert not a military building
-    RTTR_Assert(static_cast<unsigned>(bldType) >= FIRST_USUAL_BUILDING);
+    RTTR_Assert(!BuildingProperties::IsMilitary(bldType) && !BuildingProperties::IsWareHouse(bldType));
     BOOST_FOREACH(const nobUsual* bld, aii.GetBuildings(bldType))
     {
         if(gwb.CalcDistance(pt, bld->GetPos()) < min)

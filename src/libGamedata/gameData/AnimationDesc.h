@@ -31,6 +31,7 @@ struct AnimationDesc
 {
     boost::flyweight<std::string> filepath;
     std::vector<unsigned> frameIdxs;
+    bool hasShadows;
     Point<int8_t> offset;
     uint8_t msPerFrame;
 

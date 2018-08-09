@@ -104,9 +104,10 @@ iwWares::iwWares(unsigned id, const DrawPoint& pos, const Extent& size, const st
 
         // die jeweilige Ware
         DrawPoint warePos = btPos + btSize / 2;
-        wares.AddImage(300 + INVENTORY_IDS[0][ware_id], warePos,
-                       LOADER.GetMapImageN(
-                         2250 + (INVENTORY_IDS[0][ware_id] == GD_SHIELDROMANS ? SHIELD_TYPES[player.nation] : INVENTORY_IDS[0][ware_id])));
+        wares.AddImage(
+          300 + INVENTORY_IDS[0][ware_id], warePos,
+          LOADER.GetMapImageN(
+            2250 + (INVENTORY_IDS[0][ware_id] == GD_SHIELDROMANS ? SHIELD_TYPES[player.GetNation().value] : INVENTORY_IDS[0][ware_id])));
         if(INVENTORY_IDS[1][ware_id] != 0xFFFF)
         {
             glArchivItem_Bitmap* image;

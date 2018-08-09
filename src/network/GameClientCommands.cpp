@@ -39,9 +39,9 @@ void GameClient::Command_Chat(const std::string& text, const ChatDestination cd)
     mainPlayer.sendMsgAsync(new GameMessage_Chat(0xff, cd, text));
 }
 
-void GameClient::Command_SetNation(Nation newNation)
+void GameClient::Command_SetNation(const std::string& newNationName)
 {
-    mainPlayer.sendMsgAsync(new GameMessage_Player_Nation(0xff, newNation));
+    mainPlayer.sendMsgAsync(new GameMessage_Player_Nation(0xff, newNationName));
 }
 
 void GameClient::Command_SetTeam(Team newTeam)

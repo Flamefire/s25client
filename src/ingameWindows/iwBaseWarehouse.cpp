@@ -36,7 +36,7 @@
 #include "network/GameClient.h"
 #include "world/GameWorldBase.h"
 #include "world/GameWorldView.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include <stdexcept>
 
 namespace {
@@ -58,7 +58,7 @@ enum
 }
 
 iwBaseWarehouse::iwBaseWarehouse(GameWorldView& gwv, GameCommandFactory& gcFactory, nobBaseWarehouse* wh)
-    : iwWares(wh->CreateGUIID(), IngameWindow::posAtMouse, Extent(167, 416), _(BUILDING_NAMES[wh->GetBuildingType()]), true, NormalFont,
+    : iwWares(wh->CreateGUIID(), IngameWindow::posAtMouse, Extent(167, 416), _(wh->GetDescription().name), true, NormalFont,
               wh->GetInventory(), gwv.GetWorld().GetPlayer(wh->GetPlayer())),
       gwv(gwv), gcFactory(gcFactory), wh(wh)
 {
@@ -205,7 +205,7 @@ void iwBaseWarehouse::Msg_ButtonClick(const unsigned ctrl_id)
         break;
         case ID_HELP: // "Hilfe"
         {
-            WINDOWMANAGER.Show(new iwHelp(GUI_ID(CGI_HELP), _(BUILDING_HELP_STRINGS[wh->GetBuildingType()])));
+            WINDOWMANAGER.Show(new iwHelp(GUI_ID(CGI_HELP), _(wh->GetDescription().help)));
         }
         break;
         case ID_GOTO: // "Gehe Zu Ort"

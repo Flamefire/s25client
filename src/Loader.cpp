@@ -36,7 +36,10 @@
 #include "ogl/glSmartBitmap.h"
 #include "ogl/glTexturePacker.h"
 #include "gameTypes/Direction.h"
+#include "gameData/DescIdx.h"
 #include "gameData/JobConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "libsiedler2/ArchivItem_Ini.h"
 #include "libsiedler2/ArchivItem_Palette.h"
 #include "libsiedler2/ArchivItem_PaletteAnimation.h"
@@ -68,6 +71,25 @@ Loader::Loader() : isWinterGFX_(false), map_gfx(NULL), stp(NULL)
 Loader::~Loader()
 {
     delete stp;
+}
+
+ITexture* Loader::GetTexFromFile(const std::string& filepath, unsigned nr)
+{
+    std::string name = GetKeyFromPath(filepath);
+    return GetTextureN(name, nr);
+}
+
+ITexture* Loader::GetTexFromFile(const ArchiveEntryRef& archiveEntry)
+{
+    return GetTexFromFile(archiveEntry.filepath, archiveEntry.index);
+}
+
+glArchivItem_Bitmap* Loader::GetImageFromFile(const ArchiveEntryRef& archiveEntry)
+{
+    if(archiveEntry.filepath.get().empty())
+        return NULL;
+    std::string name = GetKeyFromPath(archiveEntry.filepath);
+    return GetImageN(name, archiveEntry.index);
 }
 
 glArchivItem_Bitmap* Loader::GetImageN(const std::string& file, unsigned nr)
@@ -121,22 +143,22 @@ glArchivItem_Bob* Loader::GetBobN(const std::string& file)
     return dynamic_cast<glArchivItem_Bob*>(files_[file].archiv.get(0));
 }
 
-glArchivItem_BitmapBase* Loader::GetNationImageN(unsigned nation, unsigned nr)
+glArchivItem_BitmapBase* Loader::GetNationImageN(Nation nation, unsigned nr)
 {
-    return dynamic_cast<glArchivItem_BitmapBase*>(nation_gfx[nation]->get(nr));
+    return dynamic_cast<glArchivItem_BitmapBase*>(nation_gfx[nation.value]->get(nr));
 }
 
-glArchivItem_Bitmap* Loader::GetNationImage(unsigned nation, unsigned nr)
+glArchivItem_Bitmap* Loader::GetNationImage(Nation nation, unsigned nr)
 {
     return checkedCast<glArchivItem_Bitmap*>(GetNationImageN(nation, nr));
 }
 
-ITexture* Loader::GetNationTex(unsigned nation, unsigned nr)
+ITexture* Loader::GetNationTex(Nation nation, unsigned nr)
 {
     return checkedCast<ITexture*>(GetNationImage(nation, nr));
 }
 
-glArchivItem_Bitmap_Player* Loader::GetNationPlayerImage(unsigned nation, unsigned nr)
+glArchivItem_Bitmap_Player* Loader::GetNationPlayerImage(Nation nation, unsigned nr)
 {
     return checkedCast<glArchivItem_Bitmap_Player*>(GetNationImageN(nation, nr));
 }
@@ -365,40 +387,57 @@ void Loader::LoadDummyGUIFiles()
  *
  *  @return @p true bei Erfolg, @p false bei Fehler.
  */
-bool Loader::LoadFilesAtGame(const std::string& mapGfxPath, bool isWinterGFX, const std::vector<bool>& nations)
+bool Loader::LoadFilesAtGame(const std::string& mapGfxPath, bool isWinterGFX, const std::vector<Nation>& nations,
+                             const WorldDescription& worldDesc)
 {
-    if(NAT_BABYLONIANS < nations.size() && nations[NAT_BABYLONIANS])
-        AddOverrideFolder("<RTTR_RTTR>/LSTS/GAME/Babylonier", false);
-
     using namespace boost::assign; // Adds the vector += operator
+
+    BOOST_FOREACH(Nation i, nations)
+    {
+        const NationDesc& nat = worldDesc.get(i);
+        if(!nat.texOverideFolder.empty())
+            AddOverrideFolder(nat.texOverideFolder, false);
+    }
+
     std::vector<unsigned> files;
 
     files += 26, 44, 45, 86, 92, // rom_bobs.lst, carrier.bob, jobs.bob, boat.lst, boot_z.lst
-      58, 59, 60, 61, 62, 63,    // mis0bobs.lst, mis1bobs.lst, mis2bobs.lst, mis3bobs.lst, mis4bobs.lst, mis5bobs.lst
-      35, 36, 37, 38;            // afr_icon.lst, jap_icon.lst, rom_icon.lst, vik_icon.lst
-
-    for(unsigned char i = 0; i < NUM_NATIVE_NATS; ++i)
-    {
-        // ggf. Völker-Grafiken laden
-        if((i < nations.size() && nations[i]) || (i == NAT_ROMANS && NAT_BABYLONIANS < nations.size() && nations[NAT_BABYLONIANS]))
-            files.push_back(27 + i + (isWinterGFX ? NUM_NATIVE_NATS : 0));
-    }
-
+      58, 59, 60, 61, 62, 63;    // mis0bobs.lst, mis1bobs.lst, mis2bobs.lst, mis3bobs.lst, mis4bobs.lst, mis5bobs.lst
     // Load files
     if(!LoadFilesFromArray(files))
         return false;
 
-    const libsiedler2::ArchivItem_Palette* pal5 = GetPaletteN("pal5");
+    std::vector<std::string> files2;
+    files2.push_back(mapGfxPath);
+    BOOST_FOREACH(Nation i, nations)
+    {
+        const NationDesc& nat = worldDesc.get(i);
+        files2.push_back(isWinterGFX ? nat.winterTexFile : nat.summerTexFile);
+        BOOST_FOREACH(const BuildingDesc& bldDesc, nat.buildings)
+        {
+            std::string iconPath = bldDesc.icon.filepath;
+            if(iconPath.find(".") != std::string::npos && !helpers::contains(files2, iconPath))
+                files2.push_back(iconPath);
+        }
+    }
 
-    std::string mapGFXFile = RTTRCONFIG.ExpandPath(mapGfxPath);
-    if(!LoadFile(mapGFXFile, pal5))
+    if(!LoadFiles(files2))
         return false;
-    map_gfx = &GetInfoN(boost::algorithm::to_lower_copy(bfs::path(mapGFXFile).stem().string()));
+
+    map_gfx = &GetInfoN(boost::algorithm::to_lower_copy(bfs::path(mapGfxPath).stem().string()));
 
     isWinterGFX_ = isWinterGFX;
 
-    for(unsigned nation = 0; nation < NUM_NATS; ++nation)
-        nation_gfx[nation] = &GetInfoN(NATION_GFXSET_Z[isWinterGFX ? 1 : 0][nation]);
+    nation_gfx.clear();
+    nation_gfx.resize(nations.size());
+    BOOST_FOREACH(Nation i, nations)
+    {
+        const NationDesc& nat = worldDesc.get(i);
+        const bfs::path texFile(isWinterGFX ? nat.winterTexFile : nat.summerTexFile);
+        if(nation_gfx.size() <= i.value)
+            nation_gfx.resize(i.value + 1);
+        nation_gfx[i.value] = &GetInfoN(boost::algorithm::to_lower_copy(texFile.stem().string()));
+    }
 
     return true;
 }
@@ -430,7 +469,7 @@ bool Loader::LoadFiles(const std::vector<std::string>& files)
     return true;
 }
 
-void Loader::fillCaches()
+void Loader::fillCaches(const WorldDescription& worldDesc)
 {
     delete stp;
     stp = new glTexturePacker();
@@ -481,45 +520,37 @@ void Loader::fillCaches()
     }
 
     glArchivItem_Bob* bob_jobs = GetBobN("jobs");
-
-    for(unsigned nation = 0; nation < NUM_NATS; ++nation)
+    building_cache.resize(nation_gfx.size());
+    flag_cache.resize(nation_gfx.size());
+    bob_jobs_cache.resize(nation_gfx.size());
+    for(unsigned nation = 0; nation < nation_gfx.size(); ++nation)
     {
+        const NationDesc& natDesc = worldDesc.get(DescIdx<NationDesc>(nation));
+
         // BUILDINGS
         for(unsigned type = 0; type < NUM_BUILDING_TYPES; ++type)
         {
             glSmartBitmap& bmp = building_cache[nation][type][0];
             glSmartBitmap& skel = building_cache[nation][type][1];
+            glSmartBitmap& door = building_cache[nation][type][3];
 
             bmp.reset();
             skel.reset();
+            door.reset();
 
-            if(type == BLD_CHARBURNER)
-            {
-                unsigned id = nation * 8;
+            const BuildingDesc::Textures& textures = natDesc.buildings[type].textures;
 
-                bmp.add(GetImageN("charburner", id + (isWinterGFX_ ? 6 : 1)));
-                bmp.addShadow(GetImageN("charburner", id + 2));
+            bmp.add(GetImageFromFile(isWinterGFX_ ? textures.main.winter : textures.main.summer));
+            bmp.add(GetImageFromFile(isWinterGFX_ ? textures.shadow.winter : textures.shadow.summer));
 
-                skel.add(GetImageN("charburner", id + 3));
-                skel.addShadow(GetImageN("charburner", id + 4));
-            } else
-            {
-                bmp.add(GetNationImage(nation, 250 + 5 * type));
-                bmp.addShadow(GetNationImage(nation, 250 + 5 * type + 1));
-                if(type == BLD_HEADQUARTERS)
-                {
-                    // HQ has no skeleton, but we have a tent that can act as an HQ
-                    skel.add(GetImageN("mis0bobs", 6));
-                    skel.addShadow(GetImageN("mis0bobs", 7));
-                } else
-                {
-                    skel.add(GetNationImage(nation, 250 + 5 * type + 2));
-                    skel.addShadow(GetNationImage(nation, 250 + 5 * type + 3));
-                }
-            }
+            skel.add(GetImageFromFile(isWinterGFX_ ? textures.skeleton.winter : textures.skeleton.summer));
+            skel.add(GetImageFromFile(isWinterGFX_ ? textures.skeletonShadow.winter : textures.skeletonShadow.summer));
+
+            door.add(GetImageFromFile(isWinterGFX_ ? textures.door.winter : textures.door.summer));
 
             stp->add(bmp);
             stp->add(skel);
+            stp->add(door);
         }
 
         // FLAGS
@@ -534,8 +565,8 @@ void Loader::fillCaches()
 
                 bmp.reset();
 
-                bmp.add(GetNationPlayerImage(nation, nr));
-                bmp.addShadow(GetNationImage(nation, nr + 10));
+                bmp.add(GetNationPlayerImage(DescIdx<NationDesc>(nation), nr));
+                bmp.addShadow(GetNationImage(DescIdx<NationDesc>(nation), nr + 10));
 
                 stp->add(bmp);
             }
@@ -567,21 +598,15 @@ void Loader::fillCaches()
 
                         if((job == JOB_SCOUT) || ((job >= JOB_PRIVATE) && (job <= JOB_GENERAL)))
                         {
-                            if(nation < NUM_NATIVE_NATS)
-                            {
-                                id += NATION_RTTR_TO_S2[nation] * 6;
-                            } else if(nation == NAT_BABYLONIANS) //-V547
-                            {
-                                id += NATION_RTTR_TO_S2[nation] * 6;
-                                /* TODO: change this once we have own job pictures for babylonians
-                                                                //Offsets to new job imgs
-                                                                overlayOffset = (job == JOB_SCOUT) ? 1740 : 1655;
+                            /* TODO: change this once we have own military pictures for other nations.
+                            Example:
+                            //Offsets to new job imgs
+                            overlayOffset = (job == JOB_SCOUT) ? 1740 : 1655;
 
-                                                                //8 Frames * 6 Directions * 6 Types
-                                                                overlayOffset += (nation - NUM_NATIVE_NATS) * (8 * 6 * 6);
-                                */
-                            } else
-                                throw std::runtime_error("Wrong nation");
+                            //8 Frames * 6 Directions * 6 Types
+                            overlayOffset += (nation - NUM_NATIVE_NATS) * (8 * 6 * 6);
+                            */
+                            id += natDesc.s2Id * 6;
                         }
                     }
 
@@ -607,8 +632,8 @@ void Loader::fillCaches()
 
         bmp.reset();
 
-        bmp.add(GetNationPlayerImage(nation, 0));
-        bmp.addShadow(GetNationImage(nation, 1));
+        bmp.add(GetNationPlayerImage(DescIdx<NationDesc>(nation), 0));
+        bmp.addShadow(GetNationImage(DescIdx<NationDesc>(nation), 1));
 
         stp->add(bmp);
     }
@@ -803,7 +828,10 @@ void Loader::fillCaches()
             }
         }
     }
+}
 
+void Loader::packCachedTextures()
+{
     if(SETTINGS.video.shared_textures)
     {
         // generate mega texture
@@ -952,10 +980,7 @@ bool Loader::LoadFile(libsiedler2::Archiv& archiv, const std::string& pfad, cons
  */
 bool Loader::LoadFile(const std::string& pfad, const libsiedler2::ArchivItem_Palette* palette, bool isFromOverrideDir)
 {
-    std::string lowerPath = boost::algorithm::to_lower_copy(pfad);
-    std::string name = bfs::path(lowerPath).filename().stem().string();
-
-    FileEntry& entry = files_[name];
+    FileEntry& entry = files_[GetKeyFromPath(pfad)];
     // Load if: 1. Not loaded
     //          2. archive content changed BUT we are not loading an override file or the file wasn't loaded since the last override change
     if(entry.archiv.empty() || (entry.filesUsed != GetFilesToLoad(pfad) && (!isFromOverrideDir || !entry.loadedAfterOverrideChange)))
@@ -967,12 +992,19 @@ bool Loader::LoadFile(const std::string& pfad, const libsiedler2::ArchivItem_Pal
     return true;
 }
 
+std::string Loader::GetKeyFromPath(const std::string& filepath)
+{
+    std::string name = bfs::path(filepath).stem().string();
+    boost::algorithm::to_lower(name);
+    return name;
+}
+
 /**
  *  @brief Loads a file or directory into an archiv
  *
  *  @param filePath Path to file or directory
  *  @param palette Palette to use for possible graphic files
- *  @param to Archtive to write to
+ *  @param to Archive to write to
  */
 bool Loader::LoadSingleFile(libsiedler2::Archiv& to, const std::string& filePath, const libsiedler2::ArchivItem_Palette* palette)
 {

@@ -34,8 +34,9 @@
 #include "ogl/glArchivItem_Bitmap_Player.h"
 #include "postSystem/PostMsgWithBuilding.h"
 #include "world/GameWorldGame.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/BuildingProperties.h"
+#include "gameData/NationData.h"
 #include <boost/foreach.hpp>
 #include <numeric>
 
@@ -46,11 +47,11 @@ nobUsual::nobUsual(BuildingType type, MapPoint pos, unsigned char player, Nation
 {
     std::fill(numWares.begin(), numWares.end(), 0);
 
-    ordered_wares.resize(BLD_WORK_DESC[bldType_].waresNeeded.getNum());
+    ordered_wares.resize(GetDescription().workDescr.waresNeeded.getNum());
 
     // Arbeiter bestellen
     GamePlayer& owner = gwg->GetPlayer(player);
-    owner.AddJobWanted(BLD_WORK_DESC[bldType_].job, this);
+    owner.AddJobWanted(GetDescription().workDescr.job, this);
 
     // Tür aufmachen,bis Gebäude besetzt ist
     OpenDoor();
@@ -70,7 +71,7 @@ nobUsual::nobUsual(SerializedGameData& sgd, const unsigned obj_id)
     for(unsigned i = 0; i < 3; ++i)
         numWares[i] = sgd.PopUnsignedChar();
 
-    ordered_wares.resize(BLD_WORK_DESC[bldType_].waresNeeded.getNum());
+    ordered_wares.resize(GetDescription().workDescr.waresNeeded.getNum());
 
     BOOST_FOREACH(std::list<Ware*>& orderedWare, ordered_wares)
         sgd.PopObjectContainer(orderedWare, GOT_WARE);
@@ -126,9 +127,9 @@ void nobUsual::DestroyBuilding()
     GetEvMgr().RemoveEvent(productivity_ev);
 
     // Inventur entsprechend verringern wegen den Waren, die vernichtetet werden
-    for(unsigned i = 0; i < BLD_WORK_DESC[bldType_].waresNeeded.size(); ++i)
+    for(unsigned i = 0; i < GetDescription().workDescr.waresNeeded.size(); ++i)
     {
-        GoodType ware = BLD_WORK_DESC[bldType_].waresNeeded[i];
+        GoodType ware = GetDescription().workDescr.waresNeeded[i];
         if(ware == GD_NOTHING)
             break;
         gwg->GetPlayer(player).DecreaseInventoryWare(ware, numWares[i]);
@@ -142,40 +143,32 @@ void nobUsual::Draw(DrawPoint drawPt)
 
     // Wenn Produktion gestoppt ist, Schild außen am Gebäude zeichnen zeichnen
     if(disable_production_virtual)
-        LOADER.GetMapImageN(46)->DrawFull(drawPt + BUILDING_SIGN_CONSTS[nation][bldType_]);
+        LOADER.GetMapImageN(46)->DrawFull(drawPt + GetDescription().signPos);
 
     // Rauch zeichnen
 
     // Raucht dieses Gebäude und ist es in Betrieb? (nur arbeitende Gebäude rauchen schließlich)
-    if(is_working && BUILDING_SMOKE_CONSTS[nation][bldType_].type)
+    if(is_working && GetDescription().smoke.type)
     {
         // Dann Qualm zeichnen (damit Qualm nicht synchron ist, x- und y- Koordinate als Unterscheidung
-        LOADER
-          .GetMapImageN(692 + BUILDING_SMOKE_CONSTS[nation][bldType_].type * 8
-                        + GAMECLIENT.GetGlobalAnimation(8, 5, 2, (GetX() + GetY()) * 100))
-          ->DrawFull(drawPt + BUILDING_SMOKE_CONSTS[nation][bldType_].offset, 0x99EEEEEE);
+        LOADER.GetMapImageN(692 + GetDescription().smoke.type * 8 + GAMECLIENT.GetGlobalAnimation(8, 5, 2, (GetX() + GetY()) * 100))
+          ->DrawFull(drawPt + GetDescription().smoke.offset, 0x99EEEEEE);
+    }
+
+    if(worker)
+    {
+        DrawAnimation(drawPt, "occupied");
+        if(is_working)
+            DrawAnimation(drawPt, "work");
+        else
+            DrawAnimation(drawPt, "idle");
     }
 
     // TODO: zusätzliche Dinge wie Mühlenräder, Schweinchen etc bei bestimmten Gebäuden zeichnen
 
-    // Bei Mühle, wenn sie nicht arbeitet, immer Mühlenräder (nichtdrehend) zeichnen
-    if(bldType_ == BLD_MILL && !is_working)
-    {
-        // Flügel der Mühle
-        LOADER.GetNationImage(nation, 250 + 5 * 49)->DrawFull(drawPt);
-        // Schatten der Flügel
-        LOADER.GetNationImage(nation, 250 + 5 * 49 + 1)->DrawFull(drawPt, COLOR_SHADOW);
-    }
     // Esel in den Kammer bei Eselzucht zeichnen
-    else if(bldType_ == BLD_DONKEYBREEDER)
+    if(bldType_ == BLD_DONKEYBREEDER)
     {
-        // Für alle Völker jeweils
-        // X-Position der Esel
-        const DrawPointInit DONKEY_OFFSETS[NUM_NATS][3] = {{{13, -9}, {26, -9}, {39, -9}},
-                                                           {{3, -17}, {16, -17}, {30, -17}},
-                                                           {{2, -21}, {15, -21}, {29, -21}},
-                                                           {{7, -17}, {18, -17}, {30, -17}},
-                                                           {{3, -22}, {16, -22}, {30, -22}}};
         // Animations-IDS des Esels
         const boost::array<unsigned char, 25> DONKEY_ANIMATION = {
           {0, 1, 2, 3, 4, 5, 6, 7, 7, 7, 6, 5, 4, 4, 5, 6, 5, 7, 6, 5, 4, 3, 2, 1, 0}};
@@ -189,15 +182,13 @@ void nobUsual::Draw(DrawPoint drawPt)
         if(productivity >= 30)
             LOADER
               .GetMapImageN(2180 + DONKEY_ANIMATION[GAMECLIENT.GetGlobalAnimation(DONKEY_ANIMATION.size(), 5, 2, GetX() * (player + 2))])
-              ->DrawFull(drawPt + DONKEY_OFFSETS[nation][0]);
+              ->DrawFull(drawPt + DONKEY_OFFSETS[nation.value][0]);
         if(productivity >= 60)
             LOADER.GetMapImageN(2180 + DONKEY_ANIMATION[GAMECLIENT.GetGlobalAnimation(DONKEY_ANIMATION.size(), 5, 2, GetY())])
-              ->DrawFull(drawPt + DONKEY_OFFSETS[nation][1]);
+              ->DrawFull(drawPt + DONKEY_OFFSETS[nation.value][1]);
         if(productivity >= 90)
-            LOADER
-              .GetMapImageN(
-                2180 + DONKEY_ANIMATION[GAMECLIENT.GetGlobalAnimation(DONKEY_ANIMATION.size(), 5, 2, GetX() + GetY() * (nation + 1))])
-              ->DrawFull(drawPt + DONKEY_OFFSETS[nation][2]);
+            LOADER.GetMapImageN(2180 + DONKEY_ANIMATION[GAMECLIENT.GetGlobalAnimation(DONKEY_ANIMATION.size(), 5, 2, GetX() + GetY())])
+              ->DrawFull(drawPt + DONKEY_OFFSETS[nation.value][2]);
     }
     // Bei Katapulthaus Katapult oben auf dem Dach zeichnen, falls er nicht "arbeitet"
     else if(bldType_ == BLD_CATAPULT && !is_working)
@@ -208,20 +199,10 @@ void nobUsual::Draw(DrawPoint drawPt)
     // Bei Schweinefarm Schweinchen auf dem Hof zeichnen
     else if(bldType_ == BLD_PIGFARM && this->HasWorker())
     {
-        // Position der 5 Schweinchen für alle 4 Völker (1. ist das große Schwein)
-        const DrawPointInit PIG_POSITIONS[NUM_NATS][5] = {
-          //  gr. S. 1.klS 2. klS usw
-          {{3, -8}, {17, 3}, {-12, 4}, {-2, 10}, {-22, 11}},    // Afrikaner
-          {{-16, 0}, {-37, 0}, {-32, 8}, {-16, 10}, {-22, 18}}, // Japaner
-          {{-15, 0}, {-4, 9}, {-22, 10}, {2, 19}, {-15, 20}},   // Römer
-          {{5, -5}, {25, -12}, {-7, 7}, {-23, 11}, {-10, 14}},  // Wikinger
-          {{-16, 5}, {-37, 5}, {-32, -1}, {-16, 15}, {-27, 18}} // Babylonier
-        };
-
         /// Großes Schwein zeichnen
-        LOADER.GetMapImageN(2160)->DrawFull(drawPt + PIG_POSITIONS[nation][0], COLOR_SHADOW);
+        LOADER.GetMapImageN(2160)->DrawFull(drawPt + PIG_POSITIONS[nation.value][0], COLOR_SHADOW);
         LOADER.GetMapImageN(2100 + GAMECLIENT.GetGlobalAnimation(12, 3, 1, GetX() + GetY() + GetObjId()))
-          ->DrawFull(drawPt + PIG_POSITIONS[nation][0]);
+          ->DrawFull(drawPt + PIG_POSITIONS[nation.value][0]);
 
         // Die 4 kleinen Schweinchen, je nach Produktivität
         for(unsigned i = 1; i < min<unsigned>(unsigned(productivity) / 20 + 1, 5); ++i)
@@ -233,17 +214,14 @@ void nobUsual::Draw(DrawPoint drawPt)
                                                            2, 0, 1, 2, 2, 0, 0, 0, 3, 0, 2, 0, 3, 0, 3, 0, 1, 1, 0, 3, 0};
             const unsigned short animpos =
               GAMECLIENT.GetGlobalAnimation(63 * 12, 63 * 4 - i * 5, 1, 183 * i + GetX() * GetObjId() + GetY() * i);
-            LOADER.GetMapImageN(2160)->DrawFull(drawPt + PIG_POSITIONS[nation][i], COLOR_SHADOW);
-            LOADER.GetMapImageN(2112 + smallpig_animations[animpos / 12] * 12 + animpos % 12)->DrawFull(drawPt + PIG_POSITIONS[nation][i]);
+            LOADER.GetMapImageN(2160)->DrawFull(drawPt + PIG_POSITIONS[nation.value][i], COLOR_SHADOW);
+            LOADER.GetMapImageN(2112 + smallpig_animations[animpos / 12] * 12 + animpos % 12)
+              ->DrawFull(drawPt + PIG_POSITIONS[nation.value][i]);
         }
 
         // Ggf. Sounds abspielen (oink oink), da soll sich der Schweinezüchter drum kümmen
         dynamic_cast<nofPigbreeder*>(worker)->MakePigSounds(); //-V522
     }
-    // Bei nubischen Bergwerken das Feuer vor dem Bergwerk zeichnen
-    else if(BuildingProperties::IsMine(GetBuildingType()) && worker && nation == NAT_AFRICANS)
-        LOADER.GetMapPlayerImage(740 + GAMECLIENT.GetGlobalAnimation(8, 5, 2, GetObjId() + GetX() + GetY()))
-          ->DrawFull(drawPt + NUBIAN_MINE_FIRE[bldType_ - BLD_GRANITEMINE]);
 }
 
 void nobUsual::HandleEvent(const unsigned id)
@@ -268,7 +246,7 @@ void nobUsual::HandleEvent(const unsigned id)
         // Ware bestellen (falls noch Platz ist) und nicht an Betriebe, die stillgelegt wurden!
         if(!disable_production)
         {
-            const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+            const BldWorkDescription& workDesc = GetDescription().workDescr;
             RTTR_Assert(workDesc.waresNeeded[last_ordered_ware] != GD_NOTHING);
             // How many wares can we have of each type?
             unsigned wareSpaces = workDesc.numSpacesPerWare;
@@ -293,7 +271,7 @@ void nobUsual::HandleEvent(const unsigned id)
 void nobUsual::AddWare(Ware*& ware)
 {
     // Gucken, um was für einen Warentyp es sich handelt und dann dort hinzufügen
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     for(unsigned char i = 0; i < workDesc.waresNeeded.size(); ++i)
     {
         if(ware->type == workDesc.waresNeeded[i])
@@ -326,7 +304,7 @@ bool nobUsual::FreePlaceAtFlag()
 void nobUsual::WareLost(Ware* ware)
 {
     // Ware konnte nicht kommen --> raus damit
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     for(unsigned char i = 0; i < workDesc.waresNeeded.size(); ++i)
     {
         if(ware->type == workDesc.waresNeeded[i])
@@ -342,7 +320,7 @@ void nobUsual::GotWorker(Job /*job*/, noFigure* worker)
 {
     this->worker = static_cast<nofBuildingWorker*>(worker);
 
-    if(BLD_WORK_DESC[bldType_].waresNeeded[0] != GD_NOTHING)
+    if(GetDescription().workDescr.waresNeeded[0] != GD_NOTHING)
         // erste Ware bestellen
         HandleEvent(0);
 }
@@ -365,12 +343,12 @@ void nobUsual::WorkerLost()
 
     // neuen Arbeiter bestellen
     worker = NULL;
-    gwg->GetPlayer(player).AddJobWanted(BLD_WORK_DESC[bldType_].job, this);
+    gwg->GetPlayer(player).AddJobWanted(GetDescription().workDescr.job, this);
 }
 
 bool nobUsual::WaresAvailable()
 {
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     if(workDesc.useOneWareEach)
     {
         // Any ware not there -> false, else true
@@ -398,7 +376,7 @@ bool nobUsual::WaresAvailable()
 
 void nobUsual::ConsumeWares()
 {
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     unsigned numWaresNeeded = workDesc.waresNeeded.getNum();
     if(numWaresNeeded == 0)
         return;
@@ -448,7 +426,7 @@ unsigned nobUsual::CalcDistributionPoints(noRoadNode* /*start*/, const GoodType 
     if(disable_production)
         return 0;
 
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     // Warentyp ermitteln
     unsigned id;
     for(id = 0; id < workDesc.waresNeeded.size(); ++id)
@@ -481,7 +459,7 @@ unsigned nobUsual::CalcDistributionPoints(noRoadNode* /*start*/, const GoodType 
 void nobUsual::TakeWare(Ware* ware)
 {
     // Ware in die Bestellliste aufnehmen
-    const BldWorkDescription& workDesc = BLD_WORK_DESC[bldType_];
+    const BldWorkDescription& workDesc = GetDescription().workDescr;
     for(unsigned char i = 0; i < workDesc.waresNeeded.size(); ++i)
     {
         if(ware->type == workDesc.waresNeeded[i])

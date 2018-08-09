@@ -24,6 +24,7 @@
 #include "network/GameClient.h"
 #include "ogl/glArchivItem_Bitmap_Player.h"
 #include "world/GameWorldGame.h"
+#include "gameData/NationData.h"
 
 nofButcher::nofButcher(const MapPoint pos, const unsigned char player, nobUsual* workplace)
     : nofWorkman(JOB_BUTCHER, pos, player, workplace)
@@ -33,12 +34,10 @@ nofButcher::nofButcher(SerializedGameData& sgd, const unsigned obj_id) : nofWork
 
 void nofButcher::DrawWorking(DrawPoint drawPt)
 {
-    static const DrawPointInit offsets[NUM_NATS] = {{38, 2}, {-3, 5}, {21, -1}, {26, -5}, {-7, 2}};
-
     unsigned now_id;
 
     LOADER.GetPlayerImage("rom_bobs", 160 + (now_id = GAMECLIENT.Interpolate(136, current_ev)) % 6)
-      ->DrawFull(drawPt + offsets[workplace->GetNation()], COLOR_WHITE, gwg->GetPlayer(workplace->GetPlayer()).color);
+      ->DrawFull(drawPt + butcher::workOffset[workplace->GetNation().value], COLOR_WHITE, gwg->GetPlayer(workplace->GetPlayer()).color);
 
     if(now_id % 6 == 5)
     {

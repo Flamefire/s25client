@@ -87,10 +87,66 @@ const Position FIRE_POS[NUM_NATS] = {Position(), Position(0, 0), Position(0, 0),
 const Position EXTRAFIRE_POS[NUM_NATS] = {Position(36, -51), Position(), Position(8, -115), Position(5, -80), Position()};
 } // namespace harbor
 
+namespace baker
+{
+    const PositionPtInit workOffset[NUM_NATS] = { { 40, -4 },{ -16, 8 },{ -5, 9 },{ -8, 7 },{ -16, 8 } };
+    const PositionPtInit walkOffsets[NUM_NATS][8] = // nation, schrit, x-y
+    { { { 10, 10 },{ 17, 12 },{ 24, 14 },{ 32, 14 },{ 34, 9 },{ 36, 4 },{ 38, -1 },{ 40, -4 } },
+    { { 9, 11 },{ 11, 13 },{ 7, 17 },{ 3, 20 },{ -1, 17 },{ -5, 14 },{ -9, 12 },{ -13, 10 } },
+    { { 9, 9 },{ 11, 11 },{ 9, 13 },{ 7, 15 },{ 4, 13 },{ 1, 11 },{ -2, 9 },{ -5, 9 } },
+    { { 9, 11 },{ 11, 13 },{ 9, 15 },{ 7, 17 },{ 4, 15 },{ 1, 13 },{ -2, 11 },{ -5, 9 } },
+    { { 9, 11 },{ 11, 13 },{ 7, 17 },{ 3, 20 },{ -1, 17 },{ -5, 14 },{ -9, 12 },{ -13, 10 } } };
+    const signed char walkdirection[NUM_NATS][3] = {
+        { 3, 3, 2 },{ 4, 5, 0 },{ 4, 5, 0 },{ 4, 5, 0 },{ 4, 5, 0 } };
+}
+
+namespace brewer
+{
+    const PositionPtInit workOffset[NUM_NATS] = { { 10, 17 },{ 10, 17 },{ 10, 17 },{ 10, 17 },{ 10, 17 } };
+}
+
+namespace butcher
+{
+    const PositionPtInit workOffset[NUM_NATS] = { { 38, 2 },{ -3, 5 },{ 21, -1 },{ 26, -5 },{ -7, 2 } };
+}
+
+namespace carpenter
+{
+    const PositionPtInit workOffset[NUM_NATS] = { { 30, 3 },{ 38, 3 },{ 30, 8 },{ 17, -2 },{ 38, 3 } };
+}
+
+namespace donkeybreeder
+{
+    const PositionPtInit walk_start[NUM_NATS] = { { 2, 2 },{ -6, -6 },{ -7, -7 },{ -7, -7 },{ -6, -6 } };
+    const signed char walk_length[NUM_NATS] = { 26, 23, 23, 27, 23 };
+}
+
+namespace ironfounder
+{
+    const PositionPtInit offsets[NUM_NATS] = { { -22, 12 },{ -23, 3 },{ -19, 8 },{ -18, 4 },{ -33, 7 } };
+}
+
+namespace miller
+{
+    const PositionPtInit offsets_sitdown[NUM_NATS] = { { 23, 8 },{ 23, 8 },{ 23, 8 },{ 23, 8 },{ 23, 8 } };
+    const PositionPtInit walkoffsets[8] = { { 8, 8 },{ 10, 9 },{ 12, 10 },{ 14, 11 },{ 16, 10 },{ 18, 9 },{ 20, 8 },{ 22, 8 } };
+}
+
+template<typename T>
+std::string toString(T val)
+{
+    return s25util::toStringClassic(val);
+}
+
 template<typename T>
 std::string toString(const Point<T>& pt)
 {
-    return std::string("{") + s25util::toStringClassic(pt.x) + "," + s25util::toStringClassic(pt.y) + "}";
+    return std::string("{") + toString(pt.x) + "," + toString(pt.y) + "}";
+}
+
+std::string toString(const PositionPtInit& pt)
+{
+    return std::string("{") + toString(pt.x) + "," + toString(pt.y) + "}";
 }
 
 void addNewData(const std::string& baseLuaPath)
@@ -117,7 +173,7 @@ void addNewData(const std::string& baseLuaPath)
                                       "\"" + basePath + boost::algorithm::to_upper_copy(NATION_GFXSET_Z[1][i]) + ".LST\"", comment);
         comment = "Default avatar texture";
         gdNations[i].insertFieldAfter(":winterTexFile", "defaultAvatar",
-                                      "{ filepath = \"io\", idx = " + s25util::toStringClassic(avatarIds[i]) + " }", comment);
+                                      "{ filepath = \"io\", idx = " + toString(avatarIds[i]) + " }", comment);
     }
     {
         std::string basePath = "<RTTR_RTTR>/LSTS/GAME/Babylonier";
@@ -151,30 +207,30 @@ void addNewData(const std::string& baseLuaPath)
             if(bld == OldBuildingType::CHARBURNER)
             {
                 gd.insertFieldAfter(bldName + ":name", "icon",
-                                    "{ filepath = \"charburner\", idx = " + s25util::toStringClassic(natIdx * 8 + 8) + " }");
+                                    "{ filepath = \"charburner\", idx = " + toString(natIdx * 8 + 8) + " }");
                 gd.insertTable("texture");
                 gd.insertFieldAfter(bldName + ":texture:", "main",
-                                    "{{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 1) + " }, { \"charburner\", "
-                                      + s25util::toStringClassic(natIdx * 8 + 6) + " }}");
-                gd.insertField("shadow", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 2) + " }");
-                gd.insertField("skeleton", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 3) + " }");
-                gd.insertField("skeletonShadow", "{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 4) + " }");
-                gd.insertField("door", "{{ \"charburner\", " + s25util::toStringClassic(natIdx * 8 + 5) + " }, { \"charburner\", "
-                                         + s25util::toStringClassic(natIdx * 8 + 7) + " }}");
+                                    "{{ \"charburner\", " + toString(natIdx * 8 + 1) + " }, { \"charburner\", "
+                                      + toString(natIdx * 8 + 6) + " }}");
+                gd.insertField("shadow", "{ \"charburner\", " + toString(natIdx * 8 + 2) + " }");
+                gd.insertField("skeleton", "{ \"charburner\", " + toString(natIdx * 8 + 3) + " }");
+                gd.insertField("skeletonShadow", "{ \"charburner\", " + toString(natIdx * 8 + 4) + " }");
+                gd.insertField("door", "{{ \"charburner\", " + toString(natIdx * 8 + 5) + " }, { \"charburner\", "
+                                         + toString(natIdx * 8 + 7) + " }}");
 
             } else
             {
                 std::string comment = (i) ? "" : "Texture for the icon";
-                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + s25util::toStringClassic((int)bld) + " }",
+                gd.insertFieldAfter(bldName + ":name", "icon", "{ filepath = iconFile, idx = " + toString((int)bld) + " }",
                                     comment);
                 comment = (i) ? "" :
                                 "Textures for the building. Required: main, skeleton, door. Optional: shadow, skeletonShadow. Multiple "
                                 "values: 0 = summer, 1 = winter";
                 gd.insertTable("texture", comment);
-                gd.insertFieldAfter(bldName + ":texture:", "main", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld) + ")",
+                gd.insertFieldAfter(bldName + ":texture:", "main", "getSummerAndWinterTex(" + toString(250 + 5 * bld) + ")",
                                     comment);
                 comment = (i) ? "" : "Shadow texture";
-                gd.insertField("shadow", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 1) + ")", comment);
+                gd.insertField("shadow", "getSummerAndWinterTex(" + toString(250 + 5 * bld + 1) + ")", comment);
                 comment = (i) ? "" : "Skeleton (in construction) texture and its shadow";
                 if(bld == OldBuildingType::HEADQUARTERS)
                 {
@@ -183,11 +239,11 @@ void addNewData(const std::string& baseLuaPath)
                     gd.insertField("skeletonShadow", "{ filepath = \"mis0bobs\", idx = 7 }", comment);
                 } else
                 {
-                    gd.insertField("skeleton", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 2) + ")", comment);
-                    gd.insertField("skeletonShadow", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 3) + ")", comment);
+                    gd.insertField("skeleton", "getSummerAndWinterTex(" + toString(250 + 5 * bld + 2) + ")", comment);
+                    gd.insertField("skeletonShadow", "getSummerAndWinterTex(" + toString(250 + 5 * bld + 3) + ")", comment);
                 }
                 comment = (i) ? "" : "Texture of the (closed) door";
-                gd.insertField("door", "getSummerAndWinterTex(" + s25util::toStringClassic(250 + 5 * bld + 4) + ")", comment);
+                gd.insertField("door", "getSummerAndWinterTex(" + toString(250 + 5 * bld + 4) + ")", comment);
             }
             if(bld == OldBuildingType::HARBOR_BUILDING)
             {
@@ -208,6 +264,53 @@ void addNewData(const std::string& baseLuaPath)
                 gd.insertFieldAfter(bldName + ":workOffsets:", "builder", toString(harbor::BUILDER_POS[natIdx]));
                 gd.insertField("boards", toString(harbor::BOARDS_POS[natIdx]));
                 gd.insertField("stones", toString(harbor::STONES_POS[natIdx]));
+            }
+            if(bld == OldBuildingType::BAKERY)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets").isSingleLine_ = LuaTable::SL_NO;
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(baker::workOffset[natIdx]));
+                for(int i = 0; i < 8; i++)
+                    gd.insertField("step"+ toString(i), toString(baker::walkOffsets[natIdx][i]));
+            }
+            if(bld == OldBuildingType::BREWERY)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets");
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(brewer::workOffset[natIdx]));
+            }
+            if(bld == OldBuildingType::SLAUGHTERHOUSE)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets");
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(butcher::workOffset[natIdx]));
+            }
+            if(bld == OldBuildingType::SAWMILL)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets");
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(carpenter::workOffset[natIdx]));
+            }
+            if(bld == OldBuildingType::DONKEY_BREEDING)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets").isSingleLine_ = LuaTable::SL_NO;
+                gd.insertFieldAfter(bldName + ":workOffsets:", "start", toString(donkeybreeder::walk_start[natIdx]));
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(Position(donkeybreeder::walk_length[natIdx], 4) + donkeybreeder::walk_start[natIdx]));
+            }
+            if(bld == OldBuildingType::IRON_SMELTER)
+            {
+                gd.insertTableAfter(bldName + ":textures", "workOffsets");
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(ironfounder::offsets[natIdx]));
+            }
+            if(bld == OldBuildingType::MILL)
+            {
+                gd.insertTableAfter(bldName + ":texture", "animations").isSingleLine_ = LuaTable::SL_NO;
+                gd.insertFieldAfter(bldName + ":animations:", "idle",
+                    "{ filepath = \"<" + std::string(NationNames[natIdx])
+                    + ">\", frames=495, hasShadows = true, msPerFrame = 0}");
+                gd.insertField("work",
+                    "{ filepath = \"<" + std::string(NationNames[natIdx])
+                    + ">\", frames=range(460, 500, 5), hasShadows = true, msPerFrame = 197}");
+                gd.insertTableAfter(bldName + ":textures", "workOffsets").isSingleLine_ = LuaTable::SL_NO;
+                gd.insertFieldAfter(bldName + ":workOffsets:", "work", toString(baker::workOffset[natIdx]));
+                for(int i = 0; i < 8; i++)
+                    gd.insertField("step" + toString(i), toString(baker::walkOffsets[natIdx][i]));
             }
 
             std::string comment = (i) ? "" : "Y-Position of the door (X will be calculated by extending the path from the flag)";

@@ -18,9 +18,9 @@
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "iwTransport.h"
 
-#include "DrawPointInit.h"
 #include "GamePlayer.h"
 #include "Loader.h"
+#include "PositionPtInit.h"
 #include "WindowManager.h"
 #include "controls/ctrlImageButton.h"
 #include "controls/ctrlOptionGroup.h"
@@ -71,8 +71,8 @@ iwTransport::iwTransport(const GameWorldViewer& gwv, GameCommandFactory& gcFacto
     TRANSPORT_SPRITES[13] = LOADER.GetMapTexN(2250 + GD_BOAT);
 
     // Positionen der einzelnen Buttons
-    const DrawPointInit BUTTON_POS[14] = {{20, 25},  {52, 42},  {84, 59},   {116, 76}, {84, 93},  {52, 110}, {20, 127},
-                                          {52, 144}, {84, 161}, {116, 178}, {84, 195}, {52, 212}, {20, 229}, {52, 246}};
+    const PositionPtInit BUTTON_POS[14] = {{20, 25},  {52, 42},  {84, 59},   {116, 76}, {84, 93},  {52, 110}, {20, 127},
+                                           {52, 144}, {84, 161}, {116, 178}, {84, 195}, {52, 212}, {20, 229}, {52, 246}};
 
     // Einstellungen festlegen
     for(unsigned char i = 0; i < 14; ++i)

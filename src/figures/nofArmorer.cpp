@@ -29,7 +29,7 @@
 #include "ogl/glArchivItem_Bitmap_Player.h"
 #include "world/GameWorldGame.h"
 #include "gameData/JobConsts.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 
 nofArmorer::nofArmorer(const MapPoint pos, const unsigned char player, nobUsual* workplace)
     : nofWorkman(JOB_ARMORER, pos, player, workplace), sword_shield(false)
@@ -46,16 +46,14 @@ nofArmorer::nofArmorer(SerializedGameData& sgd, const unsigned obj_id) : nofWork
 
 void nofArmorer::DrawWorking(DrawPoint drawPt)
 {
-    const DrawPointInit offsets[NUM_NATS] = {{-10, 15}, {-11, 9}, {-14, 16}, {-19, 1}, {-11, 9}};
-
     unsigned max_id = 280;
     unsigned now_id = GAMECLIENT.Interpolate(max_id, current_ev);
     if(now_id < 200)
     {
-        unsigned char wpNation = workplace->GetNation();
+        unsigned char wpNation = workplace->GetNation().value;
         unsigned plColor = gwg->GetPlayer(player).color;
 
-        LOADER.GetPlayerImage("rom_bobs", 16 + (now_id % 8))->DrawFull(drawPt + offsets[wpNation], COLOR_WHITE, plColor);
+        LOADER.GetPlayerImage("rom_bobs", 16 + (now_id % 8))->DrawFull(drawPt + ARMORER_POS[wpNation], COLOR_WHITE, plColor);
 
         if((now_id % 8) == 5)
         {
@@ -72,7 +70,7 @@ unsigned short nofArmorer::GetCarryID() const
     else
     {
         // Je nach Nation einen bestimmtem Schild fertigen
-        switch(gwg->GetPlayer(player).nation)
+        switch(gwg->GetPlayer(player).GetNation().value)
         {
             case NAT_AFRICANS: return 60;
             case NAT_JAPANESE: return 58;

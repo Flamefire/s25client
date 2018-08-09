@@ -25,11 +25,11 @@
 #include "ogl/FontStyle.h"
 #include "ogl/glArchivItem_Bitmap.h"
 #include "world/GameWorldView.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 
 iwBuildingSite::iwBuildingSite(GameWorldView& gwv, const noBuildingSite* const buildingsite)
-    : IngameWindow(buildingsite->CreateGUIID(), IngameWindow::posAtMouse, Extent(226, 194),
-                   _(BUILDING_NAMES[buildingsite->GetBuildingType()]), LOADER.GetImageN("resource", 41)),
+    : IngameWindow(buildingsite->CreateGUIID(), IngameWindow::posAtMouse, Extent(226, 194), _(buildingsite->GetDescription().name),
+                   LOADER.GetImageN("resource", 41)),
       gwv(gwv), buildingsite(buildingsite)
 {
     // Bild des Gebäudes
@@ -52,7 +52,7 @@ void iwBuildingSite::Msg_ButtonClick(const unsigned ctrl_id)
     {
         case 2: // Hilfe
         {
-            WINDOWMANAGER.Show(new iwHelp(GUI_ID(CGI_HELP), _(BUILDING_HELP_STRINGS[buildingsite->GetBuildingType()])));
+            WINDOWMANAGER.Show(new iwHelp(GUI_ID(CGI_HELP), _(buildingsite->GetDescription().help)));
         }
         break;
         case 3: // Gebäude abbrennen
@@ -82,12 +82,12 @@ void iwBuildingSite::Msg_PaintAfter()
 
         if(i == 0)
         {
-            wares_count = BUILDING_COSTS[buildingsite->GetNation()][buildingsite->GetBuildingType()].boards;
+            wares_count = buildingsite->GetDescription().costs.boards;
             wares_used = buildingsite->getUsedBoards();
             wares_delivered = buildingsite->getBoards() + wares_used;
         } else
         {
-            wares_count = BUILDING_COSTS[buildingsite->GetNation()][buildingsite->GetBuildingType()].stones;
+            wares_count = buildingsite->GetDescription().costs.stones;
             wares_used = buildingsite->getUsedStones();
             wares_delivered = buildingsite->getStones() + wares_used;
         }

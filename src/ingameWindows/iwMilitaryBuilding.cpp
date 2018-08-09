@@ -35,7 +35,6 @@
 #include "ogl/glArchivItem_Font.h"
 #include "world/GameWorldBase.h"
 #include "world/GameWorldView.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/MilitaryConsts.h"
 #include <boost/foreach.hpp>
 #include <set>

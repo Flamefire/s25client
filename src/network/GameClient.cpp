@@ -284,6 +284,7 @@ void GameClient::StartGame(const unsigned random_init)
     // Create the game
     game.reset(
       new Game(gameLobby->getSettings(), startGF, std::vector<PlayerInfo>(gameLobby->getPlayers().begin(), gameLobby->getPlayers().end())));
+    game->world.GetDescriptionWriteable() = gameLobby->getDescription();
     if(!IsReplayModeOn())
     {
         for(unsigned id = 0; id < gameLobby->getNumPlayers(); id++)
@@ -540,7 +541,7 @@ bool GameClient::OnGameMessage(const GameMessage_Player_Nation& msg)
     if(msg.player >= gameLobby->getNumPlayers())
         return true;
 
-    gameLobby->getPlayer(msg.player).nation = msg.nation;
+    gameLobby->getPlayer(msg.player).nationName = msg.nationName;
 
     if(ci)
         ci->CI_PlayerDataChanged(msg.player);
@@ -1499,6 +1500,13 @@ unsigned GameClient::GetGlobalAnimation(const unsigned short max, const unsigned
     return ((currenttime % unit) * max / unit + offset) % max;
 }
 
+unsigned GameClient::GetAnimationFrame(unsigned max, unsigned msPerFrame, unsigned offset)
+{
+    const unsigned currenttime =
+      boost::chrono::duration_cast<FramesInfo::milliseconds32_t>((framesinfo.lastTime + framesinfo.frameTime).time_since_epoch()).count();
+    return (currenttime / msPerFrame + offset) % max;
+}
+
 unsigned GameClient::Interpolate(unsigned max_val, const GameEvent* ev)
 {
     RTTR_Assert(ev);
@@ -1509,9 +1517,8 @@ unsigned GameClient::Interpolate(unsigned max_val, const GameEvent* ev)
     else
         elapsedTime = FramesInfo::milliseconds32_t::zero();
     FramesInfo::milliseconds32_t duration = ev->length * framesinfo.gf_length;
-    unsigned result = (max_val * elapsedTime) / duration;
-    if(result >= max_val)
-        RTTR_Assert(result < max_val);
+    unsigned result = ::Interpolate(0u, max_val, elapsedTime, duration);
+    RTTR_Assert(result < max_val);
     return result;
 }
 
@@ -1525,7 +1532,7 @@ int GameClient::Interpolate(int x1, int x2, const GameEvent* ev)
     else
         elapsedTime = milliseconds32_t::zero();
     milliseconds32_t duration = ev->length * framesinfo.gf_length;
-    return x1 + ((x2 - x1) * elapsedTime) / duration;
+    return ::Interpolate(x1, x2, elapsedTime, duration);
 }
 
 void GameClient::ServerLost()

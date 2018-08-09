@@ -17,10 +17,15 @@
 
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "BuildingProperties.h"
+#include "helpers/converters.h"
+#include "gameData/BuildingBPDesc.h"
+#include "gameData/WorldDescription.h"
+#include <algorithm>
+#include <stdexcept>
 
 boost::container::static_vector<BuildingType, NUM_BUILDING_TYPES / 4u> BuildingProperties::militaryBldTypes;
 
-void BuildingProperties::Init()
+void BuildingProperties::Init(const WorldDescription& worldDesc)
 {
     militaryBldTypes.clear();
     for(unsigned i = 0; i < NUM_BUILDING_TYPES; i++)
@@ -55,6 +60,11 @@ bool BuildingProperties::IsMine(BuildingType bld)
     }
 }
 
+bool BuildingProperties::IsProduction(BuildingType bld)
+{
+    return !IsMilitary(bld) && !IsWareHouse(bld);
+}
+
 bool BuildingProperties::IsWareHouse(BuildingType bld)
 {
     switch(bld)
@@ -63,21 +73,5 @@ bool BuildingProperties::IsWareHouse(BuildingType bld)
         case BLD_HARBORBUILDING:
         case BLD_STOREHOUSE: return true;
         default: return false;
-    }
-}
-
-bool BuildingProperties::IsValid(BuildingType bld)
-{
-    switch(bld)
-    {
-        case BLD_NOTHING2:
-        case BLD_NOTHING3:
-        case BLD_NOTHING4:
-        case BLD_NOTHING5:
-        case BLD_NOTHING6:
-        case BLD_NOTHING7:
-        case BLD_NOTHING9:
-        case BLD_NOTHING: return false;
-        default: return true;
     }
 }

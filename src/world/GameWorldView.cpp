@@ -40,10 +40,11 @@
 #include "world/GameWorldBase.h"
 #include "world/GameWorldViewer.h"
 #include "gameTypes/RoadBuildState.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/GuiConsts.h"
 #include "gameData/MapConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <stdexcept>
@@ -343,6 +344,7 @@ void GameWorldView::DrawGUI(const RoadBuildState& rb, const TerrainRenderer& ter
 
 void GameWorldView::DrawNameProductivityOverlay(const TerrainRenderer& terrainRenderer)
 {
+    const NationDesc& natDesc = GetWorld().GetDescription().get(gwv.GetPlayer().GetNation());
     for(int x = firstPt.x; x <= lastPt.x; ++x)
     {
         for(int y = firstPt.y; y <= lastPt.y; ++y)
@@ -366,7 +368,7 @@ void GameWorldView::DrawNameProductivityOverlay(const TerrainRenderer& terrainRe
             if(show_names)
             {
                 unsigned color = (no->GetGOT() == GOT_BUILDINGSITE) ? COLOR_GREY : COLOR_YELLOW;
-                SmallFont->Draw(curPos, _(BUILDING_NAMES[no->GetBuildingType()]), FontStyle::CENTER | FontStyle::VCENTER, color);
+                SmallFont->Draw(curPos, _(natDesc.buildings[no->GetBuildingType()].name), FontStyle::CENTER | FontStyle::VCENTER, color);
                 curPos.y += SmallFont->getHeight();
             }
 
@@ -515,12 +517,13 @@ void GameWorldView::DrawBoundaryStone(const MapPoint& pt, const DrawPoint pos, V
     if(!owner)
         return;
 
-    unsigned nation = GetWorld().GetPlayer(owner - 1).nation;
+    Nation nation = GetWorld().GetPlayer(owner - 1).GetNation();
     unsigned player_color = GetWorld().GetPlayer(owner - 1).color;
     if(isFoW)
         player_color = CalcPlayerFOWDrawColor(player_color);
 
-    LOADER.boundary_stone_cache[nation].draw(pos, isFoW ? FOW_DRAW_COLOR : COLOR_WHITE, player_color);
+    glSmartBitmap& img = LOADER.boundary_stone_cache[nation.value];
+    img.draw(pos, isFoW ? FOW_DRAW_COLOR : COLOR_WHITE, player_color);
 
     for(unsigned i = 0; i < 3; ++i)
     {
@@ -530,7 +533,7 @@ void GameWorldView::DrawBoundaryStone(const MapPoint& pt, const DrawPoint pos, V
               pos
               - DrawPoint((gwv.GetTerrainRenderer().GetVertexPos(pt) - gwv.GetTerrainRenderer().GetNeighbourVertexPos(pt, 3 + i)) / 2.0f);
 
-            LOADER.boundary_stone_cache[nation].draw(tmp, isFoW ? FOW_DRAW_COLOR : COLOR_WHITE, player_color);
+            img.draw(tmp, isFoW ? FOW_DRAW_COLOR : COLOR_WHITE, player_color);
         }
     }
 }

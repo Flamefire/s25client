@@ -40,7 +40,7 @@ struct GameLobbyController : public IGameLobbyController
     void SetName(unsigned playerIdx, const std::string& name) override;
     void SetColor(unsigned playerIdx, unsigned newColor) override;
     void SetTeam(unsigned playerIdx, Team newTeam) override;
-    void SetNation(unsigned playerIdx, Nation newNation) override;
+    void SetNation(unsigned playerIdx, const std::string& newNation) override;
     const GlobalGameSettings& GetGGS() const override;
     void ChangeGlobalGameSettings(const GlobalGameSettings& ggs) override;
     void SwapPlayers(unsigned player1, unsigned player2);

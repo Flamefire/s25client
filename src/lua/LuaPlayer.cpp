@@ -31,7 +31,6 @@
 #include "world/GameWorldGame.h"
 #include "world/TerritoryRegion.h"
 #include "gameTypes/BuildingCount.h"
-#include "gameData/BuildingConsts.h"
 #include "libutil/Log.h"
 #include <stdexcept>
 

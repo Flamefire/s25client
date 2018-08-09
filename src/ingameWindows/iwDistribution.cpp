@@ -29,7 +29,6 @@
 #include "ogl/FontStyle.h"
 #include "world/GameWorldViewer.h"
 #include "gameTypes/BuildingTypes.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/const_gui_ids.h"
 #include <boost/foreach.hpp>
 

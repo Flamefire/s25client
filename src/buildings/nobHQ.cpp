@@ -26,6 +26,7 @@
 #include "world/GameWorldGame.h"
 #include "gameData/MilitaryConsts.h"
 #include <numeric>
+#include "gameData/NationData.h"
 
 nobHQ::nobHQ(const MapPoint pos, const unsigned char player, const Nation nation, const bool isTent)
     : nobBaseWarehouse(BLD_HEADQUARTERS, pos, player, nation), isTent_(isTent)
@@ -359,7 +360,7 @@ nobHQ::nobHQ(SerializedGameData& sgd, const unsigned obj_id) : nobBaseWarehouse(
 void nobHQ::Draw(DrawPoint drawPt)
 {
     if(isTent_)
-        LOADER.building_cache[nation][BLD_HEADQUARTERS][1].draw(drawPt);
+        LOADER.building_cache[nation.value][BLD_HEADQUARTERS][1].draw(drawPt);
     else
     {
         DrawBaseBuilding(drawPt);
@@ -367,7 +368,7 @@ void nobHQ::Draw(DrawPoint drawPt)
         // Draw at most 4 flags
         const unsigned numSoldiers =
           std::accumulate(reserve_soldiers_available.begin(), reserve_soldiers_available.end(), GetNumSoldiers());
-        DrawPoint flagsPos = drawPt + TROOPS_FLAG_HQ_OFFSET[nation];
+        DrawPoint flagsPos = drawPt + TROOPS_FLAG_HQ_OFFSET[nation.value];
         for(unsigned i = min<unsigned>(numSoldiers, 4); i; --i)
         {
             glArchivItem_Bitmap_Player* bitmap =

@@ -42,6 +42,7 @@
 #include "gameData/JobConsts.h"
 #include "gameData/MapConsts.h"
 #include "gameData/MilitaryConsts.h"
+#include "gameData/NationDesc.h"
 #include "libutil/Log.h"
 #include "libutil/colors.h"
 
@@ -779,8 +780,7 @@ void noFigure::DrawWalkingBobJobs(DrawPoint drawPt, unsigned job)
 {
     if((job == JOB_SCOUT) || ((job >= JOB_PRIVATE) && (job <= JOB_GENERAL)))
     {
-        DrawWalking(drawPt, LOADER.GetBobN("jobs"), JOB_CONSTS[job].jobs_bob_id + NATION_RTTR_TO_S2[gwg->GetPlayer(player).nation] * 6,
-                    false);
+        DrawWalking(drawPt, LOADER.GetBobN("jobs"), JOB_CONSTS[job].jobs_bob_id + gwg->GetPlayer(player).GetNationDesc().s2Id * 6, false);
         return;
     }
 
@@ -791,8 +791,8 @@ void noFigure::DrawWalkingBobJobs(DrawPoint drawPt, unsigned job)
     if(!waiting_for_free_node || pause_walked_gf)
         drawPt += CalcFigurRelative();
 
-    LOADER.bob_jobs_cache[gwg->GetPlayer(player).nation][job][GetCurMoveDir().toUInt()][ani_step].draw(drawPt, 0xFFFFFFFF,
-                                                                                                       gwg->GetPlayer(player).color);
+    LOADER.bob_jobs_cache[gwg->GetPlayer(player).GetNation().value][job][GetCurMoveDir().toUInt()][ani_step].draw(
+      drawPt, 0xFFFFFFFF, gwg->GetPlayer(player).color);
 }
 
 void noFigure::DrawWalking(DrawPoint drawPt, glArchivItem_Bob* file, unsigned id, bool fat, bool waitingsoldier)

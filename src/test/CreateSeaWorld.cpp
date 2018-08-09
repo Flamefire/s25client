@@ -24,7 +24,7 @@
 #include <boost/foreach.hpp>
 #include <boost/test/test_tools.hpp>
 
-CreateSeaWorld::CreateSeaWorld(const MapExtent& size, unsigned numPlayers) : size_(size), playerNations_(numPlayers, NAT_ROMANS) {}
+CreateSeaWorld::CreateSeaWorld(const MapExtent& size, unsigned numPlayers) : size_(size), playerNations_(numPlayers, Nation(0)) {}
 
 namespace {
 bool PlaceHarbor(MapPoint pt, GameWorldBase& world, std::vector<MapPoint>& harbors)
@@ -187,7 +187,7 @@ bool CreateSeaWorld::operator()(GameWorldGame& world) const
     return true;
 }
 
-CreateWaterWorld::CreateWaterWorld(const MapExtent& size, unsigned numPlayers) : size_(size), playerNations_(numPlayers, NAT_ROMANS)
+CreateWaterWorld::CreateWaterWorld(const MapExtent& size, unsigned numPlayers) : size_(size), playerNations_(numPlayers, Nation(0))
 {
     // Only 2 players supported
     RTTR_Assert(numPlayers <= 2u);

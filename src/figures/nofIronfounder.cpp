@@ -25,6 +25,7 @@
 #include "network/GameClient.h"
 #include "ogl/glArchivItem_Bitmap_Player.h"
 #include "world/GameWorldGame.h"
+#include "gameData/BuildingDesc.h"
 
 nofIronfounder::nofIronfounder(const MapPoint pos, const unsigned char player, nobUsual* workplace)
     : nofWorkman(JOB_IRONFOUNDER, pos, player, workplace)
@@ -34,14 +35,12 @@ nofIronfounder::nofIronfounder(SerializedGameData& sgd, const unsigned obj_id) :
 
 void nofIronfounder::DrawWorking(DrawPoint drawPt)
 {
-    const DrawPointInit offsets[5] = {{-22, 12}, {-23, 3}, {-19, 8}, {-18, 4}, {-33, 7}};
-
     unsigned now_id = GAMECLIENT.Interpolate(272, current_ev);
 
     if(now_id < 182)
     {
         LOADER.GetPlayerImage("rom_bobs", 100 + (now_id % 8))
-          ->DrawFull(drawPt + offsets[workplace->GetNation()], COLOR_WHITE, gwg->GetPlayer(workplace->GetPlayer()).color);
+          ->DrawFull(drawPt + workplace->GetDescription().getWorkOffset("work"), COLOR_WHITE, gwg->GetPlayer(workplace->GetPlayer()).color);
 
         // Evtl Sound abspielen
         if(now_id % 16 == 3)

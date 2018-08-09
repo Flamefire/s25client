@@ -21,12 +21,14 @@
 
 #include "ctrlButton.h"
 class Window;
+struct WorldDescription;
+class ITexture;
 
 class ctrlBuildingIcon : public ctrlButton
 {
 public:
-    ctrlBuildingIcon(Window* const parent, const unsigned id, const DrawPoint& pos, const BuildingType type, const Nation nation,
-                     const unsigned short size = 36, const std::string& tooltip = "");
+    ctrlBuildingIcon(Window* const parent, const unsigned id, const WorldDescription& worldDesc, const DrawPoint& pos,
+                     const BuildingType type, const Nation nation, const unsigned short size = 36, const std::string& tooltip = "");
     /// liefert den GebäudeTyp des Icons.
     BuildingType GetType() const { return type; }
 
@@ -35,7 +37,7 @@ protected:
     void Draw_() override;
     void DrawContent() const override;
 
-protected:
+    ITexture* image;
     const BuildingType type; /// der GebäudeType des Icons.
     const Nation nation;     /// Volk
 };

@@ -20,19 +20,11 @@
 #ifndef Nation_h__
 #define Nation_h__
 
-/// Nations (byte sized)
-enum Nation
-{
-    NAT_AFRICANS = 0,
-    NAT_JAPANESE,
-    NAT_ROMANS,
-    NAT_VIKINGS,
-    NAT_BABYLONIANS,
-    NUM_NATS,
-    NAT_INVALID = 0xFF
-};
+#include "gameData/DescIdx.h"
 
-/// Number of native notions
-#define NUM_NATIVE_NATS 4
+struct NationDesc;
+
+// Shorter
+typedef DescIdx<NationDesc> Nation;
 
 #endif // Nation_h__

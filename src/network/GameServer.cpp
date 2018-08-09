@@ -29,6 +29,7 @@
 #include "files.h"
 #include "helpers/Deleter.h"
 #include "helpers/containerUtils.h"
+#include "mygettext/mygettext.h"
 #include "network/CreateServerInfo.h"
 #include "network/GameMessages.h"
 #include "ogl/glArchivItem_Map.h"
@@ -973,9 +974,9 @@ bool GameServer::OnGameMessage(const GameMessage_Player_Nation& msg)
     if(playerID < 0)
         return true;
 
-    playerInfos[playerID].nation = msg.nation;
+    playerInfos[playerID].nationName = msg.nationName;
 
-    SendToAll(GameMessage_Player_Nation(playerID, msg.nation));
+    SendToAll(GameMessage_Player_Nation(playerID, msg.nationName));
     PlayerDataChanged(playerID);
     return true;
 }

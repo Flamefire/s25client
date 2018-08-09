@@ -32,8 +32,8 @@
 #include "ogl/glSmartBitmap.h"
 #include "random/Random.h"
 #include "world/GameWorldGame.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/BuildingProperties.h"
+#include "gameData/BuildingDesc.h"
 
 nofBuilder::nofBuilder(const MapPoint pos, const unsigned char player, noRoadNode* building_site)
     : noFigure(JOB_BUILDER, pos, player, building_site), state(STATE_FIGUREWORK),
@@ -302,7 +302,7 @@ void nofBuilder::Draw(DrawPoint drawPt)
             drawPt += building_site->GetDoorPoint();
 
             LOADER
-              .bob_jobs_cache[building_site->GetNation()][JOB_BUILDER][GetCurMoveDir().toUInt()][GAMECLIENT.Interpolate(12, current_ev) % 8]
+              .bob_jobs_cache[building_site->GetNation().value][JOB_BUILDER][GetCurMoveDir().toUInt()][GAMECLIENT.Interpolate(12, current_ev) % 8]
               .draw(drawPt, COLOR_WHITE, gwg->GetPlayer(player).color);
         }
         break;
@@ -343,16 +343,12 @@ void nofBuilder::Draw(DrawPoint drawPt)
         }
         break;
     }
-
-    // char number[256];
-    // sprintf(number,"%u",obj_id);
-    // NormalFont->Draw(x,y,number,0,0xFFFF0000);
 }
 
 bool nofBuilder::ChooseWare()
 {
     // Brauch ich ein Brett(Rohbau und wenn kein Stein benötigt wird) oder Stein?
-    const BuildingCost costs = BUILDING_COSTS[building_site->GetNation()][building_site->GetBuildingType()];
+    const BuildingCost costs = building_site->GetDescription().costs;
     if(building_site->GetBuildProgress(false) < costs.boards * 8 || !costs.stones)
     {
         // Brett

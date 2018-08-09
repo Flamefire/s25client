@@ -27,6 +27,7 @@ AnimationDesc::AnimationDesc(CheckedLuaTable luaData)
     offset = luaData.getOrDefault("offset", Point<int8_t>(0, 0));
     luaData.getOrThrow(filepath, "filepath");
     luaData.getOrThrow(frameIdxs, "frames");
+    hasShadows = luaData.getOrDefault("hasShadows", false);
     luaData.getOrThrow(msPerFrame, "msPerFrame");
     luaData.checkUnused();
 }

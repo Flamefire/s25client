@@ -28,6 +28,7 @@
 #include "ogl/glArchivItem_Bitmap_Player.h"
 #include "ogl/glSmartBitmap.h"
 #include "world/GameWorldGame.h"
+#include "gameData/BuildingDesc.h"
 
 nofMiller::nofMiller(const MapPoint pos, const unsigned char player, nobUsual* workplace)
     : nofWorkman(JOB_MILLER, pos, player, workplace), last_sound(0), next_interval(0)
@@ -42,13 +43,37 @@ nofMiller::nofMiller(SerializedGameData& sgd, const unsigned obj_id) : nofWorkma
 
 void nofMiller::DrawWorking(DrawPoint drawPt)
 {
-    const DrawPointInit offsets[NUM_NATS] = {{20, 8}, {20, 8}, {20, 8}, {20, 8}, {20, 8}};
-    const DrawPointInit offsets_sitdown[NUM_NATS] = {{23, 8}, {23, 8}, {23, 8}, {23, 8}, {23, 8}};
-    const DrawPointInit walkoffsets[8] = {{8, 8}, {10, 9}, {12, 10}, {14, 11}, {16, 10}, {18, 9}, {20, 8}, {22, 8}};
-
     unsigned max_id = 120;
     unsigned now_id = GAMECLIENT.Interpolate(max_id, current_ev);
-    bool rotate_sails = true;
+    const Nation nation = workplace->GetNation();
+
+    DrawPoint walkBasePos = drawPt + workplace->GetDescription().getWorkOffset("start");
+    DrawPoint workPos = drawPt + workplace->GetDescription().getWorkOffset("work");
+
+    if(now_id < 4)
+    {
+        workplace->DrawDoor(drawPt);
+        LOADER.bob_jobs_cache[nation.value][JOB_MILLER][4][now_id % 8].draw(
+            walkBasePos + DrawPoint(now_id, now_id), COLOR_WHITE, color);
+    } else if(now_id < 12)
+    {
+        DrawPoint walkPos = Interpolate(walkBasePos + DrawPoint::all(4), workPos, now_id - 4, 8u);
+        LOADER.bob_jobs_cache[nation.value][JOB_DONKEYBREEDER][3][now_id % 8].draw(
+            walkPos, COLOR_WHITE, color);
+    } else if(now_id < 20)
+        LOADER.GetPlayerImage("rom_bobs", 291 + (now_id - 12))
+        ->DrawFull(walkBasePos + workPos, COLOR_WHITE, color);
+    else if(now_id < 28)
+    {
+        DrawPoint walkPos = Interpolate(workPos, walkBasePos + DrawPoint::all(4), now_id - 4, 8u);
+        LOADER.bob_jobs_cache[nation.value][JOB_DONKEYBREEDER][0][(now_id - 20) % 8].draw(
+            walkPos, COLOR_WHITE, color);
+    } else if(now_id < 32)
+    {
+        workplace->DrawDoor(drawPt);
+        LOADER.bob_jobs_cache[nation.value][JOB_DONKEYBREEDER][1][(now_id - 28) % 8].draw(
+            walkBasePos + DrawPoint(32 - now_id, 32 - now_id), COLOR_WHITE, color);
+    }
 
     if(now_id < 4) // hinauslaufen teil 1
     {
@@ -90,13 +115,6 @@ void nofMiller::DrawWorking(DrawPoint drawPt)
         rotate_sails = false;
     }
 
-    if(rotate_sails)
-    {
-        // Flügel der Mühle
-        LOADER.GetNationImage(workplace->GetNation(), 250 + 5 * (42 + ((now_id + 4) % 8)))->DrawFull(drawPt);
-        // Schatten der Flügel
-        LOADER.GetNationImage(workplace->GetNation(), 250 + (5 * (42 + ((now_id + 4) % 8))) + 1)->DrawFull(drawPt, COLOR_SHADOW);
-
         // Mühlensound abspielen in zufälligen Intervallen
         if(VIDEODRIVER.GetTickCount() - last_sound > next_interval)
         {
@@ -106,13 +124,6 @@ void nofMiller::DrawWorking(DrawPoint drawPt)
             last_sound = VIDEODRIVER.GetTickCount();
             next_interval = 500 + rand() % 1400;
         }
-    } else
-    {
-        // Flügel der Mühle
-        LOADER.GetNationImage(workplace->GetNation(), 250 + 5 * 49)->DrawFull(drawPt);
-        // Schatten der Flügel
-        LOADER.GetNationImage(workplace->GetNation(), 250 + 5 * 49 + 1)->DrawFull(drawPt, COLOR_SHADOW);
-    }
 }
 
 GoodType nofMiller::ProduceWare()

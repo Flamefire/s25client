@@ -50,7 +50,7 @@ GameWorldBase::~GameWorldBase() {}
 void GameWorldBase::Init(const MapExtent& mapSize, DescIdx<LandscapeDesc> lt)
 {
     RTTR_Assert(GetDescription().terrain.size() > 0); // Must have game data initialized
-    BuildingProperties::Init();
+    BuildingProperties::Init(GetDescription());
     World::Init(mapSize, lt);
     freePathFinder->Init(mapSize);
 }

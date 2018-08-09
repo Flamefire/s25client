@@ -37,6 +37,7 @@ class EventManager;
 class BinaryFile;
 class GameEvent;
 class Game;
+struct WorldDescription;
 
 /// Kümmert sich um das Serialisieren der GameDaten fürs Speichern und Resynchronisieren
 class SerializedGameData : public Serializer
@@ -58,6 +59,7 @@ public:
     void ReadSnapshot(boost::shared_ptr<Game> game);
 
     unsigned GetGameDataVersion() const { return gameDataVersion; }
+    const WorldDescription& GetDescription() const { return *worldDesc_; }
 
     //////////////////////////////////////////////////////////////////////////
     // Write methods
@@ -146,6 +148,9 @@ private:
     /// Maps already read object ids to GameObjects (-> only valid during reading)
     std::map<unsigned, GameObject*> readObjects;
     std::map<unsigned, GameEvent*> readEvents;
+
+    /// Reference to worldDesc
+    const WorldDescription* worldDesc_;
 
     /// Expected number of objects to be read/written
     unsigned expectedNumObjects;

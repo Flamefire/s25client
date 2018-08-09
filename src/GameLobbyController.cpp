@@ -93,7 +93,7 @@ void GameLobbyController::SetTeam(unsigned playerIdx, Team newTeam)
     GAMECLIENT.GetMainPlayer().sendMsgAsync(new GameMessage_Player_Team(playerIdx, newTeam));
 }
 
-void GameLobbyController::SetNation(unsigned playerIdx, Nation newNation)
+void GameLobbyController::SetNation(unsigned playerIdx, const std::string& newNation)
 {
     GAMECLIENT.GetMainPlayer().sendMsgAsync(new GameMessage_Player_Nation(playerIdx, newNation));
 }

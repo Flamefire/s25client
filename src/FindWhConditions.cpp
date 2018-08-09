@@ -18,7 +18,7 @@
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "FindWhConditions.h"
 #include "buildings/nobBaseWarehouse.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 
 namespace FW {
 

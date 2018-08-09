@@ -27,7 +27,8 @@
 #include "ogl/FontStyle.h"
 #include "ogl/glArchivItem_Font.h"
 #include "world/GameWorldView.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "gameData/const_gui_ids.h"
 #include "libutil/colors.h"
 #include <boost/array.hpp>
@@ -165,11 +166,12 @@ void iwAIDebug::Msg_PaintBefore()
 
     const AIJH::BuildJob* bj = dynamic_cast<const AIJH::BuildJob*>(currentJob);
     const AIJH::EventJob* ej = dynamic_cast<const AIJH::EventJob*>(currentJob);
+    const NationDesc& natDesc = printer->ai->gwb.GetDescription().get(printer->ai->player.GetNation());
 
     if(bj)
     {
         ss << "BuildJob:" << std::endl;
-        ss << BUILDING_NAMES[bj->GetType()] << std::endl;
+        ss << natDesc.buildings[bj->GetType()].name << std::endl;
         ss << bj->GetTarget().x << " / " << bj->GetTarget().y << std::endl;
     } else if(ej)
     {
@@ -201,7 +203,7 @@ void iwAIDebug::Msg_PaintBefore()
         if(evb)
         {
             ss << evb->GetX() << " / " << evb->GetY() << std::endl;
-            ss << BUILDING_NAMES[evb->GetBuildingType()] << std::endl;
+            ss << natDesc.buildings[evb->GetBuildingType()].name << std::endl;
         }
     }
 

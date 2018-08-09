@@ -61,17 +61,14 @@ noBuilding::noBuilding(SerializedGameData& sgd, const unsigned obj_id) : noBaseB
 
 void noBuilding::DrawBaseBuilding(DrawPoint drawPt)
 {
-    LOADER.building_cache[nation][bldType_][0].draw(drawPt);
-    DrawDoor(drawPt);
+    LOADER.building_cache[nation.value][bldType_][0].draw(drawPt);
+    if(IsDoorOpen())
+        DrawDoor(drawPt);
 }
 
 void noBuilding::DrawDoor(DrawPoint drawPt)
 {
-    if(!IsDoorOpen())
-        return;
-    glArchivItem_Bitmap* doorImg = GetDoorImage();
-    if(doorImg)
-        doorImg->DrawFull(drawPt);
+    LOADER.building_cache[nation.value][bldType_][2].DrawFull(drawPt);
 }
 
 void noBuilding::OpenDoor()

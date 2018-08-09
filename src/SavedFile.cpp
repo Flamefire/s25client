@@ -19,6 +19,7 @@
 #include "SavedFile.h"
 #include "BasePlayerInfo.h"
 #include "RTTR_Version.h"
+#include "mygettext/mygettext.h"
 #include "libendian/ConvertEndianess.h"
 #include "libutil/BinaryFile.h"
 #include "libutil/Serializer.h"

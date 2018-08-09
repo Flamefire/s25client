@@ -95,7 +95,7 @@
 /// If a format change occurred that can still be handled increase this version and handle it in the loading code.
 /// If the change is to big to handle increase the version in Savegame.cpp  and remove all code referencing GetGameDataVersion. Then reset
 /// this number to 1.
-static const unsigned currentGameDataVersion = 3;
+static const unsigned currentGameDataVersion = 1;
 
 GameObject* SerializedGameData::Create_GameObject(const GO_Type got, const unsigned obj_id)
 {
@@ -215,6 +215,7 @@ void SerializedGameData::MakeSnapshot(boost::shared_ptr<Game> game)
     Prepare(false);
 
     GameWorld& gw = game->world;
+    worldDesc_ = &gw.GetDescription();
     writeEm = &gw.GetEvMgr();
 
     // Anzahl Objekte reinschreiben (used for safety checks only)
@@ -254,6 +255,7 @@ void SerializedGameData::ReadSnapshot(boost::shared_ptr<Game> game)
     Prepare(true);
 
     GameWorld& gw = game->world;
+    worldDesc_ = &gw.GetDescription();
     em = &gw.GetEvMgr();
 
     expectedNumObjects = PopUnsignedInt();

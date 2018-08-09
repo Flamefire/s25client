@@ -20,10 +20,12 @@
 #pragma once
 
 #include "Desktop.h"
-
+#include "gameTypes/Nation.h"
 #include <vector>
+
 struct KeyEvent;
 class glArchivItem_Bitmap;
+struct WorldDescription;
 
 /// Klasse des Credits Desktops.
 class dskCredits : public Desktop
@@ -63,12 +65,14 @@ private:
         {}
     };
 
+    WorldDescription* worldDesc;
     std::vector<CreditsEntry> entries;
     std::vector<dskCredits::CreditsEntry>::iterator itCurEntry;
 
     struct Bob
     {
         unsigned id;
+        Nation nation;
         unsigned direction;
         unsigned animationStep;
         unsigned color;

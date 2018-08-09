@@ -44,12 +44,13 @@
 #include "nodeObjs/noFighting.h"
 #include "nodeObjs/noFlag.h"
 #include "nodeObjs/noShip.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/GameConsts.h"
 #include "gameData/MilitaryConsts.h"
+#include "gameData/NationDesc.h"
 #include "gameData/SettingTypeConv.h"
 #include "gameData/TerrainDesc.h"
+#include "gameData/WorldDescription.h"
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/math/special_functions/round.hpp>
@@ -145,30 +146,31 @@ void GameWorldGame::SetPointRoad(MapPoint pt, Direction dir, unsigned char type)
         gi->GI_UpdateMinimap(pt);
 }
 
-void GameWorldGame::SetBuildingSite(const BuildingType type, const MapPoint pt, const unsigned char player)
+void GameWorldGame::SetBuildingSite(const BuildingType type, const MapPoint pt, const unsigned char playerIdx)
 {
-    if(!GetPlayer(player).IsBuildingEnabled(type))
+    const GamePlayer& player = GetPlayer(playerIdx);
+    if(!player.IsBuildingEnabled(type))
         return;
 
     // Gucken, ob das Gebäude hier überhaupt noch gebaut wrden kann
-    if(!canUseBq(GetBQ(pt, player), BUILDING_SIZE[type]))
+    if(!canUseBq(GetBQ(pt, playerIdx), GetDescription().get(player.GetNation()).buildings[type].requiredSpace))
         return;
 
     // Wenn das ein Militärgebäude ist und andere Militärgebäude bereits in der Nähe sind, darf dieses nicht gebaut werden
     if(BuildingProperties::IsMilitary(type))
     {
-        if(IsMilitaryBuildingNearNode(pt, player))
+        if(IsMilitaryBuildingNearNode(pt, playerIdx))
             return;
     }
 
     // Prüfen ob Katapult und ob Katapult erlaubt ist
-    if(type == BLD_CATAPULT && !GetPlayer(player).CanBuildCatapult())
+    if(type == BLD_CATAPULT && !player.CanBuildCatapult())
         return;
 
     DestroyNO(pt, false);
 
     // Baustelle setzen
-    SetNO(pt, new noBuildingSite(type, pt, player));
+    SetNO(pt, new noBuildingSite(type, pt, playerIdx));
     if(gi)
         gi->GI_UpdateMinimap(pt);
 

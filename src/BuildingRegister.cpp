@@ -24,8 +24,9 @@
 #include "buildings/nobMilitary.h"
 #include "buildings/nobUsual.h"
 #include "helpers/containerUtils.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/BuildingProperties.h"
+#include "gameData/NationDesc.h"
 #include <boost/foreach.hpp>
 
 void BuildingRegister::Serialize(SerializedGameData& sgd) const
@@ -42,24 +43,10 @@ void BuildingRegister::Deserialize(SerializedGameData& sgd)
 {
     sgd.PopObjectContainer(warehouses, GOT_UNKNOWN);
     sgd.PopObjectContainer(harbors, GOT_NOB_HARBORBUILDING);
-    if(sgd.GetGameDataVersion() >= 2)
-    {
-        for(unsigned i = 0; i < buildings.size(); ++i)
-            sgd.PopObjectContainer(buildings[i], GOT_NOB_USUAL);
-        sgd.PopObjectContainer(building_sites, GOT_BUILDINGSITE);
-        sgd.PopObjectContainer(military_buildings, GOT_NOB_MILITARY);
-    }
-}
-
-void BuildingRegister::Deserialize2(SerializedGameData& sgd)
-{
-    if(sgd.GetGameDataVersion() < 2)
-    {
-        for(unsigned i = 0; i < 30; ++i)
-            sgd.PopObjectContainer(buildings[i], GOT_NOB_USUAL);
-        sgd.PopObjectContainer(building_sites, GOT_BUILDINGSITE);
-        sgd.PopObjectContainer(military_buildings, GOT_NOB_MILITARY);
-    }
+    for(unsigned i = 0; i < buildings.size(); ++i)
+        sgd.PopObjectContainer(buildings[i], GOT_NOB_USUAL);
+    sgd.PopObjectContainer(building_sites, GOT_BUILDINGSITE);
+    sgd.PopObjectContainer(military_buildings, GOT_NOB_MILITARY);
 }
 
 void BuildingRegister::Add(noBuildingSite* building_site)
@@ -86,8 +73,8 @@ void BuildingRegister::Add(noBuilding* bld, BuildingType bldType)
         warehouses.push_back(static_cast<nobBaseWarehouse*>(bld));
     } else
     {
-        RTTR_Assert(!helpers::contains(buildings[bldType - FIRST_USUAL_BUILDING], bld));
-        buildings[bldType - FIRST_USUAL_BUILDING].push_back(static_cast<nobUsual*>(bld));
+        RTTR_Assert(!helpers::contains(buildings[bldType], bld));
+        buildings[bldType].push_back(checkedCast<nobUsual*>(bld));
     }
     if(bldType == BLD_HARBORBUILDING)
     {
@@ -108,8 +95,8 @@ void BuildingRegister::Remove(noBuilding* bld, BuildingType bldType)
         warehouses.remove(static_cast<nobBaseWarehouse*>(bld));
     } else
     {
-        RTTR_Assert(helpers::contains(buildings[bldType - FIRST_USUAL_BUILDING], bld));
-        buildings[bldType - FIRST_USUAL_BUILDING].remove(static_cast<nobUsual*>(bld));
+        RTTR_Assert(helpers::contains(buildings[bldType], bld));
+        buildings[bldType].remove(static_cast<nobUsual*>(bld));
     }
     if(bldType == BLD_HARBORBUILDING)
     {
@@ -121,28 +108,25 @@ void BuildingRegister::Remove(noBuilding* bld, BuildingType bldType)
 /// Gibt Liste von Gebäuden des Spieler zurück
 const std::list<nobUsual*>& BuildingRegister::GetBuildings(const BuildingType type) const
 {
-    RTTR_Assert(static_cast<unsigned>(type) >= FIRST_USUAL_BUILDING);
-
-    return buildings[type - FIRST_USUAL_BUILDING];
+    return buildings[type];
 }
 
 /// Liefert die Anzahl aller Gebäude einzeln
 BuildingCount BuildingRegister::GetBuildingNums() const
 {
     BuildingCount bc;
-    std::fill(bc.buildings.begin(), bc.buildings.end(), 0);
     std::fill(bc.buildingSites.begin(), bc.buildingSites.end(), 0);
 
-    // Normale Gebäude zählen
-    for(unsigned i = 0; i < NUM_BUILDING_TYPES - FIRST_USUAL_BUILDING; ++i)
-        bc.buildings[i + FIRST_USUAL_BUILDING] = buildings[i].size();
-    // Lagerhäuser zählen
+    // "usual" buildings
+    for(unsigned i = 0; i < buildings.size(); ++i)
+        bc.buildings[i] = buildings[i].size();
+    // warehouses
     BOOST_FOREACH(const nobBaseWarehouse* bld, warehouses)
         ++bc.buildings[bld->GetBuildingType()];
-    // Militärgebäude zählen
+    // military buildings
     BOOST_FOREACH(const nobMilitary* bld, military_buildings)
         ++bc.buildings[bld->GetBuildingType()];
-    // Baustellen zählen
+    // building sites
     BOOST_FOREACH(const noBuildingSite* bld, building_sites)
         ++bc.buildingSites[bld->GetBuildingType()];
     return bc;
@@ -158,8 +142,6 @@ void BuildingRegister::CalcProductivities(std::vector<unsigned short>& productiv
 
 unsigned BuildingRegister::CalcAverageProductivity(BuildingType bldType) const
 {
-    if(BLD_WORK_DESC[bldType].producedWare == GD_NOTHING)
-        return 0;
     unsigned productivity = 0;
     unsigned numBlds = GetBuildings(bldType).size();
     if(numBlds > 0)
@@ -178,7 +160,7 @@ unsigned short BuildingRegister::CalcAverageProductivity() const
     for(unsigned i = 0; i < NUM_BUILDING_TYPES; ++i)
     {
         BuildingType bldType = BuildingType(i);
-        if(BLD_WORK_DESC[bldType].producedWare == GD_NOTHING)
+        if(GetBuildings(bldType).empty())
             continue;
 
         BOOST_FOREACH(const nobUsual* bld, GetBuildings(bldType))

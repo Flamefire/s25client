@@ -53,7 +53,7 @@ const unsigned MAX_EXPLORATION_EXPEDITION_DISTANCE = 100;
 const unsigned EXPLORATION_EXPEDITION_WAITING_TIME = 300;
 
 /// Positionen der Flaggen am Schiff für die 6 unterschiedlichen Richtungen jeweils
-const DrawPointInit SHIPS_FLAG_POS[2][6] = {
+const PositionPtInit SHIPS_FLAG_POS[2][6] = {
   // Standing (sails down)
   {{-3, -77}, {-6, -71}, {-3, -71}, {-1, -71}, {5, -63}, {-1, -70}},
   // Driving

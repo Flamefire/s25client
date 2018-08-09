@@ -22,6 +22,7 @@
 #include "SerializedGameData.h"
 #include "helpers/containerUtils.h"
 #include "helpers/mapTraits.h"
+#include "mygettext/mygettext.h"
 #include "libutil/Log.h"
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>

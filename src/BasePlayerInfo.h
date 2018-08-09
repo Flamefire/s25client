@@ -19,7 +19,6 @@
 #define BasePlayerInfo_h__
 
 #include "gameTypes/AIInfo.h"
-#include "gameTypes/Nation.h"
 #include "gameTypes/PlayerState.h"
 #include "gameTypes/TeamTypes.h"
 #include <string>
@@ -32,7 +31,7 @@ struct BasePlayerInfo
     PlayerState ps;
     AI::Info aiInfo;
     std::string name;
-    Nation nation;
+    std::string nationName;
     /// Actual color (ARGB)
     unsigned color;
     Team team;

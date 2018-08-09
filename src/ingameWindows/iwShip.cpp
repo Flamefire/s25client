@@ -17,10 +17,10 @@
 
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "iwShip.h"
-#include "DrawPointInit.h"
 #include "GamePlayer.h"
 #include "GlobalGameSettings.h"
 #include "Loader.h"
+#include "PositionPtInit.h"
 #include "Ware.h"
 #include "WindowManager.h"
 #include "controls/ctrlButton.h"
@@ -55,7 +55,7 @@ iwShip::iwShip(GameWorldView& gwv, GameCommandFactory& gcFactory, noShip* const 
     // Die Expeditionsweiterfahrbuttons
     AddImageButton(10, DrawPoint(60, 81), Extent(18, 18), TC_GREY, LOADER.GetImageN("io", 187), _("Found colony"))->SetVisible(false);
 
-    const DrawPointInit BUTTON_POS[6] = {{60, 61}, {80, 70}, {80, 90}, {60, 101}, {40, 90}, {40, 70}};
+    const PositionPtInit BUTTON_POS[6] = {{60, 61}, {80, 70}, {80, 90}, {60, 101}, {40, 90}, {40, 70}};
 
     // Expedition abbrechen
     AddImageButton(11, DrawPoint(200, 143), Extent(18, 18), TC_RED1, LOADER.GetImageN("io", 40), _("Return to harbor"))->SetVisible(false);
@@ -229,6 +229,7 @@ void iwShip::DrawCargo()
     unsigned lineCounter = 0;
 
     // Leute zeichnen
+
     for(unsigned i = 0; i < orderedFigures.size(); ++i)
     {
         while(orderedFigures[i] > 0)
@@ -241,16 +242,12 @@ void iwShip::DrawCargo()
             }
             orderedFigures[i]--;
 
-            unsigned job_bobs_id = JOB_CONSTS[i].jobs_bob_id;
-            if((i >= JOB_PRIVATE && i <= JOB_GENERAL) || (i == JOB_SCOUT))
-                job_bobs_id += NATION_RTTR_TO_S2[gwv.GetWorld().GetPlayer(player).nation] * 6;
-
             if(i == JOB_PACKDONKEY)
                 LOADER.GetMapImageN(2016)->DrawFull(drawPt);
             else if(i == JOB_BOATCARRIER)
-                LOADER.GetBobN("carrier")->Draw(GD_BOAT, 5, false, 0, drawPt, owner.color);
+                LOADER.carrier_cache[GD_BOAT][5][0][0].DrawFull(drawPt, owner.color);
             else
-                LOADER.GetBobN("jobs")->Draw(job_bobs_id, 5, JOB_CONSTS[i].fat, 0, drawPt, owner.color);
+                LOADER.bob_jobs_cache[owner.GetNation().value][i][5][0].DrawFull(drawPt, owner.color);
 
             drawPt.x += xStep;
             lineCounter++;
@@ -274,7 +271,7 @@ void iwShip::DrawCargo()
 
             // Schilder? Dann das  Schild der jeweiligen Nationalität nehmen
             if(draw_id == GD_SHIELDROMANS)
-                draw_id = SHIELD_TYPES[owner.nation];
+                draw_id = SHIELD_TYPES[owner.GetNation().value];
 
             LOADER.GetMapImageN(2200 + draw_id)->DrawFull(drawPt);
             drawPt.x += xStep;

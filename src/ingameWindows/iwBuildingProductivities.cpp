@@ -20,18 +20,11 @@
 #include "GamePlayer.h"
 #include "Loader.h"
 #include "files.h"
-#include "gameData/BuildingConsts.h"
+#include "helpers/mathFuncs.h"
+#include "gameData/BuildingProperties.h"
+#include "gameData/NationDesc.h"
 #include "gameData/const_gui_ids.h"
 #include "libutil/colors.h"
-
-/// Anzahl der angezeigten Gebäude
-const unsigned NUM_BUILDINGSS = 24;
-
-/// Reihenfolge der Gebäude
-const BuildingType bts[NUM_BUILDINGSS] = {
-  BLD_GRANITEMINE,    BLD_COALMINE, BLD_IRONMINE, BLD_GOLDMINE, BLD_WOODCUTTER, BLD_FISHERY,     BLD_QUARRY,        BLD_FORESTER,
-  BLD_SLAUGHTERHOUSE, BLD_HUNTER,   BLD_BREWERY,  BLD_ARMORY,   BLD_METALWORKS, BLD_IRONSMELTER, BLD_PIGFARM,       BLD_MILL,
-  BLD_BAKERY,         BLD_SAWMILL,  BLD_MINT,     BLD_WELL,     BLD_SHIPYARD,   BLD_FARM,        BLD_DONKEYBREEDER, BLD_CHARBURNER};
 
 /// Abstand vom linken, oberen Fensterrand
 const Extent bldProdContentOffset(50, 30);
@@ -48,37 +41,41 @@ const unsigned short distance_y = 35;
 const Extent percentSize(100, 18);
 
 iwBuildingProductivities::iwBuildingProductivities(const GamePlayer& player)
-    : IngameWindow(CGI_BUILDINGSPRODUCTIVITY, IngameWindow::posLastOrCenter,
-                   Extent(2 * percentSize.x + 2 * image_percent_x + percent_image_x + right_x, (NUM_BUILDINGSS / 2 + 1) * (distance_y + 1))
-                     + bldProdContentOffset,
-                   _("Productivity"), LOADER.GetImageN("resource", 41)),
+    : IngameWindow(CGI_BUILDINGSPRODUCTIVITY, IngameWindow::posLastOrCenter, Extent(10, 10), _("Productivity"),
+                   LOADER.GetImageN("resource", 41)),
       player(player), percents(NUM_BUILDING_TYPES, 0)
 {
-    const Nation playerNation = player.nation;
-    for(unsigned y = 0; y < NUM_BUILDINGSS / 2 + NUM_BUILDINGSS % 2; ++y)
+    std::vector<BuildingType> productionBlds;
+    for(unsigned i = 0; i < NUM_BUILDING_TYPES; i++)
     {
-        for(unsigned x = 0; x < 2; ++x)
+        BuildingType bld = BuildingType(i);
+        if(BuildingProperties::IsProduction(bld))
+            productionBlds.push_back(bld);
+    }
+    Extent iwSize =
+      Extent(2 * percentSize.x + 2 * image_percent_x + percent_image_x + right_x, (productionBlds.size() / 2 + 1) * (distance_y + 1))
+      + bldProdContentOffset;
+    SetIwSize(iwSize);
+    const NationDesc& nationDesc = player.GetNationDesc();
+    unsigned curYPos = 0;
+    for(unsigned y = 0; y < productionBlds.size();)
+    {
+        for(unsigned x = 0; x < 2 && y < productionBlds.size(); ++x, ++y)
         {
-            if(y * 2 + x >= NUM_BUILDINGSS) //-V547
-                break;
-            ;
-            unsigned imgId = (y * 2 + x) * 2;
-            DrawPoint imgPos(x * (percent_image_x + percentSize.x + image_percent_x), distance_y * y + percentSize.y / 2);
+            BuildingType bld = productionBlds[y];
+            unsigned imgId = y * 2;
+            DrawPoint imgPos(x * (percent_image_x + percentSize.x + image_percent_x), curYPos + percentSize.y / 2);
             imgPos = imgPos + bldProdContentOffset;
-            if(player.IsBuildingEnabled(bts[y * 2 + x]))
+            if(player.IsBuildingEnabled(bld))
             {
-                glArchivItem_Bitmap* img;
-                if(bts[y * 2 + x] != BLD_CHARBURNER)
-                    img = LOADER.GetImageN(NATION_ICON_IDS[playerNation], bts[y * 2 + x]);
-                else
-                    img = LOADER.GetImageN("charburner", playerNation * 8 + 8);
-                AddImage(imgId, imgPos, img, _(BUILDING_NAMES[bts[y * 2 + x]]));
-                DrawPoint percentPos(image_percent_x + x * (percent_image_x + percentSize.x + image_percent_x), distance_y * y);
-                AddPercent(imgId + 1, percentPos + bldProdContentOffset, percentSize, TC_GREY, COLOR_YELLOW, SmallFont,
-                           &percents[bts[y * 2 + x]]);
+                ITexture* img = LOADER.GetTexFromFile(nationDesc.buildings[bld].icon);
+                AddImage(imgId, imgPos, img, _(nationDesc.buildings[bld].name));
+                DrawPoint percentPos = imgPos + DrawPoint(image_percent_x, percentSize.y / 2);
+                AddPercent(imgId + 1, percentPos, percentSize, TC_GREY, COLOR_YELLOW, SmallFont, &percents[bld]);
             } else
                 AddImage(imgId, imgPos, LOADER.GetImageN("io", 188));
         }
+        curYPos += distance_y;
     }
 
     UpdatePercents();

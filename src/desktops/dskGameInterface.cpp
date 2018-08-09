@@ -501,22 +501,10 @@ bool dskGameInterface::Msg_LeftDown(const MouseCoords& mc)
         if(worldViewer.IsOwner(cSel))
         {
             const BuildingQuality bq = worldViewer.GetBQ(cSel);
+            action_tabs.allowedBQ = bq;
             // Kann hier was gebaut werden?
             if(bq >= BQ_HUT)
             {
-                action_tabs.build = true;
-
-                // Welches Gebäude kann gebaut werden?
-                switch(bq)
-                {
-                    case BQ_HUT: action_tabs.build_tabs = iwAction::Tabs::BT_HUT; break;
-                    case BQ_HOUSE: action_tabs.build_tabs = iwAction::Tabs::BT_HOUSE; break;
-                    case BQ_CASTLE: action_tabs.build_tabs = iwAction::Tabs::BT_CASTLE; break;
-                    case BQ_MINE: action_tabs.build_tabs = iwAction::Tabs::BT_MINE; break;
-                    case BQ_HARBOR: action_tabs.build_tabs = iwAction::Tabs::BT_HARBOR; break;
-                    default: break;
-                }
-
                 if(!worldViewer.GetWorld().IsFlagAround(cSel))
                     action_tabs.setflag = true;
 

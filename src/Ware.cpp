@@ -33,12 +33,12 @@
 #include "gameTypes/BuildingType.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/GameConsts.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 #include "libutil/Log.h"
 
 Ware::Ware(const GoodType type, noBaseBuilding* goal, noRoadNode* location)
     : next_dir(INVALID_DIR), state(STATE_WAITINWAREHOUSE), location(location),
-      type(type == GD_SHIELDROMANS ? SHIELD_TYPES[gwg->GetPlayer(location->GetPlayer()).nation] :
+      type(type == GD_SHIELDROMANS ? SHIELD_TYPES[gwg->GetPlayer(location->GetPlayer()).GetNation().value] :
                                      type), // Bin ich ein Schild? Dann evtl. Typ nach Nation anpassen
       goal(goal), next_harbor(MapPoint::Invalid())
 {

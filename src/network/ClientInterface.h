@@ -22,7 +22,6 @@
 #include "ClientError.h"
 #include "gameTypes/ChatDestination.h"
 #include "gameTypes/PlayerState.h"
-#include "gameData/NationConsts.h"
 #include <boost/shared_ptr.hpp>
 
 class Game;

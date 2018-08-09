@@ -19,6 +19,7 @@
 #include "Replay.h"
 #include "BasePlayerInfo.h"
 #include "Savegame.h"
+#include "mygettext/mygettext.h"
 #include "network/PlayerGameCommands.h"
 #include "gameTypes/MapInfo.h"
 #include "libendian/ConvertEndianess.h"
@@ -33,7 +34,7 @@ std::string Replay::GetSignature() const
 uint16_t Replay::GetVersion() const
 {
     /// Version des Replay-Formates
-    return 5;
+    return 6;
 }
 
 //////////////////////////////////////////////////////////////////////////

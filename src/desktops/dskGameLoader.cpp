@@ -41,6 +41,7 @@
 #include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
 #include "liblobby/LobbyClient.h"
+#include <algorithm>
 #include <set>
 #include <vector>
 
@@ -89,7 +90,7 @@ void dskGameLoader::Msg_MsgBoxResult(const unsigned msgbox_id, const MsgboxResul
 
 void dskGameLoader::Msg_Timer(const unsigned /*ctrl_id*/)
 {
-    static std::vector<bool> load_nations;
+    static std::vector<Nation> load_nations;
 
     ctrlTimer* timer = GetCtrl<ctrlTimer>(1);
     ctrlText* text = GetCtrl<ctrlText>(10 + position);
@@ -109,9 +110,10 @@ void dskGameLoader::Msg_Timer(const unsigned /*ctrl_id*/)
 
         case 2: // Nationen ermitteln
             load_nations.clear();
-            load_nations.resize(NUM_NATS, false);
             for(unsigned char i = 0; i < game->world.GetNumPlayers(); ++i)
-                load_nations[game->world.GetPlayer(i).nation] = true;
+                load_nations.push_back(game->world.GetPlayer(i).GetNation());
+            std::sort(load_nations.begin(), load_nations.end());
+            load_nations.erase(std::unique(load_nations.begin(), load_nations.end()), load_nations.end());
 
             text->SetText(_("Tribal chiefs assembled around the table..."));
             break;
@@ -125,14 +127,15 @@ void dskGameLoader::Msg_Timer(const unsigned /*ctrl_id*/)
                 LOADER.AddAddonFolder(AddonId::CATAPULT_GRAPHICS);
 
             const LandscapeDesc& lt = game->world.GetDescription().get(game->world.GetLandscapeType());
-            if(!LOADER.LoadFilesAtGame(lt.mapGfxPath, lt.isWinter, load_nations) || !LOADER.LoadFiles(GatherRequiredTexturePaths())
-               || !LOADER.LoadOverrideFiles())
+            if(!LOADER.LoadFilesAtGame(lt.mapGfxPath, lt.isWinter, load_nations, game->world.GetDescription())
+               || !LOADER.LoadFiles(GatherRequiredTexturePaths()) || !LOADER.LoadOverrideFiles())
             {
                 LC_Status_Error(_("Failed to load map objects."));
                 return;
             }
 
-            LOADER.fillCaches();
+            LOADER.fillCaches(game->world.GetDescription());
+            LOADER.packCachedTextures();
 
             text->SetText(_("Game crate was picked and spread out..."));
             break;

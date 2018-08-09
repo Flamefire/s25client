@@ -55,6 +55,7 @@ class RoadSegment;
 class SerializedGameData;
 struct VisualSettings;
 class Ware;
+struct NationDesc;
 
 /// Player in the game (belongs to world)
 class GamePlayer : public GamePlayerInfo
@@ -95,6 +96,9 @@ public:
 
     GameWorldGame& GetGameWorld() { return *gwg; }
     const GameWorldGame& GetGameWorld() const { return *gwg; }
+
+    Nation GetNation() const { return nation; }
+    const NationDesc& GetNationDesc() const;
 
     const MapPoint& GetHQPos() const { return hqPos; }
     void AddBuilding(noBuilding* bld, BuildingType bldType);
@@ -350,6 +354,7 @@ public:
 private:
     /// Access to the world. Pointer used only for vector-compatibility till C++11, always set, non-owning
     GameWorldGame* gwg;
+    Nation nation;
     /// List of all buildings
     BuildingRegister buildings; //-V730_NOINIT
 

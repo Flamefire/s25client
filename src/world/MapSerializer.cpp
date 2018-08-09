@@ -19,7 +19,7 @@
 #include "world/MapSerializer.h"
 #include "CatapultStone.h"
 #include "SerializedGameData.h"
-#include "lua/GameDataLoader.h"
+#include "mygettext/mygettext.h"
 #include "world/World.h"
 #include "gameData/LandscapeDesc.h"
 #include "gameData/TerrainDesc.h"
@@ -70,9 +70,8 @@ void MapSerializer::Serialize(const World& world, const unsigned numPlayers, Ser
 void MapSerializer::Deserialize(World& world, const unsigned numPlayers, SerializedGameData& sgd)
 {
     // Initialisierungen
-    GameDataLoader gdLoader(world.GetDescriptionWriteable());
-    if(!gdLoader.Load())
-        throw SerializedGameData::Error(_("Failed to load game data!"));
+    if(world.GetDescription().landscapes.size() == 0u)
+        throw std::runtime_error("WorldDescription not loaded");
 
     // Headinformationen
     const MapExtent size = sgd.PopPoint<MapExtent::ElementType>();

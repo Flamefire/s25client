@@ -53,8 +53,8 @@ bool GameMessage_Player_List::Run(GameMessageInterface* callback) const
     for(unsigned i = 0; i < playerInfos.size(); ++i)
     {
         const JoinPlayerInfo& playerInfo = playerInfos[i];
-        LOG.writeToFile("    %d: %s %d %d %d %d %d %d %s\n") % i % playerInfo.name % playerInfo.ps % playerInfo.rating % playerInfo.ping
-          % playerInfo.nation % playerInfo.color % playerInfo.team % (playerInfo.isReady ? "true" : "false");
+        LOG.writeToFile("    %d: %s %d %d %d %s %d %d %s\n") % i % playerInfo.name % playerInfo.ps % playerInfo.rating % playerInfo.ping
+          % playerInfo.nationName % playerInfo.color % playerInfo.team % (playerInfo.isReady ? "true" : "false");
     }
     return callback->OnGameMessage(*this);
 }

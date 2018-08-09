@@ -121,11 +121,12 @@ public:
     FramesInfo::milliseconds32_t GetFrameTime() const { return framesinfo.frameTime; }
     unsigned GetGlobalAnimation(const unsigned short max, const unsigned char factor_numerator, const unsigned char factor_denumerator,
                                 const unsigned offset);
+    unsigned GetAnimationFrame(unsigned max, unsigned msPerFrame, unsigned offset);
     unsigned Interpolate(unsigned max_val, const GameEvent* ev);
     int Interpolate(int x1, int x2, const GameEvent* ev);
 
     void Command_Chat(const std::string& text, const ChatDestination cd);
-    void Command_SetNation(Nation newNation);
+    void Command_SetNation(const std::string& newNationName);
     void Command_SetTeam(Team newTeam);
     void Command_SetColor(unsigned newColor);
     void Command_SetReady(bool isReady);
@@ -303,6 +304,15 @@ private:
     boost::interprocess::unique_ptr<ReplayInfo, Deleter<ReplayInfo> > replayinfo;
     bool replayMode;
 };
+
+/// Interpolate (or extrapolate) where result changes in [x1, x2] for time point elapsed in [0, duration]
+/// Note: For elapsed < duration: result < x2
+template<typename T_Result, typename T_Time>
+inline T_Result Interpolate(T_Result x1, T_Result x2, T_Time elapsed, T_Time duration)
+{
+    return x1 + ((x2 - x1) * elapsed) / duration;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Makros / Defines

@@ -20,7 +20,6 @@
 #include "PointOutput.h"
 #include "buildings/nobHQ.h"
 #include "factories/BuildingFactory.h"
-#include "lua/GameDataLoader.h"
 #include "ogl/glArchivItem_Map.h"
 #include "pathfinding/PathConditionShip.h"
 #include "random/Random.h"
@@ -41,6 +40,7 @@
 #include <algorithm>
 #include <map>
 #include <queue>
+#include <stdexcept>
 
 class noBase;
 class nobBaseWarehouse;
@@ -49,9 +49,8 @@ MapLoader::MapLoader(World& world, const std::vector<Nation>& playerNations) : w
 
 bool MapLoader::Load(const glArchivItem_Map& map, Exploration exploration)
 {
-    GameDataLoader gdLoader(world_.GetDescriptionWriteable());
-    if(!gdLoader.Load())
-        return false;
+    if(world_.GetDescription().landscapes.size() == 0u)
+        throw std::runtime_error("WorldDescription not loaded");
 
     uint8_t gfxSet = map.getHeader().getGfxSet();
     DescIdx<LandscapeDesc> lt(0);

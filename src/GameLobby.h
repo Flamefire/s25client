@@ -19,6 +19,7 @@
 #define GameLobby_h__
 
 #include "GlobalGameSettings.h"
+#include "gameData/WorldDescription.h"
 #include <vector>
 
 struct JoinPlayerInfo;
@@ -38,6 +39,7 @@ public:
 
     GlobalGameSettings& getSettings() { return ggs_; }
     const GlobalGameSettings& getSettings() const { return ggs_; }
+    const WorldDescription& getDescription() const { return worldDesc_; }
 
     bool isSavegame() const { return isSavegame_; }
     bool isHost() const { return isHost_; }
@@ -49,6 +51,7 @@ private:
     bool isHost_;
     std::vector<JoinPlayerInfo> players_;
     GlobalGameSettings ggs_;
+    WorldDescription worldDesc_;
 };
 
 #endif // GameLobby_h__

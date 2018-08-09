@@ -24,7 +24,7 @@
 #include "controls/ctrlList.h"
 #include "network/GameClient.h"
 #include "world/GameWorldViewer.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingNames.h"
 #include "gameData/const_gui_ids.h"
 
 iwBuildOrder::iwBuildOrder(const GameWorldViewer& gwv)

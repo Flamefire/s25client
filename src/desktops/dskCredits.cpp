@@ -29,6 +29,7 @@
 #include "ogl/glArchivItem_Bob.h"
 #include "ogl/glArchivItem_Font.h"
 #include "gameData/JobConsts.h"
+#include "gameData/NationDesc.h"
 #include "gameData/WorldDescription.h"
 #include <boost/array.hpp>
 #include <cstdlib>
@@ -151,14 +152,19 @@ dskCredits::dskCredits() : Desktop(LOADER.GetImageN("setup013", 0))
     entry.lines.push_back(_("Thank you!"));
     entries.push_back(entry);
 
-    WorldDescription worldDesc;
-    GameDataLoader gdLoader(worldDesc);
+    worldDesc = new WorldDescription;
+    GameDataLoader gdLoader(*worldDesc);
     if(!gdLoader.Load())
-        throw std::runtime_error("Failed to load game data");
+    {
+        Close();
+        return;
+    }
+    std::vector<Nation> nations;
+    for(Nation i(0); i.value < worldDesc->nations.size(); i.value++)
+        nations.push_back(i);
 
-    std::vector<bool> nations(NUM_NATIVE_NATS, true);
-
-    LOADER.LoadFilesAtGame(worldDesc.get(DescIdx<LandscapeDesc>(0)).mapGfxPath, false, nations);
+    LOADER.LoadFilesAtGame(0, false, nations, *worldDesc);
+    LOADER.fillCaches(*worldDesc);
 
     this->itCurEntry = entries.begin();
 
@@ -167,7 +173,10 @@ dskCredits::dskCredits() : Desktop(LOADER.GetImageN("setup013", 0))
         curSong->Play(0);
 }
 
-dskCredits::~dskCredits() {}
+dskCredits::~dskCredits()
+{
+    delete worldDesc;
+}
 
 void dskCredits::Msg_PaintAfter()
 {
@@ -249,25 +258,18 @@ void dskCredits::DrawBobs()
         }
 
         b.color = PLAYER_COLORS[rand() % PLAYER_COLORS.size()];
-        unsigned job = rand() % 29;
+        b.id = rand() % 29;
+        b.nation = Nation(rand() % worldDesc->nations.size());
 
         // exclude "headless" bobs
-        if(job == 8 || job == 9 || job == 12 || job == 18)
+        if(b.id == 8 || b.id == 9 || b.id == 12 || b.id == 18)
         {
-            job = rand() % (NUM_WARE_TYPES - 1);
+            b.id = rand() % (NUM_WARE_TYPES - 1);
             b.hasWare = true;
+            b.isFat = rand() % 2 == 0;
         } else
-        {
-            if(job == JOB_SCOUT)
-                job = 35 + NATION_RTTR_TO_S2[rand() % 4] * 6;
-            else if(job >= JOB_PRIVATE && job <= JOB_GENERAL)
-                job = 30 + NATION_RTTR_TO_S2[rand() % 4] * 6 + job - JOB_PRIVATE;
-            else
-                job = JOB_CONSTS[job].jobs_bob_id;
             b.hasWare = false;
-        }
 
-        b.id = job;
         b.pos.y = GetCtrl<ctrlButton>(0)->GetPos().y - 20 - rand() % 150;
         bobs.push_back(b);
     }
@@ -276,9 +278,9 @@ void dskCredits::DrawBobs()
     for(std::vector<Bob>::iterator bob = bobs.begin(); bob != bobs.end(); ++bob)
     {
         if(!bob->hasWare)
-            LOADER.GetBobN("jobs")->Draw(bob->id, bob->direction, bob->isFat, bob->animationStep, bob->pos, bob->color);
+            LOADER.bob_jobs_cache[bob->nation.value][bob->id][bob->direction][bob->animationStep].DrawFull(bob->pos, bob->color);
         else
-            LOADER.GetBobN("carrier")->Draw(bob->id, bob->direction, bob->isFat, bob->animationStep, bob->pos, bob->color);
+            LOADER.carrier_cache[bob->id][bob->direction][bob->animationStep][bob->isFat ? 1 : 0].DrawFull(bob->pos, bob->color);
 
         if(msSinceLastBobAnim > (1000 / bobAnimStepsPerSec))
         {

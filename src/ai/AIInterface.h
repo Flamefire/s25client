@@ -133,7 +133,6 @@ public:
     /// Test whether there is a possibility to start a expedition in a given direction from a given position, assuming a given starting
     /// harbor
     bool IsExplorationDirectionPossible(const MapPoint pt, unsigned originHarborID, ShipDirection direction) const;
-    unsigned GetNation() { return player_.nation; }
 
     bool SetCoinsAllowed(const nobMilitary* building, const bool enabled);
     using GameCommandFactory::SetCoinsAllowed;

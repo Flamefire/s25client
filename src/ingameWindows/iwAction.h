@@ -20,6 +20,7 @@
 #pragma once
 
 #include "IngameWindow.h"
+#include "gameTypes/BuildingQuality.h"
 #include "gameTypes/MapCoordinates.h"
 #include <boost/array.hpp>
 
@@ -44,20 +45,11 @@ public:
     {
     public:
         /// Haupttabs
-        bool build, setflag, watch, flag, cutroad, attack, sea_attack;
+        bool setflag, watch, flag, cutroad, attack, sea_attack;
         /// Gebäude-Bau-Tabs
-        enum BuildTab
-        {
-            BT_HUT = 0,
-            BT_HOUSE,
-            BT_CASTLE,
-            BT_MINE,
-            BT_HARBOR
-        } build_tabs;
+        BuildingQuality allowedBQ;
 
-        Tabs()
-            : build(false), setflag(false), watch(false), flag(false), cutroad(false), attack(false), sea_attack(false), build_tabs(BT_HUT)
-        {}
+        Tabs() : setflag(false), watch(false), flag(false), cutroad(false), attack(false), sea_attack(false), allowedBQ(BQ_NOTHING) {}
     };
 
 private:

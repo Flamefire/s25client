@@ -38,8 +38,8 @@ nofPigbreeder::nofPigbreeder(SerializedGameData& sgd, const unsigned obj_id) : n
 
 void nofPigbreeder::DrawWorking(DrawPoint drawPt)
 {
-    const DrawPointInit offsets[NUM_NATS] = {{10, 2}, {10, 2}, {10, 2}, {10, 2}, {10, 2}};
-    const DrawPointInit walkstart[NUM_NATS] = {{-6, -6}, {-6, -6}, {-6, -6}, {-6, -6}, {-6, -6}};
+    const PositionPtInit offsets[NUM_NATS] = {{10, 2}, {10, 2}, {10, 2}, {10, 2}, {10, 2}};
+    const PositionPtInit walkstart[NUM_NATS] = {{-6, -6}, {-6, -6}, {-6, -6}, {-6, -6}, {-6, -6}};
 
     unsigned max_id = 240;
     int now_id = GAMECLIENT.Interpolate(max_id, current_ev);

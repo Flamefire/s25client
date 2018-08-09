@@ -53,7 +53,7 @@ private:
     /// Füllt die Felder einer Reihe aus
     void ChangeTeam(const unsigned i, const unsigned char nr);
     void ChangeReady(const unsigned i, const bool ready);
-    void ChangeNation(const unsigned i, const Nation nation);
+    void ChangeNation(const unsigned i, const std::string& nationName);
     void ChangePing(unsigned playerId);
     void ChangeColor(const unsigned i, const unsigned color);
 

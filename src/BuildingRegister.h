@@ -30,16 +30,13 @@ class nobMilitary;
 class nobHarborBuilding;
 class nobBaseWarehouse;
 class SerializedGameData;
+struct NationDesc;
 
 class BuildingRegister
 {
 public:
-    /// Serialisieren
     void Serialize(SerializedGameData& sgd) const;
-    // Deserialisieren
     void Deserialize(SerializedGameData& sgd);
-    /// Compatibility with old savegames
-    void Deserialize2(SerializedGameData& sgd);
 
     void Add(noBuildingSite* building_site);
     void Remove(noBuildingSite* building_site);
@@ -63,7 +60,7 @@ public:
 
 private:
     std::list<noBuildingSite*> building_sites;
-    boost::array<std::list<nobUsual*>, 30> buildings;
+    boost::array<std::list<nobUsual*>, NUM_BUILDING_TYPES> buildings;
     std::list<nobMilitary*> military_buildings;
     std::list<nobHarborBuilding*> harbors;
     std::list<nobBaseWarehouse*> warehouses;

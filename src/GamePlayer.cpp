@@ -50,8 +50,9 @@
 #include "gameTypes/VisualSettings.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/MilitaryConsts.h"
+#include "gameData/NationDesc.h"
 #include "gameData/SettingTypeConv.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 #include "libutil/Log.h"
 #include <boost/foreach.hpp>
 #include <limits>
@@ -59,6 +60,7 @@
 GamePlayer::GamePlayer(unsigned playerId, const PlayerInfo& playerInfo, GameWorldGame& gwg)
     : GamePlayerInfo(playerId, playerInfo), gwg(&gwg), hqPos(MapPoint::Invalid()), emergency(false)
 {
+    nation = gwg.GetDescription().nations.getIndex(playerInfo.nationName, true);
     std::fill(building_enabled.begin(), building_enabled.end(), true);
 
     LoadStandardDistribution();
@@ -130,7 +132,7 @@ BuildOrders GamePlayer::GetStandardBuildOrder()
     for(unsigned i = 0; i < NUM_BUILDING_TYPES; ++i)
     {
         BuildingType bld = BuildingType(i);
-        if(bld == BLD_HEADQUARTERS || !BuildingProperties::IsValid(bld))
+        if(bld == BLD_HEADQUARTERS)
             continue;
 
         RTTR_Assert(curPrio < ordering.size());
@@ -290,8 +292,6 @@ void GamePlayer::Deserialize(SerializedGameData& sgd)
         jobs_wanted.push_back(nj);
     }
 
-    buildings.Deserialize2(sgd);
-
     sgd.PopObjectContainer(ware_list, GOT_WARE);
     sgd.PopObjectContainer(flagworkers, GOT_UNKNOWN);
     sgd.PopObjectContainer(ships, GOT_SHIP);
@@ -428,6 +428,11 @@ void GamePlayer::RemoveBuildingSite(noBuildingSite* bldSite)
 {
     RTTR_Assert(bldSite->GetPlayer() == GetPlayerId());
     buildings.Remove(bldSite);
+}
+
+const NationDesc& GamePlayer::GetNationDesc() const
+{
+    return gwg->GetDescription().get(nation);
 }
 
 void GamePlayer::AddBuilding(noBuilding* bld, BuildingType bldType)

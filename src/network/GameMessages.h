@@ -443,10 +443,11 @@ class GameMessage_Player_Nation : public GameMessageWithPlayer
 {
 public:
     /// Das zu setzende Volk
-    Nation nation;
+    std::string nationName;
 
     GameMessage_Player_Nation() : GameMessageWithPlayer(NMS_PLAYER_NATION) {} //-V730
-    GameMessage_Player_Nation(uint8_t player, const Nation nation) : GameMessageWithPlayer(NMS_PLAYER_NATION, player), nation(nation)
+    GameMessage_Player_Nation(uint8_t player, const std::string& nationName)
+        : GameMessageWithPlayer(NMS_PLAYER_NATION, player), nationName(nationName)
     {
         LOG.writeToFile(">>> NMS_PLAYER_SET_NATION\n");
     }
@@ -454,13 +455,13 @@ public:
     void Serialize(Serializer& ser) const override
     {
         GameMessageWithPlayer::Serialize(ser);
-        ser.PushUnsignedChar(static_cast<unsigned char>(nation));
+        ser.PushString(nationName);
     }
 
     void Deserialize(Serializer& ser) override
     {
         GameMessageWithPlayer::Deserialize(ser);
-        nation = Nation(ser.PopUnsignedChar());
+        nationName = ser.PopString();
     }
 
     bool Run(GameMessageInterface* callback) const override

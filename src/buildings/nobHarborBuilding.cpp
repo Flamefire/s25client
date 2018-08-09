@@ -37,10 +37,10 @@
 #include "random/Random.h"
 #include "world/GameWorldGame.h"
 #include "nodeObjs/noShip.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/GameConsts.h"
 #include "gameData/MilitaryConsts.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 #include <boost/foreach.hpp>
 
 nobHarborBuilding::ExpeditionInfo::ExpeditionInfo(SerializedGameData& sgd)
@@ -217,39 +217,13 @@ nobHarborBuilding::nobHarborBuilding(SerializedGameData& sgd, const unsigned obj
     }
 }
 
-// Relative Position des Bauarbeiters
-const Position BUILDER_POS[NUM_NATS] = {Position(-20, 18), Position(-28, 17), Position(-20, 15), Position(-38, 17), Position(-38, 17)};
-/// Relative Position der Brettertürme
-const Position BOARDS_POS[NUM_NATS] = {Position(-75, -5), Position(-60, -5), Position(-55, -5), Position(-65, -5), Position(-65, -5)};
-/// Relative Position der Steintürme
-const Position STONES_POS[NUM_NATS] = {Position(-65, 10), Position(-52, 10), Position(-42, 10), Position(-52, 10), Position(-52, 10)};
-/// Relative Postion der inneren Hafenfeuer
-const Position FIRE_POS[NUM_NATS] = {Position(36, -51), Position(0, 0), Position(0, 0), Position(5, -80), Position(0, 0)};
-/// Relative Postion der äußeren Hafenfeuer
-const Position EXTRAFIRE_POS[NUM_NATS] = {Position(0, 0), Position(0, 0), Position(8, -115), Position(0, 0), Position(0, 0)};
-
 void nobHarborBuilding::Draw(DrawPoint drawPt)
 {
     // Gebäude an sich zeichnen
     DrawBaseBuilding(drawPt);
 
-    // Hafenfeuer zeichnen // TODO auch für nicht-römer machen
-    if(nation == NAT_ROMANS || nation == NAT_JAPANESE || nation == NAT_BABYLONIANS)
-    {
-        LOADER.GetNationImage(nation, 500 + 5 * GAMECLIENT.GetGlobalAnimation(8, 2, 1, GetObjId() + GetX() + GetY()))
-          ->DrawFull(drawPt + FIRE_POS[nation]);
-    } else if(nation == NAT_AFRICANS || nation == NAT_VIKINGS)
-    {
-        LOADER.GetMapPlayerImage(740 + GAMECLIENT.GetGlobalAnimation(8, 5, 2, GetObjId() + GetX() + GetY()))
-          ->DrawFull(drawPt + FIRE_POS[nation]);
-    }
-
-    if(nation == NAT_ROMANS)
-    {
-        // Zusätzliches Feuer
-        LOADER.GetMapPlayerImage(740 + GAMECLIENT.GetGlobalAnimation(8, 5, 2, GetObjId() + GetX() + GetY()))
-          ->DrawFull(drawPt + EXTRAFIRE_POS[nation]);
-    }
+    DrawAnimation(drawPt, "occupied");
+    DrawAnimation(drawPt, "work");
 
     // Läuft gerade eine Expedition?
     if(expedition.active)
@@ -257,10 +231,10 @@ void nobHarborBuilding::Draw(DrawPoint drawPt)
         // Waren für die Expedition zeichnen
 
         // Bretter
-        DrawPoint boardsPos = drawPt + BOARDS_POS[nation];
+        DrawPoint boardsPos = drawPt + GetDescription().getWorkOffset("boards");
         for(unsigned char i = 0; i < expedition.boards; ++i)
             LOADER.GetMapImageN(2200 + GD_BOARDS)->DrawFull(boardsPos - DrawPoint(0, i * 4));
-        DrawPoint stonesPos = drawPt + STONES_POS[nation];
+        DrawPoint stonesPos = drawPt + GetDescription().getWorkOffset("stones");
         // Steine
         for(unsigned char i = 0; i < expedition.stones; ++i)
             LOADER.GetMapImageN(2200 + GD_STONES)->DrawFull(stonesPos - DrawPoint(0, i * 4));
@@ -277,12 +251,12 @@ void nobHarborBuilding::Draw(DrawPoint drawPt)
             // Id vom laufen
             unsigned walking_id = (id / 32) % 8;
 
-            DrawPoint builderPos = drawPt + BUILDER_POS[nation];
+            DrawPoint builderPos = drawPt + GetDescription().getWorkOffset("builder");
             if(id < 500)
-                LOADER.bob_jobs_cache[nation][JOB_BUILDER][0][walking_id].draw(builderPos - DrawPoint(walking_distance, 0), COLOR_WHITE,
-                                                                               gwg->GetPlayer(player).color);
+                LOADER.bob_jobs_cache[nation.value][JOB_BUILDER][0][walking_id].draw(builderPos - DrawPoint(walking_distance, 0),
+                                                                                     COLOR_WHITE, gwg->GetPlayer(player).color);
             else
-                LOADER.bob_jobs_cache[nation][JOB_BUILDER][3][walking_id].draw(
+                LOADER.bob_jobs_cache[nation.value][JOB_BUILDER][3][walking_id].draw(
                   builderPos + DrawPoint(walking_distance - WALKING_DISTANCE, 0), COLOR_WHITE, gwg->GetPlayer(player).color);
         }
     }
@@ -314,8 +288,9 @@ void nobHarborBuilding::StartExpedition()
 
     // In unseren Warenbestand gucken und die erforderlichen Bretter und Steine sowie den
     // Bauarbeiter holen, falls vorhanden
-    expedition.boards = std::min(unsigned(BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards), inventory[GD_BOARDS]);
-    expedition.stones = std::min(unsigned(BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones), inventory[GD_STONES]);
+    const BuildingDesc& bldDesc = GetDescription();
+    expedition.boards = std::min(unsigned(bldDesc.costs.boards), inventory[GD_BOARDS]);
+    expedition.stones = std::min(unsigned(bldDesc.costs.stones), inventory[GD_STONES]);
     inventory.Remove(GD_BOARDS, expedition.boards);
     inventory.Remove(GD_STONES, expedition.stones);
 
@@ -470,10 +445,11 @@ void nobHarborBuilding::OrderExpeditionWares()
     }
 
     // Prüfen, ob jeweils noch weitere Waren bestellt werden müssen
+    const BuildingDesc& bldDesc = GetDescription();
     unsigned todo_boards = 0;
-    if(boards + expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
+    if(boards + expedition.boards < bldDesc.costs.boards)
     {
-        todo_boards = BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards - (boards + expedition.boards);
+        todo_boards = bldDesc.costs.boards - (boards + expedition.boards);
         Ware* ware;
         do
         {
@@ -487,9 +463,9 @@ void nobHarborBuilding::OrderExpeditionWares()
     }
 
     unsigned todo_stones = 0;
-    if(stones + expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+    if(stones + expedition.stones < bldDesc.costs.stones)
     {
-        todo_stones = BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones - (stones + expedition.stones);
+        todo_stones = bldDesc.costs.stones - (stones + expedition.stones);
         Ware* ware;
         do
         {
@@ -543,8 +519,7 @@ void nobHarborBuilding::ShipArrived(noShip* ship)
         return;
     }
     // Expedition ready?
-    if(expedition.active && expedition.builder && expedition.boards == BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards
-       && expedition.stones == BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+    if(IsExpeditionReady())
     {
         // Aufräumen am Hafen
         expedition.active = false;
@@ -668,8 +643,9 @@ void nobHarborBuilding::AddWare(Ware*& ware)
     // Brauchen wir die Ware?
     if(expedition.active)
     {
-        if((ware->type == GD_BOARDS && expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
-           || (ware->type == GD_STONES && expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones))
+        const BuildingDesc& bldDesc = GetDescription();
+        if((ware->type == GD_BOARDS && expedition.boards < bldDesc.costs.boards)
+           || (ware->type == GD_STONES && expedition.stones < bldDesc.costs.stones))
         {
             if(ware->type == GD_BOARDS)
                 ++expedition.boards;
@@ -726,9 +702,10 @@ bool nobHarborBuilding::IsExpeditionReady() const
     if(!expedition.active)
         return false;
     // Alles da?
-    if(expedition.boards < BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards)
+    const BuildingDesc& bldDesc = GetDescription();
+    if(expedition.boards < bldDesc.costs.boards)
         return false;
-    if(expedition.stones < BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones)
+    if(expedition.stones < bldDesc.costs.stones)
         return false;
     if(!expedition.builder)
         return false;
@@ -1288,9 +1265,10 @@ unsigned nobHarborBuilding::CalcDistributionPoints(const GoodType type) const
     unsigned short points = 10000;
 
     // Ermitteln, ob wir noch Bretter oder Steine brauchen
-    if(expedition.boards + ordered_boards >= BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards && type == GD_BOARDS)
+    const BuildingDesc& bldDesc = GetDescription();
+    if(type == GD_BOARDS && expedition.boards + ordered_boards >= bldDesc.costs.boards)
         return 0;
-    if(expedition.stones + ordered_stones >= BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones && type == GD_STONES)
+    if(type == GD_STONES && expedition.stones + ordered_stones >= bldDesc.costs.stones)
         return 0;
 
     // Schon bestellte Sachen wirken sich positiv aus, da wir ja so eher eine Expedition bereit haben

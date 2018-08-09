@@ -28,7 +28,7 @@
 #include "world/GameWorldGame.h"
 #include "nodeObjs/noFlag.h"
 #include "gameData/JobConsts.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 
 nofBuildingWorker::nofBuildingWorker(const Job job, const MapPoint pos, const unsigned char player, nobUsual* workplace)
     : noFigure(job, pos, player, workplace), state(STATE_FIGUREWORK), workplace(workplace), ware(GD_NOTHING), was_sounding(false)

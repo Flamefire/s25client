@@ -41,10 +41,11 @@
 #include "random/Random.h"
 #include "world/GameWorldGame.h"
 #include "nodeObjs/noFlag.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/BuildingProperties.h"
 #include "gameData/GameConsts.h"
 #include "gameData/MilitaryConsts.h"
+#include "gameData/NationData.h"
 #include "gameData/SettingTypeConv.h"
 #include "libutil/Log.h"
 #include <boost/foreach.hpp>
@@ -183,7 +184,7 @@ void nobMilitary::Draw(DrawPoint drawPt)
     {
         const unsigned flagTexture = 3162 + GAMECLIENT.GetGlobalAnimation(8, 2, 1, pos.x * pos.y * i);
         LOADER.GetMapPlayerImage(flagTexture)
-          ->DrawFull(drawPt + TROOPS_FLAG_OFFSET[nation][size] + DrawPoint(0, i * 3), COLOR_WHITE, gwg->GetPlayer(player).color);
+          ->DrawFull(drawPt + TROOPS_FLAG_OFFSET[nation.value][size] + DrawPoint(0, i * 3), COLOR_WHITE, gwg->GetPlayer(player).color);
     }
 
     // Die Fahne, die anzeigt wie weit das Gebäude von der Grenze entfernt ist, zeichnen
@@ -204,11 +205,11 @@ void nobMilitary::Draw(DrawPoint drawPt)
         bitmap = LOADER.GetMapPlayerImage(3150 + frontier_distance_tmp * 4 + animationFrame);
     }
     if(bitmap)
-        bitmap->DrawFull(drawPt + BORDER_FLAG_OFFSET[nation][size]);
+        bitmap->DrawFull(drawPt + BORDER_FLAG_OFFSET[nation.value][size]);
 
     // Wenn Goldzufuhr gestoppt ist, Schild außen am Gebäude zeichnen zeichnen
     if(coinsDisabledVirtual)
-        LOADER.GetMapImageN(46)->DrawFull(drawPt + BUILDING_SIGN_CONSTS[nation][bldType_]);
+        LOADER.GetMapImageN(46)->DrawFull(drawPt + GetDescription().signPos);
 }
 
 void nobMilitary::HandleEvent(const unsigned id)
@@ -309,12 +310,13 @@ unsigned nobMilitary::GetMilitaryRadius() const
 
 unsigned nobMilitary::GetMaxCoinCt() const
 {
-    return NUM_GOLDS[nation][size];
+    return GetDescription().workDescr.numSpacesPerWare;
 }
 
 unsigned nobMilitary::GetMaxTroopsCt() const
 {
-    return NUM_TROOPSS[nation][size];
+    // We have 2/3 coins to troops. TODO: Make this configurable
+    return (GetDescription().workDescr.numSpacesPerWare * 3 + 1) / 2;
 }
 
 void nobMilitary::LookForEnemyBuildings(const nobBaseMilitary* const exception)
@@ -838,7 +840,7 @@ unsigned nobMilitary::GetSoldiersStrengthForAttack(const MapPoint dest, unsigned
     for(SortedTroops::const_reverse_iterator it = troops.rbegin(); it != troops.rend() && numRemainingSoldiers;
         ++it, --numRemainingSoldiers)
     {
-        strength += HITPOINTS[nation][(*it)->GetRank()];
+        strength += HITPOINTS[nation.value][(*it)->GetRank()];
     }
 
     return (strength);
@@ -851,7 +853,7 @@ unsigned nobMilitary::GetSoldiersStrength() const
 
     for(SortedTroops::const_iterator it = troops.begin(); it != troops.end(); ++it)
     {
-        strength += HITPOINTS[nation][(*it)->GetRank()];
+        strength += HITPOINTS[nation.value][(*it)->GetRank()];
     }
 
     return (strength);

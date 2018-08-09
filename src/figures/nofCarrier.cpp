@@ -232,7 +232,7 @@ void nofCarrier::Draw(DrawPoint drawPt)
 
                 if(!animation)
                 {
-                    LOADER.bob_jobs_cache[gwg->GetPlayer(player).nation][fat ? NUM_JOB_TYPES : 0][GetCurMoveDir().toUInt()][2].draw(
+                    LOADER.bob_jobs_cache[gwg->GetPlayer(player).GetNation().value][fat ? NUM_JOB_TYPES : 0][GetCurMoveDir().toUInt()][2].draw(
                       drawPt, COLOR_WHITE, gwg->GetPlayer(player).color);
                 } else
                     // Steht und wartet (ohne Ware)

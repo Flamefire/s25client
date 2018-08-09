@@ -18,12 +18,12 @@
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "PositionSearch.h"
 #include "AIPlayerJH.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/NationDesc.h"
 
 AIJH::PositionSearch::PositionSearch(const AIPlayerJH& player, const MapPoint pt, AIResource res, int minimum, BuildingType bld,
                                      bool searchGlobalOptimum /*= false*/)
-    : startPt(pt), res(res), minimum(minimum), size(BUILDING_SIZE[bld]), bld(bld), searchGlobalOptimum(searchGlobalOptimum),
-      nodesPerStep(25), // TODO: Make it depend on something...
+    : startPt(pt), res(res), minimum(minimum), size(player.GetNationDesc().buildings[bld].requiredSpace), bld(bld),
+      searchGlobalOptimum(searchGlobalOptimum), nodesPerStep(25), // TODO: Make it depend on something...
       resultPt(MapPoint::Invalid()), resultValue(0)
 {
     tested.resize(prodOfComponents(player.GetWorld().GetSize()));

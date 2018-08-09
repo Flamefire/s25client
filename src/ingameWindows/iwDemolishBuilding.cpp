@@ -24,7 +24,6 @@
 #include "ogl/glArchivItem_Bitmap.h"
 #include "world/GameWorldView.h"
 #include "world/GameWorldViewer.h"
-#include "gameData/BuildingConsts.h"
 
 iwDemolishBuilding::iwDemolishBuilding(GameWorldView& gwv, const noBaseBuilding* building, const bool flag)
     : IngameWindow(building->CreateGUIID(), IngameWindow::posAtMouse, Extent(200, 200), _("Demolish?"), LOADER.GetImageN("resource", 41)),

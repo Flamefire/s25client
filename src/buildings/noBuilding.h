@@ -34,14 +34,11 @@ protected:
 
     /// Called to destroy derived classes after building was replaced by fire and removed from players inventory
     virtual void DestroyBuilding() = 0;
+    void Serialize_noBuilding(SerializedGameData& sgd) const;
 
 public:
     void Destroy() override;
 
-protected:
-    void Serialize_noBuilding(SerializedGameData& sgd) const;
-
-public:
     void Serialize(SerializedGameData& sgd) const override { Serialize_noBuilding(sgd); }
 
     /// Draws the basic building (no fires etc.) with the door

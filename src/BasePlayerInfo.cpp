@@ -20,20 +20,19 @@
 #include "libutil/Serializer.h"
 #include "libutil/colors.h"
 
-BasePlayerInfo::BasePlayerInfo() : ps(PS_FREE), nation(NAT_ROMANS), color(PLAYER_COLORS[0]), team(TM_NOTEAM) {}
+BasePlayerInfo::BasePlayerInfo() : ps(PS_FREE), color(PLAYER_COLORS[0]), team(TM_NOTEAM) {}
 
 BasePlayerInfo::BasePlayerInfo(Serializer& ser, bool lightData)
     : ps(static_cast<PlayerState>(ser.PopUnsignedChar())), aiInfo(!lightData || ps == PS_AI ? ser : AI::Info())
 {
     if(lightData && !isUsed())
     {
-        nation = NAT_ROMANS;
         team = TM_NOTEAM;
         color = PLAYER_COLORS[0];
     } else
     {
-        name = ser.PopLongString();
-        nation = static_cast<Nation>(ser.PopUnsignedChar());
+        name = ser.PopString();
+        nationName = ser.PopString();
         color = ser.PopUnsignedInt();
         team = static_cast<Team>(ser.PopUnsignedChar());
     }
@@ -46,8 +45,8 @@ void BasePlayerInfo::Serialize(Serializer& ser, bool lightData) const
         return;
     if(!lightData || ps == PS_AI)
         aiInfo.serialize(ser);
-    ser.PushLongString(name);
-    ser.PushUnsignedChar(static_cast<unsigned char>(nation));
+    ser.PushString(name);
+    ser.PushString(nationName);
     ser.PushUnsignedInt(color);
     ser.PushUnsignedChar(static_cast<unsigned char>(team));
 }

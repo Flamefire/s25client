@@ -20,9 +20,10 @@
 #include "DrawPoint.h"
 #include "gameTypes/BuildingType.h"
 #include "gameTypes/MapTypes.h"
-#include "gameData/NationConsts.h"
+#include "gameTypes/Nation.h"
 
 class SerializedGameData;
+struct WorldDescription;
 
 /// Typen für die FOW Objekte
 enum FOW_Type
@@ -86,9 +87,11 @@ private:
     const Nation nation;
     /// Gibt den Baufortschritt an, wie hoch das Gebäude schon gebaut ist, gemessen in 8 Stufen für jede verbaute Ware
     const unsigned char build_progress;
+    const WorldDescription& worldDesc;
 
 public:
-    fowBuildingSite(const bool planing, const BuildingType type, const Nation nation, const unsigned char build_progress);
+    fowBuildingSite(const WorldDescription& worldDesc, const bool planing, const BuildingType type, const Nation nation,
+                    const unsigned char build_progress);
     fowBuildingSite(SerializedGameData& sgd);
     void Serialize(SerializedGameData& sgd) const override;
     void Draw(DrawPoint drawPt) const override;

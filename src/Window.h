@@ -25,8 +25,8 @@
 #include "TextFormatSetter.h"
 #include "animation/AnimationManager.h"
 #include "gameTypes/BuildingType.h"
+#include "gameTypes/Nation.h"
 #include "gameTypes/TextureColor.h"
-#include "gameData/NationConsts.h"
 #include "libutil/colors.h"
 #include <map>
 #include <vector>
@@ -59,6 +59,7 @@ class glArchivItem_Bitmap;
 class glArchivItem_Map;
 class glArchivItem_Font;
 class ITexture;
+struct WorldDescription;
 
 struct KeyEvent;
 class MouseCoords;
@@ -135,8 +136,8 @@ public:
 
     AnimationManager& GetAnimationManager() { return animations_; }
 
-    ctrlBuildingIcon* AddBuildingIcon(unsigned id, const DrawPoint& pos, BuildingType type, const Nation nation, unsigned short size = 36,
-                                      const std::string& tooltip_ = "");
+    ctrlBuildingIcon* AddBuildingIcon(unsigned id, const DrawPoint& pos, const WorldDescription& worldDesc, BuildingType type,
+                                      const Nation nation, unsigned short size = 36, const std::string& tooltip_ = "");
     ctrlButton* AddTextButton(unsigned id, const DrawPoint& pos, const Extent& size, const TextureColor tc, const std::string& text,
                               glArchivItem_Font* font, const std::string& tooltip = "");
     ctrlButton* AddColorButton(unsigned id, const DrawPoint& pos, const Extent& size, const TextureColor tc, const unsigned fillColor,

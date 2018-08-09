@@ -77,14 +77,14 @@ public:
         std::vector<PlayerInfo> players(3);
         players[0].ps = PS_OCCUPIED;
         players[0].name = "Player1";
-        players[0].nation = NAT_VIKINGS;
+        players[0].nationName = "Vikings";
         players[0].color = PLAYER_COLORS[5];
         players[0].team = TM_TEAM1;
         players[0].isHost = true;
 
         players[1].ps = PS_AI;
         players[1].name = "PlayerAI";
-        players[1].nation = NAT_ROMANS;
+        players[1].nationName = "Romans";
         players[1].color = 0xFFFF0000;
         players[1].team = TM_TEAM2;
         players[1].isHost = false;
@@ -117,8 +117,8 @@ public:
         hqPositions.push_back(MapPoint(0, 1));
         hqPositions.push_back(MapPoint(16, 17));
         std::vector<Nation> playerNations;
-        playerNations.push_back(world.GetPlayer(0).nation);
-        playerNations.push_back(world.GetPlayer(1).nation);
+        playerNations.push_back(world.GetPlayer(0).GetNation());
+        playerNations.push_back(world.GetPlayer(1).GetNation());
         BOOST_REQUIRE(MapLoader::PlaceHQs(world, hqPositions, playerNations, false));
     }
 

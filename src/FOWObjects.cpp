@@ -21,7 +21,9 @@
 #include "SerializedGameData.h"
 #include "network/GameClient.h"
 #include "ogl/glArchivItem_Bitmap.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingProperties.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "libutil/colors.h"
 
 /// Berechnet die dunklere Spielerfarbe zum Zeichnen
@@ -46,45 +48,39 @@ FOWObject::~FOWObject() {}
 
 fowBuilding::fowBuilding(const BuildingType type, const Nation nation) : type(type), nation(nation) {}
 
-fowBuilding::fowBuilding(SerializedGameData& sgd) : type(BuildingType(sgd.PopUnsignedChar())), nation(Nation(sgd.PopUnsignedChar())) {}
+fowBuilding::fowBuilding(SerializedGameData& sgd)
+    : type(BuildingType(sgd.PopUnsignedChar())), nation(sgd.GetDescription().nations.getIndex(sgd.PopString(), true))
+{}
 
 void fowBuilding::Serialize(SerializedGameData& sgd) const
 {
     sgd.PushUnsignedChar(static_cast<unsigned char>(type));
-    sgd.PushUnsignedChar(static_cast<unsigned char>(nation));
+    sgd.PushString(sgd.GetDescription().get(nation).name);
 }
 
 void fowBuilding::Draw(DrawPoint drawPt) const
 {
-    if(type == BLD_CHARBURNER)
-    {
-        LOADER.GetImageN("charburner", nation * 8 + 1)->DrawFull(drawPt, FOW_DRAW_COLOR);
-    } else
-    {
-        LOADER.GetNationImage(nation, 250 + 5 * type)->DrawFull(drawPt, FOW_DRAW_COLOR);
-        // ACHTUNG nicht jedes Gebäude hat einen Schatten !!
-        if(LOADER.GetNationImage(nation, 250 + 5 * type + 1))
-            LOADER.GetNationImage(nation, 250 + 5 * type + 1)->DrawFull(drawPt, COLOR_SHADOW);
-    }
+    LOADER.building_cache[nation.value][type][0].DrawFull(drawPt, FOW_DRAW_COLOR);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 // fowBuildingSite
 
-fowBuildingSite::fowBuildingSite(const bool planing, const BuildingType type, const Nation nation, const unsigned char build_progress)
-    : planing(planing), type(type), nation(nation), build_progress(build_progress)
+fowBuildingSite::fowBuildingSite(const WorldDescription& worldDesc, const bool planing, const BuildingType type, const Nation nation,
+                                 const unsigned char build_progress)
+    : worldDesc(worldDesc), planing(planing), type(type), nation(nation), build_progress(build_progress)
 {}
 
 fowBuildingSite::fowBuildingSite(SerializedGameData& sgd)
-    : planing(sgd.PopBool()), type(BuildingType(sgd.PopUnsignedChar())), nation(Nation(sgd.PopUnsignedChar())),
-      build_progress(sgd.PopUnsignedChar())
+    : worldDesc(sgd.GetDescription()), planing(sgd.PopBool()), type(BuildingType(sgd.PopUnsignedChar())),
+      nation(sgd.GetDescription().nations.getIndex(sgd.PopString(), true)), build_progress(sgd.PopUnsignedChar())
 {}
 
 void fowBuildingSite::Serialize(SerializedGameData& sgd) const
 {
     sgd.PushBool(planing);
     sgd.PushUnsignedChar(static_cast<unsigned char>(type));
-    sgd.PushUnsignedChar(static_cast<unsigned char>(nation));
+    sgd.PushString(sgd.GetDescription().get(nation).name);
     sgd.PushUnsignedChar(build_progress);
 }
 
@@ -107,23 +103,25 @@ void fowBuildingSite::Draw(DrawPoint drawPt) const
         unsigned progressRaw, progressBld;
         unsigned maxProgressRaw, maxProgressBld;
 
-        if(BUILDING_COSTS[nation][type].stones)
+        const BuildingDesc& bldDesc = worldDesc.get(nation).buildings[type];
+
+        if(bldDesc.costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            maxProgressRaw = BUILDING_COSTS[nation][type].boards * 8;
-            maxProgressBld = BUILDING_COSTS[nation][type].stones * 8;
+            maxProgressRaw = bldDesc.costs.boards * 8;
+            maxProgressBld = bldDesc.costs.stones * 8;
         } else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            maxProgressBld = maxProgressRaw = BUILDING_COSTS[nation][type].boards * 4;
+            maxProgressBld = maxProgressRaw = bldDesc.costs.boards * 4;
         }
         progressRaw = min<unsigned>(build_progress, maxProgressRaw);
         progressBld = ((build_progress > maxProgressRaw) ? (build_progress - maxProgressRaw) : 0);
 
         // Rohbau
-        LOADER.building_cache[nation][type][1].drawPercent(drawPt, progressRaw * 100 / maxProgressRaw, FOW_DRAW_COLOR);
+        LOADER.building_cache[nation.value][type][1].drawPercent(drawPt, progressRaw * 100 / maxProgressRaw, FOW_DRAW_COLOR);
         // Das richtige Haus
-        LOADER.building_cache[nation][type][0].drawPercent(drawPt, progressBld * 100 / maxProgressBld, FOW_DRAW_COLOR);
+        LOADER.building_cache[nation.value][type][0].drawPercent(drawPt, progressBld * 100 / maxProgressBld, FOW_DRAW_COLOR);
     }
 }
 
@@ -135,19 +133,20 @@ fowFlag::fowFlag(const unsigned playerColor, const Nation nation, const FlagType
 {}
 
 fowFlag::fowFlag(SerializedGameData& sgd)
-    : color(sgd.PopUnsignedInt()), nation(Nation(sgd.PopUnsignedChar())), flag_type(FlagType(sgd.PopUnsignedChar()))
+    : color(sgd.PopUnsignedInt()), nation(sgd.GetDescription().nations.getIndex(sgd.PopString(), true)),
+      flag_type(FlagType(sgd.PopUnsignedChar()))
 {}
 
 void fowFlag::Serialize(SerializedGameData& sgd) const
 {
     sgd.PushUnsignedInt(color);
-    sgd.PushUnsignedChar(static_cast<unsigned char>(nation));
+    sgd.PushString(sgd.GetDescription().get(nation).name);
     sgd.PushUnsignedChar(static_cast<unsigned char>(flag_type));
 }
 
 void fowFlag::Draw(DrawPoint drawPt) const
 {
-    LOADER.flag_cache[nation][flag_type][0].draw(drawPt, FOW_DRAW_COLOR, color);
+    LOADER.flag_cache[nation.value][flag_type][0].draw(drawPt, FOW_DRAW_COLOR, color);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

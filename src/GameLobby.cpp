@@ -18,8 +18,16 @@
 #include "rttrDefines.h" // IWYU pragma: keep
 #include "GameLobby.h"
 #include "JoinPlayerInfo.h"
+#include "lua/GameDataLoader.h"
+#include <stdexcept>
 
-GameLobby::GameLobby(bool isSavegame, bool isHost, unsigned numPlayers) : isSavegame_(isSavegame), isHost_(isHost), players_(numPlayers) {}
+GameLobby::GameLobby(bool isSavegame, bool isHost, unsigned numPlayers) : isSavegame_(isSavegame), isHost_(isHost), players_(numPlayers)
+{
+    GameDataLoader gdLoader(worldDesc_);
+    if(!gdLoader.Load())
+        throw std::runtime_error("Failed to load world description");
+}
+
 GameLobby::~GameLobby() {}
 
 JoinPlayerInfo& GameLobby::getPlayer(unsigned playerId)

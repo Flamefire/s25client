@@ -22,6 +22,7 @@
 
 #include "DrawPoint.h"
 #include "ITexture.h"
+#include "glBitmapItem.h"
 #include <vector>
 
 namespace libsiedler2 {

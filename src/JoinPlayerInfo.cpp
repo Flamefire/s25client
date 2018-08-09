@@ -47,7 +47,7 @@ void JoinPlayerInfo::FixSwappedSaveSlot(JoinPlayerInfo& other)
     // Unswap fixed stuff
     using std::swap;
     swap(originName, other.originName);
-    swap(nation, other.nation);
+    swap(nationName, other.nationName);
     swap(color, other.color);
     swap(team, other.team);
 }

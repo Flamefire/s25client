@@ -29,7 +29,7 @@
 #include "ogl/glArchivItem_Bitmap.h"
 #include "ogl/glSmartBitmap.h"
 #include "world/GameWorldGame.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "libutil/colors.h"
 #include <stdexcept>
 
@@ -67,12 +67,13 @@ noBuildingSite::noBuildingSite(const BuildingType type, const MapPoint pos, cons
 
 /// Konstruktor für Hafenbaustellen vom Schiff aus
 noBuildingSite::noBuildingSite(const MapPoint pos, const unsigned char player)
-    : noBaseBuilding(NOP_BUILDINGSITE, BLD_HARBORBUILDING, pos, player), state(STATE_BUILDING), planer(NULL),
-      boards(BUILDING_COSTS[nation][BLD_HARBORBUILDING].boards), stones(BUILDING_COSTS[nation][BLD_HARBORBUILDING].stones), used_boards(0),
+    : noBaseBuilding(NOP_BUILDINGSITE, BLD_HARBORBUILDING, pos, player), state(STATE_BUILDING), planer(NULL), used_boards(0),
       used_stones(0), build_progress(0)
 {
     builder = new nofBuilder(pos, player, this);
     GamePlayer& owner = gwg->GetPlayer(player);
+    boards = GetDescription().costs.boards;
+    stones = GetDescription().costs.stones;
     // Baustelle in den Index eintragen, damit die Wirtschaft auch Bescheid weiß
     owner.AddBuildingSite(this);
     // Bauarbeiter auch auf der Karte auftragen
@@ -162,7 +163,8 @@ void noBuildingSite::OrderConstructionMaterial()
 
     // Bretter
     GamePlayer& owner = gwg->GetPlayer(player);
-    for(int i = used_boards + boards + ordered_boards.size(); i < BUILDING_COSTS[owner.nation][bldType_].boards; ++i)
+    const BuildingCost costs = GetDescription().costs;
+    for(int i = used_boards + boards + ordered_boards.size(); i < costs.boards; ++i)
     {
         Ware* w = owner.OrderWare(GD_BOARDS, this);
         if(!w)
@@ -170,7 +172,7 @@ void noBuildingSite::OrderConstructionMaterial()
         RTTR_Assert(helpers::contains(ordered_boards, w));
     }
     // Steine
-    for(int i = used_stones + stones + ordered_stones.size(); i < BUILDING_COSTS[owner.nation][bldType_].stones; ++i)
+    for(int i = used_stones + stones + ordered_stones.size(); i < costs.stones; ++i)
     {
         Ware* w = owner.OrderWare(GD_STONES, this);
         if(!w)
@@ -191,13 +193,14 @@ void noBuildingSite::Draw(DrawPoint drawPt)
     if(state == STATE_PLANING)
     {
         // Baustellenschild mit Schatten zeichnen
-        LOADER.GetNationImage(gwg->GetPlayer(player).nation, 450)->DrawFull(drawPt);
-        LOADER.GetNationImage(gwg->GetPlayer(player).nation, 451)->DrawFull(drawPt, COLOR_SHADOW);
+        LOADER.GetNationImage(gwg->GetPlayer(player).GetNation(), 450)->DrawFull(drawPt);
+        LOADER.GetNationImage(gwg->GetPlayer(player).GetNation(), 451)->DrawFull(drawPt, COLOR_SHADOW);
     } else
     {
         // Baustellenstein und -schatten zeichnen
-        LOADER.GetNationImage(gwg->GetPlayer(player).nation, 455)->DrawFull(drawPt);
-        LOADER.GetNationImage(gwg->GetPlayer(player).nation, 456)->DrawFull(drawPt, COLOR_SHADOW);
+        const GamePlayer& owner = gwg->GetPlayer(player);
+        LOADER.GetNationImage(owner.GetNation(), 455)->DrawFull(drawPt);
+        LOADER.GetNationImage(owner.GetNation(), 456)->DrawFull(drawPt, COLOR_SHADOW);
 
         // Waren auf der Baustelle
 
@@ -214,33 +217,33 @@ void noBuildingSite::Draw(DrawPoint drawPt)
         // Rohbau
 
         // ausrechnen, wie weit er ist
-        unsigned progressRaw, progressBld;
         unsigned maxProgressRaw, maxProgressBld;
 
-        if(BUILDING_COSTS[nation][bldType_].stones)
+        const BuildingCost costs = GetDescription().costs;
+        if(costs.stones)
         {
             // Haus besteht aus Steinen und Brettern
-            maxProgressRaw = BUILDING_COSTS[nation][bldType_].boards * 8;
-            maxProgressBld = BUILDING_COSTS[nation][bldType_].stones * 8;
+            maxProgressRaw = costs.boards * 8;
+            maxProgressBld = costs.stones * 8;
         } else
         {
             // Haus besteht nur aus Brettern, dann 50:50
-            maxProgressBld = maxProgressRaw = BUILDING_COSTS[nation][bldType_].boards * 4;
+            maxProgressBld = maxProgressRaw = costs.boards * 4;
         }
-        progressRaw = min<unsigned>(build_progress, maxProgressRaw);
-        progressBld = ((build_progress > maxProgressRaw) ? (build_progress - maxProgressRaw) : 0);
+        unsigned progressRaw = min<unsigned>(build_progress, maxProgressRaw);
+        unsigned progressBld = ((build_progress > maxProgressRaw) ? (build_progress - maxProgressRaw) : 0);
 
         // Rohbau
-        LOADER.building_cache[nation][bldType_][1].drawPercent(drawPt, progressRaw * 100 / maxProgressRaw);
+        LOADER.building_cache[nation.value][bldType_][1].drawPercent(drawPt, progressRaw * 100 / maxProgressRaw);
         // Das richtige Haus
-        LOADER.building_cache[nation][bldType_][0].drawPercent(drawPt, progressBld * 100 / maxProgressBld);
+        LOADER.building_cache[nation.value][bldType_][0].drawPercent(drawPt, progressBld * 100 / maxProgressBld);
     }
 }
 
 /// Erzeugt von ihnen selbst ein FOW Objekt als visuelle "Erinnerung" für den Fog of War
 FOWObject* noBuildingSite::CreateFOWObject() const
 {
-    return new fowBuildingSite(state == STATE_PLANING, bldType_, nation, build_progress);
+    return new fowBuildingSite(gwg->GetDescription(), state == STATE_PLANING, bldType_, nation, build_progress);
 }
 
 void noBuildingSite::GotWorker(Job /*job*/, noFigure* worker)
@@ -277,12 +280,12 @@ unsigned noBuildingSite::CalcDistributionPoints(noRoadNode* /*start*/, const Goo
 
     const unsigned curBoards = ordered_boards.size() + boards + used_boards;
     const unsigned curStones = ordered_stones.size() + stones + used_stones;
-    RTTR_Assert(curBoards <= BUILDING_COSTS[nation][this->bldType_].boards);
-    RTTR_Assert(curStones <= BUILDING_COSTS[nation][this->bldType_].stones);
+    const BuildingCost costs = GetDescription().costs;
+    RTTR_Assert(curBoards <= costs.boards);
+    RTTR_Assert(curStones <= costs.stones);
 
     // Wenn wir schon genug Baumaterial haben, brauchen wir nichts mehr
-    if((goodtype == GD_BOARDS && curBoards == BUILDING_COSTS[nation][this->bldType_].boards)
-       || (goodtype == GD_STONES && curStones == BUILDING_COSTS[nation][this->bldType_].stones))
+    if((goodtype == GD_BOARDS && curBoards == costs.boards) || (goodtype == GD_STONES && curStones == costs.stones))
         return 0;
 
     // 10000 als Basis wählen, damit man auch noch was abziehen kann
@@ -291,8 +294,8 @@ unsigned noBuildingSite::CalcDistributionPoints(noRoadNode* /*start*/, const Goo
 
     // Baumaterial mit einberechnen (wer noch am wenigsten braucht, soll mehr Punkte kriegen, da ja möglichst
     // zuerst Gebäude fertiggestellt werden sollten)
-    points -= (BUILDING_COSTS[nation][bldType_].boards - curBoards) * 20;
-    points -= (BUILDING_COSTS[nation][bldType_].stones - curStones) * 20;
+    points -= (costs.boards - curBoards) * 20;
+    points -= (costs.stones - curStones) * 20;
 
     // Baupriorität mit einberechnen (niedriger = höhere Priorität, daher - !)
     const unsigned buildingSitePrio = gwg->GetPlayer(player).GetBuidingSitePriority(this) * 30;
@@ -367,7 +370,8 @@ void noBuildingSite::TakeWare(Ware* ware)
 
 bool noBuildingSite::IsBuildingComplete()
 {
-    return (build_progress == BUILDING_COSTS[nation][bldType_].boards * 8 + BUILDING_COSTS[nation][bldType_].stones * 8);
+    const BuildingCost costs = GetDescription().costs;
+    return (build_progress == costs.boards * 8 + costs.stones * 8);
 }
 
 unsigned char noBuildingSite::GetBuildProgress(bool percent) const
@@ -375,8 +379,9 @@ unsigned char noBuildingSite::GetBuildProgress(bool percent) const
     if(!percent)
         return build_progress;
 
-    unsigned costs = BUILDING_COSTS[nation][bldType_].boards * 8 + BUILDING_COSTS[nation][bldType_].stones * 8;
-    unsigned progress = (((unsigned)build_progress) * 100) / costs;
+    const BuildingCost costs = GetDescription().costs;
+    unsigned sumCosts = costs.boards * 8 + costs.stones * 8;
+    unsigned progress = (build_progress * 100u) / sumCosts;
 
     return (unsigned char)progress;
 }

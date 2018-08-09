@@ -33,13 +33,14 @@ struct DescriptionContainer
     /// Return the number of descriptions stored
     unsigned size() const { return static_cast<unsigned>(items.size()); }
     /// Return the index of the item with the given name
-    DescIdx<T> getIndex(const std::string& name) const;
+    DescIdx<T> getIndex(const std::string& name, bool throwOnMissingEntry = false) const;
     /// Return the entry with the given name or NULL
     const T* tryGet(const std::string& name) const;
     /// Return the entry with the given idx or NULL
     const T* tryGet(const DescIdx<T> idx) const;
     /// Return the item at the given index
     const T& get(const DescIdx<T> idx) const;
+    const T& operator[](const DescIdx<T> idx) const { return get(idx); }
     /// Return a mutable reference to the given item
     T& getMutable(const DescIdx<T> idx);
 
@@ -64,11 +65,15 @@ inline DescIdx<T> DescriptionContainer<T>::add(T item)
 }
 
 template<typename T>
-inline DescIdx<T> DescriptionContainer<T>::getIndex(const std::string& name) const
+inline DescIdx<T> DescriptionContainer<T>::getIndex(const std::string& name, bool throwOnMissingEntry) const
 {
     std::map<std::string, unsigned>::const_iterator it = name2Idx.find(name);
     if(it == name2Idx.end())
+    {
+        if(throwOnMissingEntry)
+            throw std::runtime_error(std::string("Entry with name ") + name + " not found!");
         return DescIdx<T>();
+    }
     return DescIdx<T>(it->second);
 }
 

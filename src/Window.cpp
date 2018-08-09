@@ -215,10 +215,10 @@ void Window::DeleteCtrl(unsigned id)
     childIdToWnd_.erase(it);
 }
 
-ctrlBuildingIcon* Window::AddBuildingIcon(unsigned id, const DrawPoint& pos, BuildingType type, const Nation nation, unsigned short size,
-                                          const std::string& tooltip)
+ctrlBuildingIcon* Window::AddBuildingIcon(unsigned id, const DrawPoint& pos, const WorldDescription& worldDesc, BuildingType type,
+                                          const Nation nation, unsigned short size, const std::string& tooltip_)
 {
-    return AddCtrl(new ctrlBuildingIcon(this, id, ScaleIf(pos), type, nation, ScaleIf(Extent(size, 0)).x, tooltip));
+    return AddCtrl(new ctrlBuildingIcon(this, id, worldDesc, ScaleIf(pos), type, nation, ScaleIf(Extent(size, 0)).x, tooltip_));
 }
 
 ctrlButton* Window::AddTextButton(unsigned id, const DrawPoint& pos, const Extent& size, const TextureColor tc, const std::string& text,

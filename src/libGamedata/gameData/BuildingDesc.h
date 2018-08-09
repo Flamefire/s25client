@@ -69,6 +69,12 @@ struct BuildingDesc : public BuildingBPDesc
             throw std::runtime_error("Missing work offset '" + name + "'");
         return it->second;
     }
+    Point<int8_t> getWorkOffset(std::string name, uint8_t step) const
+    {
+        RTTR_Assert(step <= 9);
+        name = name + static_cast<char>('0' + step);
+        return getWorkOffset(name);
+    }
 };
 
 #endif // BuildingDesc_h__

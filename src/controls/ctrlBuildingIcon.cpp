@@ -21,13 +21,16 @@
 #include "files.h"
 #include "ogl/glArchivItem_Bitmap.h"
 #include "gameTypes/BuildingType.h"
-#include "gameData/NationConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include <string>
 
-ctrlBuildingIcon::ctrlBuildingIcon(Window* const parent, const unsigned id, const DrawPoint& pos, const BuildingType type,
-                                   const Nation nation, const unsigned short size, const std::string& tooltip)
+ctrlBuildingIcon::ctrlBuildingIcon(Window* const parent, const unsigned id, const WorldDescription& worldDesc, const DrawPoint& pos,
+                                   const BuildingType type, const Nation nation, const unsigned short size, const std::string& tooltip)
     : ctrlButton(parent, id, pos, Extent(size, size), TC_GREY, tooltip), type(type), nation(nation)
-{}
+{
+    image = LOADER.GetTexFromFile(worldDesc.get(nation).buildings[type].icon);
+}
 
 /**
  *  zeichnet das Fenster.
@@ -36,11 +39,6 @@ void ctrlBuildingIcon::Draw_()
 {
     if(state == BUTTON_HOVER || state == BUTTON_PRESSED)
         LOADER.GetImageN("io", 0)->DrawPart(GetDrawRect());
-    glArchivItem_Bitmap* image;
-    if(type != BLD_CHARBURNER)
-        image = LOADER.GetImageN(NATION_ICON_IDS[nation], type);
-    else
-        image = LOADER.GetImageN("charburner", nation * 8 + 8);
     if(image)
         image->DrawFull(GetDrawPos() + GetSize() / 2, (state == BUTTON_PRESSED ? COLOR_YELLOW : COLOR_WHITE));
 }

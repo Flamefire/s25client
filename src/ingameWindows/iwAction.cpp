@@ -29,6 +29,7 @@
 #include "controls/ctrlOptionGroup.h"
 #include "controls/ctrlTab.h"
 #include "drivers/VideoDriverWrapper.h"
+#include "helpers/mathFuncs.h"
 #include "iwDemolishBuilding.h"
 #include "iwMilitaryBuilding.h"
 #include "iwObservate.h"
@@ -39,7 +40,9 @@
 #include "world/GameWorldView.h"
 #include "world/GameWorldViewer.h"
 #include "nodeObjs/noFlag.h"
-#include "gameData/BuildingConsts.h"
+#include "gameData/BuildingProperties.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "gameData/const_gui_ids.h"
 #include <cstdio>
 #include <sstream>
@@ -92,145 +95,98 @@ iwAction::iwAction(GameInterface& gi, GameWorldView& gwv, const Tabs& tabs, MapP
     ctrlTab* main_tab = AddTabCtrl(0, DrawPoint(10, 20), 180);
 
     // Bau-main_tab
-    if(tabs.build)
+    if(tabs.allowedBQ >= BQ_HUT)
     {
         ctrlGroup* group = main_tab->AddTab(LOADER.GetImageN("io", 18), _("-> Build house"), TAB_BUILD);
 
         ctrlTab* build_tab = group->AddTabCtrl(1, DrawPoint(0, 45), 180);
 
-        // Building tabs
-        if(tabs.build_tabs == Tabs::BT_MINE) // mines
-            build_tab->AddTab(LOADER.GetImageN("io", 76), _("-> Dig mines"), Tabs::BT_MINE);
+        // Building tabs. Ids = indices into this array
+        const boost::array<BuildingQuality, 4> bqForTabs = {{BQ_HUT, BQ_HOUSE, BQ_HARBOR, BQ_MINE}};
+        if(tabs.allowedBQ == BQ_MINE) // mines
+            build_tab->AddTab(LOADER.GetImageN("io", 76), _("-> Dig mines"), 3);
         else
         {
-            build_tab->AddTab(LOADER.GetImageN("io", 67), _("-> Build hut"), Tabs::BT_HUT);
-            if(tabs.build_tabs >= Tabs::BT_HOUSE)
-                build_tab->AddTab(LOADER.GetImageN("io", 68), _("-> Build house"), Tabs::BT_HOUSE);
-            if(tabs.build_tabs >= Tabs::BT_CASTLE) // castle & harbor
-                build_tab->AddTab(LOADER.GetImageN("io", 69), _("-> Build castle"), Tabs::BT_CASTLE);
+            build_tab->AddTab(LOADER.GetImageN("io", 67), _("-> Build hut"), 0);
+            if(canUseBq(tabs.allowedBQ, BQ_HOUSE))
+                build_tab->AddTab(LOADER.GetImageN("io", 68), _("-> Build house"), 1);
+            if(canUseBq(tabs.allowedBQ, BQ_CASTLE)) // castle & harbor
+                build_tab->AddTab(LOADER.GetImageN("io", 69), _("-> Build castle"), 2);
         }
+
+        const WorldDescription& worldDesc = gwv.GetWorld().GetDescription();
+        const NationDesc& natDesc = worldDesc.get(player.GetNation());
 
         // add building icons to TabCtrl
-        const unsigned char building_count_max = 14;
-        const unsigned building_count[4] = {9, 13, 6, 4};
-        const BuildingType building_icons[4][building_count_max] = {{/* 0 */
-                                                                     /* 0 */ BLD_WOODCUTTER,
-                                                                     /* 1 */ BLD_FORESTER,
-                                                                     /* 2 */ BLD_QUARRY,
-                                                                     /* 3 */ BLD_FISHERY,
-                                                                     /* 4 */ BLD_HUNTER,
-                                                                     /* 5 */ BLD_BARRACKS,
-                                                                     /* 6 */ BLD_GUARDHOUSE,
-                                                                     /* 7 */ BLD_LOOKOUTTOWER,
-                                                                     /* 8 */ BLD_WELL},
-                                                                    {/* 1 */
-                                                                     /*  0 */ BLD_SAWMILL,
-                                                                     /*  1 */ BLD_SLAUGHTERHOUSE,
-                                                                     /*  2 */ BLD_MILL,
-                                                                     /*  3 */ BLD_BAKERY,
-                                                                     /*  4 */ BLD_IRONSMELTER,
-                                                                     /*  5 */ BLD_METALWORKS,
-                                                                     /*  6 */ BLD_ARMORY,
-                                                                     /*  7 */ BLD_MINT,
-                                                                     /*  8 */ BLD_SHIPYARD,
-                                                                     /*  9 */ BLD_BREWERY,
-                                                                     /* 10 */ BLD_STOREHOUSE,
-                                                                     /* 11 */ BLD_WATCHTOWER,
-                                                                     /* 12 */ BLD_CATAPULT},
-                                                                    {/* 2 */
-                                                                     /* 0 */ BLD_FARM,
-                                                                     /* 1 */ BLD_PIGFARM,
-                                                                     /* 2 */ BLD_DONKEYBREEDER,
-                                                                     /* 3 */ BLD_CHARBURNER,
-                                                                     /* 4 */ BLD_FORTRESS,
-                                                                     /* 5 */ BLD_HARBORBUILDING},
-                                                                    {/* 3 */
-                                                                     /* 0 */ BLD_GOLDMINE,
-                                                                     /* 1 */ BLD_IRONMINE,
-                                                                     /* 2 */ BLD_COALMINE,
-                                                                     /* 3 */ BLD_GRANITEMINE}};
-
-        const unsigned NUM_TABSS[5] = {1, 2, 3, 1, 3};
 
         /// Flexible what-buildings-are-available handling
-        bool building_available[4][building_count_max];
-
-        // First enable all buildings
-        for(unsigned char i = 0; i < 4; ++i)
-        {
-            for(unsigned char j = 0; j < building_count_max; ++j)
-            {
-                if(j < building_count[i])
-                {
-                    building_available[i][j] = player.IsBuildingEnabled(building_icons[i][j]);
-                } else
-                {
-                    building_available[i][j] = false;
-                }
-            }
-        }
+        boost::array<bool, NUM_BUILDING_TYPES> building_available;
+        // First enable all possible buildings
+        for(unsigned char i = 0; i < NUM_BUILDING_TYPES; ++i)
+            building_available[i] =
+              canUseBq(tabs.allowedBQ, natDesc.buildings[i].requiredSpace) && player.IsBuildingEnabled(BuildingType(i));
 
         // Now deactivate those we don't want
-
-        // Harbor
-        if(tabs.build_tabs != Tabs::BT_HARBOR)
-            building_available[2][5] = false;
 
         // Military buildings
         if(!military_buildings)
         {
-            building_available[0][5] = false;
-            building_available[0][6] = false;
-            building_available[1][11] = false;
-            building_available[2][4] = false;
+            for(unsigned char i = 0; i < NUM_BUILDING_TYPES; ++i)
+            {
+                if(BuildingProperties::IsMilitary(BuildingType(i)))
+                    building_available[i] = false;
+            }
         }
 
         // Mint and Goldmine
         if(gwv.GetWorld().GetGGS().isEnabled(AddonId::CHANGE_GOLD_DEPOSITS))
         {
-            building_available[1][7] = false;
-            building_available[3][0] = false;
+            building_available[BLD_MINT] = false;
+            building_available[BLD_GOLDMINE] = false;
         }
 
         // Catapult
         if(!player.CanBuildCatapult()) //-V807
-            building_available[1][12] = false;
+            building_available[BLD_CATAPULT] = false;
 
         // Charburner
         if(!gwv.GetWorld().GetGGS().isEnabled(AddonId::CHARBURNER))
-            building_available[2][3] = false;
+            building_available[BLD_CHARBURNER] = false;
 
-        for(unsigned char i = 0; i < NUM_TABSS[tabs.build_tabs]; ++i)
+        for(unsigned i = 0; i < build_tab->GetNumTabs(); ++i)
         {
             unsigned char k = 0;
-            Tabs::BuildTab bt = (tabs.build_tabs == Tabs::BT_MINE) ? Tabs::BT_MINE : Tabs::BuildTab(i);
+            ctrlGroup* curGrp = build_tab->GetGroup(i);
+            BuildingQuality curBQ = bqForTabs[curGrp->GetID()];
 
-            for(unsigned char j = 0; j < building_count_max; ++j)
+            for(unsigned j = 0; j < NUM_BUILDING_TYPES; ++j)
             {
-                if(!building_available[bt][j])
+                const BuildingDesc& bldDsc = natDesc.buildings[j];
+                if(!building_available[j] || !canUseBq(curBQ, bldDsc.requiredSpace))
                     continue;
+                building_available[j] = false; // Don't pick again
 
                 // Baukosten im Tooltip mit anzeigen
                 std::stringstream tooltip;
-                tooltip << _(BUILDING_NAMES[building_icons[bt][j]]);
+                tooltip << _(bldDsc.name);
 
                 tooltip << _("\nCosts: ");
-                if(BUILDING_COSTS[player.nation][building_icons[bt][j]].boards > 0)
-                    tooltip << (int)BUILDING_COSTS[player.nation][building_icons[bt][j]].boards << _(" boards");
-                if(BUILDING_COSTS[player.nation][building_icons[bt][j]].stones > 0)
+                if(bldDsc.costs.boards > 0)
+                    tooltip << (int)bldDsc.costs.boards << _(" boards");
+                if(bldDsc.costs.stones > 0)
                 {
-                    if(BUILDING_COSTS[player.nation][building_icons[bt][j]].boards > 0)
+                    if(bldDsc.costs.boards > 0)
                         tooltip << ", ";
-                    tooltip << (int)BUILDING_COSTS[player.nation][building_icons[bt][j]].stones << _(" stones");
+                    tooltip << (int)bldDsc.costs.stones << _(" stones");
                 }
 
                 DrawPoint iconPos((k % 5) * 36, (k / 5) * 36 + 45);
-                build_tab->GetGroup(bt)->AddBuildingIcon(j, iconPos, building_icons[bt][j], player.nation, 36, tooltip.str());
+                curGrp->AddBuildingIcon(j, iconPos, worldDesc, BuildingType(j), player.GetNation(), 36, tooltip.str());
 
                 ++k;
             }
 
-            building_tab_heights[bt] = (k / 5 + ((k % 5 != 0) ? 1 : 0)) * 36 + 150;
+            building_tab_heights[curGrp->GetID()] = helpers::ceilDiv(k, 5) * 36 + 150;
         }
 
         build_tab->SetSelection(0, true);

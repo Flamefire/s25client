@@ -34,7 +34,6 @@ public:
 private:
     /// Aktualisieren der Prozente
     void UpdatePercents();
-
     /// Produktivitäts-Progressbars aktualisieren
     void Msg_PaintAfter() override;
 };

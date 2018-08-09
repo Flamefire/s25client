@@ -26,8 +26,8 @@
 #include "gameTypes/GoodTypes.h"
 #include "gameTypes/JobTypes.h"
 #include "gameTypes/MapTypes.h"
+#include "gameTypes/Nation.h"
 #include "gameData/AnimalConsts.h"
-#include "gameData/NationConsts.h"
 #include "libsiedler2/Archiv.h"
 #include "libutil/Singleton.h"
 #include <boost/array.hpp>
@@ -45,6 +45,9 @@ class glArchivItem_Bob;
 class glArchivItem_Font;
 class SoundEffectItem;
 class glTexturePacker;
+struct WorldDescription;
+struct ArchiveEntryRef;
+
 namespace libsiedler2 {
 class ArchivItem_Ini;
 class ArchivItem_Palette;
@@ -85,7 +88,8 @@ public:
     /// Lädt alle allgemeinen Dateien.
     bool LoadFilesAtStart();
     /// Lädt die Spieldateien.
-    bool LoadFilesAtGame(const std::string& mapGfxPath, bool isWinterGFX, const std::vector<bool>& nations);
+    bool LoadFilesAtGame(const std::string& mapGfxPath, bool isWinterGFX, const std::vector<Nation>& nations,
+                         const WorldDescription& worldDesc);
     /// Load all files from the override folders that have not been use yet
     bool LoadOverrideFiles();
     /// Load all given files with the default palette
@@ -98,11 +102,17 @@ public:
     /// Load a file into the archiv
     bool LoadFile(libsiedler2::Archiv& archiv, const std::string& pfad, const libsiedler2::ArchivItem_Palette* palette = NULL);
 
-    void fillCaches();
+    std::string GetKeyFromPath(const std::string& filepath);
+
+    void fillCaches(const WorldDescription& worldDesc);
+    void packCachedTextures();
     static glArchivItem_Bitmap* ExtractTexture(const glArchivItem_Bitmap& srcImg, const Rect& rect);
     static libsiedler2::Archiv* ExtractAnimatedTexture(const glArchivItem_Bitmap& srcImg, const Rect& rect, uint8_t start_index,
                                                        uint8_t color_count);
 
+    ITexture* GetTexFromFile(const ArchiveEntryRef& archiveEntry);
+    ITexture* GetTexFromFile(const std::string& filepath, unsigned nr);
+    glArchivItem_Bitmap* GetImageFromFile(const ArchiveEntryRef& archiveEntry);
     glArchivItem_Bitmap* GetImageN(const std::string& file, unsigned nr);
     /// Same as GetImageN but returns a ITexture. Note glArchivItem_Bitmap is a ITexture
     ITexture* GetTextureN(const std::string& file, unsigned nr);
@@ -114,11 +124,11 @@ public:
     std::string GetTextN(const std::string& file, unsigned nr);
     libsiedler2::Archiv& GetInfoN(const std::string& file);
     glArchivItem_Bob* GetBobN(const std::string& file);
-    glArchivItem_BitmapBase* GetNationImageN(unsigned nation, unsigned nr);
-    glArchivItem_Bitmap* GetNationImage(unsigned nation, unsigned nr);
+    glArchivItem_BitmapBase* GetNationImageN(Nation nation, unsigned nr);
+    glArchivItem_Bitmap* GetNationImage(Nation nation, unsigned nr);
     /// Same as GetNationImage but returns a ITexture. Note glArchivItem_Bitmap is a ITexture
-    ITexture* GetNationTex(unsigned nation, unsigned nr);
-    glArchivItem_Bitmap_Player* GetNationPlayerImage(unsigned nation, unsigned nr);
+    ITexture* GetNationTex(Nation nation, unsigned nr);
+    glArchivItem_Bitmap_Player* GetNationPlayerImage(Nation nation, unsigned nr);
     glArchivItem_Bitmap* GetMapImageN(unsigned nr);
     /// Same as GetMapImageN but returns a ITexture. Note glArchivItem_Bitmap is a ITexture
     ITexture* GetMapTexN(unsigned nr);
@@ -130,16 +140,16 @@ public:
 
     /// Animals: Species, Direction, AnimationFrame(Last = Dead)
     helpers::MultiArray<glSmartBitmap, NUM_SPECS, 6, ANIMAL_MAX_ANIMATION_STEPS + 1> animal_cache;
-    /// Buildings: Nation, Type, Building/Skeleton
-    helpers::MultiArray<glSmartBitmap, NUM_NATS, NUM_BUILDING_TYPES, 2> building_cache;
+    /// Buildings: Nation, Type, Building/Skeleton/Door
+    std::vector<helpers::MultiArray<glSmartBitmap, NUM_BUILDING_TYPES, 3> > building_cache;
     /// Flags: Nation, Type, AnimationFrame
-    helpers::MultiArray<glSmartBitmap, NUM_NATS, 3, 8> flag_cache;
+    std::vector<helpers::MultiArray<glSmartBitmap, 3, 8> > flag_cache;
     /// Military Flags: AnimationFrame
     // helpers::MultiArray<glSmartBitmap, 8> building_flag_cache;
     /// Trees: Type, AnimationFrame
     helpers::MultiArray<glSmartBitmap, 9, 15> tree_cache;
     /// Jobs: Nation, Job (last is fat carrier), Direction, AnimationFrame
-    helpers::MultiArray<glSmartBitmap, NUM_NATS, NUM_JOB_TYPES + 1, 6, 8> bob_jobs_cache;
+    std::vector<helpers::MultiArray<glSmartBitmap, NUM_JOB_TYPES + 1, 6, 8> > bob_jobs_cache;
     /// Stone: Type, Size
     helpers::MultiArray<glSmartBitmap, 2, 6> granite_cache;
     /// Grainfield: Type, Size
@@ -147,7 +157,7 @@ public:
     /// Carrier w/ ware: Ware, Direction, Animation, NormalOrFat
     helpers::MultiArray<glSmartBitmap, NUM_WARE_TYPES, 6, 8, 2> carrier_cache;
     /// Boundary stones: Nation
-    helpers::MultiArray<glSmartBitmap, NUM_NATS> boundary_stone_cache;
+    std::vector<glSmartBitmap> boundary_stone_cache;
     /// BoatCarrier: Direction, AnimationFrame
     helpers::MultiArray<glSmartBitmap, 6, 8> boat_cache;
     /// Donkey: Direction, AnimationFrame
@@ -180,7 +190,7 @@ private:
     std::map<std::string, FileEntry> files_;
 
     bool isWinterGFX_;
-    boost::array<libsiedler2::Archiv*, NUM_NATS> nation_gfx;
+    std::vector<libsiedler2::Archiv*> nation_gfx;
     libsiedler2::Archiv* map_gfx;
     glTexturePacker* stp;
 };

@@ -20,8 +20,8 @@
 
 #include "gameTypes/GameSettingTypes.h"
 #include "gameTypes/MapCoordinates.h"
+#include "gameTypes/Nation.h"
 #include "gameData/DescIdx.h"
-#include "gameData/NationConsts.h"
 #include <vector>
 
 class World;

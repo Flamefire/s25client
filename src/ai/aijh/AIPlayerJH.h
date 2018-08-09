@@ -37,6 +37,7 @@ class noFlag;
 class GlobalGameSettings;
 class noShip;
 class nobBaseWarehouse;
+struct NationDesc;
 namespace AIEvent {
 class Base;
 }
@@ -56,6 +57,8 @@ public:
     AIInterface& GetInterface() { return aii; }
     const AIInterface& GetInterface() const { return aii; }
     const GameWorldBase& GetWorld() const { return gwb; }
+    /// Get the nation description for this player
+    const NationDesc& GetNationDesc() const;
     // Required by the AIJobs:
     AIConstruction& GetConstruction() { return *construction; }
     const BuildingPlanner& GetBldPlanner() const { return *bldPlanner; }

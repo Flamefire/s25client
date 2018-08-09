@@ -49,6 +49,8 @@
 #include "network/IGameLobbyController.h"
 #include "ogl/FontStyle.h"
 #include "gameData/GameConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "gameData/const_gui_ids.h"
 #include "liblobby/LobbyClient.h"
 #include "libsiedler2/ErrorCodes.h"
@@ -402,9 +404,9 @@ void dskHostGame::UpdatePlayerRow(const unsigned row)
         }
 
         if(allowNationChange)
-            group->AddTextButton(3, DrawPoint(240, cy), Extent(90, 22), tc, _(NationNames[0]), NormalFont);
+            group->AddTextButton(3, DrawPoint(240, cy), Extent(90, 22), tc, "-", NormalFont);
         else
-            group->AddTextDeepening(3, DrawPoint(240, cy), Extent(90, 22), tc, _(NationNames[0]), NormalFont, COLOR_YELLOW);
+            group->AddTextDeepening(3, DrawPoint(240, cy), Extent(90, 22), tc, "-", NormalFont, COLOR_YELLOW);
 
         if(allowColorChange)
             group->AddColorButton(4, DrawPoint(340, cy), Extent(30, 22), tc, 0);
@@ -412,9 +414,9 @@ void dskHostGame::UpdatePlayerRow(const unsigned row)
             group->AddColorDeepening(4, DrawPoint(340, cy), Extent(30, 22), tc, 0);
 
         if(allowTeamChange)
-            group->AddTextButton(5, DrawPoint(380, cy), Extent(50, 22), tc, _("-"), NormalFont);
+            group->AddTextButton(5, DrawPoint(380, cy), Extent(50, 22), tc, "-", NormalFont);
         else
-            group->AddTextDeepening(5, DrawPoint(380, cy), Extent(50, 22), tc, _("-"), NormalFont, COLOR_YELLOW);
+            group->AddTextDeepening(5, DrawPoint(380, cy), Extent(50, 22), tc, "-", NormalFont, COLOR_YELLOW);
 
         // Bereit (nicht bei KIs und Host)
         if(player.ps == PS_OCCUPIED && !player.isHost)
@@ -422,7 +424,7 @@ void dskHostGame::UpdatePlayerRow(const unsigned row)
 
         // Ping ( "%d" )
         ctrlVarDeepening* ping =
-          group->AddVarDeepening(7, DrawPoint(490, cy), Extent(50, 22), tc, _("%d"), NormalFont, COLOR_YELLOW, 1, &player.ping); //-V111
+          group->AddVarDeepening(7, DrawPoint(490, cy), Extent(50, 22), tc, "%d", NormalFont, COLOR_YELLOW, 1, &player.ping); //-V111
 
         // Verschieben (nur bei Savegames und beim Host!)
         if(gameLobby->isSavegame() && player.ps == PS_OCCUPIED)
@@ -446,7 +448,7 @@ void dskHostGame::UpdatePlayerRow(const unsigned row)
             ping->SetVisible(false);
 
         // Felder ausfüllen
-        ChangeNation(row, player.nation);
+        ChangeNation(row, player.nationName);
         ChangeTeam(row, player.team);
         ChangePing(row);
         ChangeReady(row, player.isReady);
@@ -487,12 +489,17 @@ void dskHostGame::Msg_Group_ButtonClick(const unsigned group_id, const unsigned 
             if(playerId == localPlayerId_ || gameLobby->isHost())
             {
                 JoinPlayerInfo& player = gameLobby->getPlayer(playerId);
-                player.nation = Nation((unsigned(player.nation) + 1) % NUM_NATS);
-                if(gameLobby->isHost())
-                    lobbyHostController->SetNation(playerId, player.nation);
+                Nation nation = gameLobby->getDescription().nations.getIndex(player.nationName);
+                if(!nation)
+                    nation = Nation(0);
                 else
-                    GAMECLIENT.Command_SetNation(player.nation);
-                ChangeNation(playerId, player.nation);
+                    nation = Nation((nation.value + 1) % gameLobby->getDescription().nations.size());
+                player.nationName = gameLobby->getDescription().get(nation).name;
+                if(gameLobby->isHost())
+                    lobbyHostController->SetNation(playerId, player.nationName);
+                else
+                    GAMECLIENT.Command_SetNation(player.nationName);
+                ChangeNation(playerId, player.nationName);
             }
         }
         break;
@@ -864,9 +871,9 @@ void dskHostGame::ChangeReady(const unsigned player, const bool ready)
     }
 }
 
-void dskHostGame::ChangeNation(const unsigned i, const Nation nation)
+void dskHostGame::ChangeNation(const unsigned i, const std::string& nationName)
 {
-    GetCtrl<ctrlGroup>(ID_PLAYER_GROUP_START + i)->GetCtrl<ctrlBaseText>(3)->SetText(_(NationNames[nation]));
+    GetCtrl<ctrlGroup>(ID_PLAYER_GROUP_START + i)->GetCtrl<ctrlBaseText>(3)->SetText(nationName);
 }
 
 void dskHostGame::ChangePing(unsigned playerId)

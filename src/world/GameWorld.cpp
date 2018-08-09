@@ -62,9 +62,9 @@ bool GameWorld::LoadMap(boost::shared_ptr<Game> game, const std::string& mapFile
     {
         GamePlayer& player = GetPlayer(i);
         if(player.isUsed())
-            players.push_back(player.nation);
+            players.push_back(player.GetNation());
         else
-            players.push_back(NAT_INVALID);
+            players.push_back(Nation());
     }
 
     MapLoader loader(*this, players);

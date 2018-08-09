@@ -32,8 +32,8 @@ typedef boost::array<DistributionMapping, 23> DistributionMap;
 extern const DistributionMap SUPPRESS_UNUSED distributionMap;
 /// List of the percentage a building should get from a specific ware
 typedef boost::array<uint8_t, DistributionMap::static_size> Distributions;
-/// Ordering of building types by priority. All buildings in here except unused and HQ
-typedef boost::array<BuildingType, NUM_BUILDING_TYPES - NUM_UNUSED_BLD_TYPES - 1> BuildOrders;
+/// Ordering of building types by priority. All buildings in here except HQ
+typedef boost::array<BuildingType, NUM_BUILDING_TYPES - 1> BuildOrders;
 /// Mapping transport priority -> standard transport priority of ware(group):
 /// E.g. std prio of coins = 0 -> TransportOrders[0] = stdPrio[COINS] = 0
 /// New prio of coins = 1 -> TransportOrders[1] = stdPrio[COINS] = 0

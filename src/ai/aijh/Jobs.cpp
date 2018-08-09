@@ -28,8 +28,8 @@
 #include "buildings/noBuildingSite.h"
 #include "world/GameWorldBase.h"
 #include "nodeObjs/noFlag.h"
-#include "gameData/BuildingConsts.h"
 #include "gameData/BuildingProperties.h"
+#include "gameData/NationDesc.h"
 
 namespace AIJH {
 
@@ -112,6 +112,7 @@ void BuildJob::TryToBuild()
         foundPos = aijh.FindPositionForBuildingAround(type, around);
         if(BuildingProperties::IsMilitary(type))
         {
+            const NationDesc& natDesc = aijh.GetNationDesc();
             if(foundPos.isValid())
             {
                 // could we build a bigger military building? check if the location is surrounded by terrain that does not allow normal
@@ -119,24 +120,27 @@ void BuildJob::TryToBuild()
                 AIInterface& aiInterface = aijh.GetInterface();
                 RTTR_Assert(aiInterface.GetBuildingQuality(foundPos) == aijh.GetAINode(foundPos).bq);
                 if(type != BLD_FORTRESS && aiInterface.GetBuildingQuality(foundPos) != BQ_MINE
-                   && aiInterface.GetBuildingQuality(foundPos) > BUILDING_SIZE[type] && aijh.BQsurroundcheck(foundPos, 6, true, 10) < 10)
+                   && aiInterface.GetBuildingQuality(foundPos) > natDesc.buildings[type].requiredSpace
+                   && aijh.BQsurroundcheck(foundPos, 6, true, 10) < 10)
                 {
                     // more than 80% is unbuildable in range 7 -> upgrade
                     BOOST_FOREACH(BuildingType bld, BuildingProperties::militaryBldTypes)
                     {
-                        if(BUILDING_SIZE[bld] > BUILDING_SIZE[type] && aiInterface.CanBuildBuildingtype(bld))
+                        if(natDesc.buildings[bld].requiredSpace > natDesc.buildings[type].requiredSpace
+                           && aiInterface.CanBuildBuildingtype(bld))
                         {
                             type = bld;
                             break;
                         }
                     }
                 }
-            } else if(aijh.GetBldPlanner().IsExpansionRequired() && BUILDING_SIZE[type] != BQ_HUT)
+            } else if(aijh.GetBldPlanner().IsExpansionRequired() && natDesc.buildings[type].requiredSpace != BQ_HUT)
             {
                 // Downgrade to the next smaller building
                 BOOST_REVERSE_FOREACH(BuildingType bld, BuildingProperties::militaryBldTypes)
                 {
-                    if(BUILDING_SIZE[bld] < BUILDING_SIZE[type] && aijh.GetInterface().CanBuildBuildingtype(bld))
+                    if(natDesc.buildings[bld].requiredSpace < natDesc.buildings[type].requiredSpace
+                       && aijh.GetInterface().CanBuildBuildingtype(bld))
                     {
                         aijh.AddBuildJob(bld, around);
                         break;
@@ -181,7 +185,7 @@ void BuildJob::BuildMainRoad()
     {
         // Prüfen ob sich vielleicht die BQ geändert hat und damit Bau unmöglich ist
         BuildingQuality bq = aiInterface.GetBuildingQuality(target);
-        if(canUseBq(bq, BUILDING_SIZE[type]))
+        if(canUseBq(bq, aijh.GetNationDesc().buildings[type].requiredSpace))
         {
             state = JOB_FAILED;
 #ifdef DEBUG_AI
@@ -246,7 +250,7 @@ void BuildJob::BuildMainRoad()
     }
 
     // Just 4 Fun Gelehrten rufen
-    if(BUILDING_SIZE[type] == BQ_MINE)
+    if(aijh.GetNationDesc().buildings[type].requiredSpace == BQ_MINE)
     {
         aiInterface.CallSpecialist(houseFlag->GetPos(), JOB_GEOLOGIST);
     }

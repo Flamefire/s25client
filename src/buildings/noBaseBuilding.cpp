@@ -30,15 +30,18 @@
 #include "world/GameWorldGame.h"
 #include "nodeObjs/noExtension.h"
 #include "nodeObjs/noFlag.h"
-#include "gameData/BuildingConsts.h"
-#include "gameData/DoorConsts.h"
+#include "gameData/BuildingDesc.h"
 #include "gameData/MapConsts.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "libutil/Log.h"
+#include "libutil/colors.h"
 
 noBaseBuilding::noBaseBuilding(const NodalObjectType nop, const BuildingType type, const MapPoint pos, const unsigned char player)
-    : noRoadNode(nop, pos, player), bldType_(type), nation(gwg->GetPlayer(player).nation), door_point_x(1000000),
-      door_point_y(DOOR_CONSTS[gwg->GetPlayer(player).nation][type])
+    : noRoadNode(nop, pos, player), bldType_(type), nation(gwg->GetPlayer(player).GetNation()), door_point_x(1000000)
 {
+    door_point_y = GetDescription().doorPosY;
+
     MapPoint flagPt = GetFlagPos();
     // Evtl Flagge setzen, wenn noch keine da ist
     if(gwg->GetNO(flagPt)->GetType() != NOP_FLAG)
@@ -116,20 +119,22 @@ void noBaseBuilding::Destroy_noBaseBuilding()
             const unsigned percents[5] = {0, 25, 50, 75, 100};
             const unsigned percent = 10 * percents[percent_index];
 
+            const BuildingDesc& bldDesc = GetDescription();
+
             // zurückgaben berechnen (abgerundet)
-            unsigned boards = (percent * BUILDING_COSTS[nation][bldType_].boards) / 1000;
-            unsigned stones = (percent * BUILDING_COSTS[nation][bldType_].stones) / 1000;
+            unsigned boards = (percent * bldDesc.costs.boards) / 1000;
+            unsigned stones = (percent * bldDesc.costs.stones) / 1000;
 
             GoodType goods[2] = {GD_BOARDS, GD_STONES};
-            bool which = 0;
+            unsigned stonesOrBoards = 0;
             while(flag->IsSpaceForWare() && (boards > 0 || stones > 0))
             {
-                if((!which && boards > 0) || (which && stones > 0))
+                if((!stonesOrBoards && boards > 0) || (stonesOrBoards && stones > 0))
                 {
                     // Ware erzeugen
-                    Ware* ware = new Ware(goods[which], NULL, flag);
+                    Ware* ware = new Ware(goods[stonesOrBoards], NULL, flag);
                     // Inventur anpassen
-                    gwg->GetPlayer(player).IncreaseInventoryWare(goods[which], 1);
+                    gwg->GetPlayer(player).IncreaseInventoryWare(goods[stonesOrBoards], 1);
                     // Abnehmer für Ware finden
                     ware->SetGoal(gwg->GetPlayer(player).FindClientForWare(ware));
                     // Ware soll ihren weiteren Weg berechnen
@@ -138,13 +143,13 @@ void noBaseBuilding::Destroy_noBaseBuilding()
                     flag->AddWare(ware);
                     ware->WaitAtFlag(flag);
 
-                    if(!which)
+                    if(!stonesOrBoards)
                         --boards;
                     else
                         --stones;
                 }
 
-                which = !which;
+                stonesOrBoards = 1 - stonesOrBoards;
             }
         }
     }
@@ -157,14 +162,15 @@ void noBaseBuilding::Serialize_noBaseBuilding(SerializedGameData& sgd) const
     Serialize_noRoadNode(sgd);
 
     sgd.PushUnsignedChar(static_cast<unsigned char>(bldType_));
-    sgd.PushUnsignedChar(nation);
+    sgd.PushString(sgd.GetDescription().get(nation).name);
     sgd.PushSignedInt(door_point_x);
     sgd.PushSignedInt(door_point_y);
 }
 
 noBaseBuilding::noBaseBuilding(SerializedGameData& sgd, const unsigned obj_id)
-    : noRoadNode(sgd, obj_id), bldType_(BuildingType(sgd.PopUnsignedChar())), nation(Nation(sgd.PopUnsignedChar())),
-      door_point_x(sgd.PopSignedInt()), door_point_y(sgd.PopSignedInt())
+    : noRoadNode(sgd, obj_id), bldType_(BuildingType(sgd.PopUnsignedChar())),
+      nation(sgd.GetDescription().nations.getIndex(sgd.PopString(), true)), door_point_x(sgd.PopSignedInt()),
+      door_point_y(sgd.PopSignedInt())
 {}
 
 int noBaseBuilding::GetDoorPointX()
@@ -244,12 +250,32 @@ void noBaseBuilding::DestroyBuildingExtensions()
 
 BuildingQuality noBaseBuilding::GetSize() const
 {
-    return BUILDING_SIZE[bldType_];
+    return GetDescription().requiredSpace;
 }
 
 BlockingManner noBaseBuilding::GetBM() const
 {
     return BlockingManner::Building;
+}
+
+const BuildingDesc& noBaseBuilding::GetDescription() const
+{
+    return gwg->GetDescription().get(nation).buildings[bldType_];
+}
+
+void noBaseBuilding::DrawAnimation(DrawPoint drawPt, const std::string& name) const
+{
+    const AnimationDesc* anim = GetDescription().getAnimation(name);
+    if(anim)
+    {
+        unsigned animationFrame = (anim->frameIdxs.size() == 1) ? 0 :
+            GAMECLIENT.GetAnimationFrame(anim->frameIdxs.size(), anim->msPerFrame, GetObjId() + GetX() + GetY());
+        unsigned fileIdx = anim->frameIdxs[animationFrame];
+
+        LOADER.GetTexFromFile(anim->filepath, fileIdx)->DrawFull(drawPt + anim->offset);
+        if(anim->hasShadows)
+            LOADER.GetTexFromFile(anim->filepath, fileIdx +1)->DrawFull(drawPt + anim->offset, COLOR_SHADOW);
+    }
 }
 
 /// Gibt ein Bild zurück für das normale Gebäude
@@ -260,14 +286,11 @@ ITexture* noBaseBuilding::GetBuildingImage() const
 
 ITexture* noBaseBuilding::GetBuildingImage(BuildingType type, Nation nation) //-V688
 {
-    return &LOADER.building_cache[nation][type][0];
+    return &LOADER.building_cache[nation.value][type][0];
 }
 
 /// Gibt ein Bild zurück für die Tür des Gebäudes
-glArchivItem_Bitmap* noBaseBuilding::GetDoorImage() const
+ITexture* noBaseBuilding::GetDoorImage() const
 {
-    if(bldType_ == BLD_CHARBURNER)
-        return LOADER.GetImageN("charburner", nation * 8 + (LOADER.IsWinterGFX() ? 7 : 5));
-    else
-        return LOADER.GetNationImage(nation, 250 + 5 * bldType_ + 4);
+    return &LOADER.building_cache[nation.value][bldType_][3];
 }

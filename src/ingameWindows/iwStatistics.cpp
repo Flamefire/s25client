@@ -31,6 +31,8 @@
 #include "ogl/FontStyle.h"
 #include "world/GameWorldBase.h"
 #include "world/GameWorldViewer.h"
+#include "gameData/NationDesc.h"
+#include "gameData/WorldDescription.h"
 #include "gameData/const_gui_ids.h"
 #include <sstream>
 
@@ -53,6 +55,8 @@ iwStatistics::iwStatistics(const GameWorldViewer& gwv)
     unsigned short startX = 126 - (numPlayingPlayers - 1) * 17;
     unsigned pos = 0;
 
+    const WorldDescription& worldDesc = gwv.GetWorld().GetDescription();
+
     for(unsigned i = 0; i < world.GetNumPlayers(); ++i)
     {
         // nicht belegte Spielplätze rauswerfen
@@ -60,36 +64,11 @@ iwStatistics::iwStatistics(const GameWorldViewer& gwv)
         if(!curPlayer.isUsed())
             continue;
 
-        switch(curPlayer.nation)
-        {
-            case NAT_AFRICANS:
-                AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1, LOADER.GetImageN("io", 257),
-                               curPlayer.name)
-                  ->SetBorder(false);
-                break;
-            case NAT_JAPANESE:
-                AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1, LOADER.GetImageN("io", 253),
-                               curPlayer.name)
-                  ->SetBorder(false);
-                break;
-            case NAT_ROMANS:
-                AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1, LOADER.GetImageN("io", 252),
-                               curPlayer.name)
-                  ->SetBorder(false);
-                break;
-            case NAT_VIKINGS:
-                AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1, LOADER.GetImageN("io", 256),
-                               curPlayer.name)
-                  ->SetBorder(false);
-                break;
-            case NAT_BABYLONIANS:
-                AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1, LOADER.GetImageN("io_new", 7),
-                               curPlayer.name)
-                  ->SetBorder(false);
-                break;
-            case NUM_NATS:
-            case NAT_INVALID: break;
-        }
+        const FileEntry& avatarEntry = worldDesc.get(curPlayer.GetNation()).defaultAvatar;
+
+        AddImageButton(1 + i, DrawPoint(startX + pos * 34 - 17, 45 - 23), Extent(34, 47), TC_GREEN1,
+                       LOADER.GetTexFromFile(avatarEntry.filepath, avatarEntry.index), curPlayer.name)
+          ->SetBorder(false);
 
         // Statistik-Sichtbarkeit abhängig von Auswahl
         switch(GAMECLIENT.IsReplayModeOn() ? 0 : world.GetGGS().getSelection(AddonId::STATISTICS_VISIBILITY))

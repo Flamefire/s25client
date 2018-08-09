@@ -41,7 +41,7 @@
 #include "nodeObjs/noFlag.h"
 #include "gameData/JobConsts.h"
 #include "gameData/SettingTypeConv.h"
-#include "gameData/ShieldConsts.h"
+#include "gameData/NationData.h"
 #include "libutil/Log.h"
 #include <algorithm>
 

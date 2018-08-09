@@ -30,6 +30,7 @@ class noFlag;
 class SerializedGameData;
 class Ware;
 class noFigure;
+struct BuildingDesc;
 
 class noBaseBuilding : public noRoadNode
 {
@@ -48,6 +49,8 @@ protected:
     void WareNotNeeded(Ware* ware);
     /// Zerstört Anbauten, falls es sich um ein großes Gebäude handelt (wo es diese auch gibt)
     void DestroyBuildingExtensions();
+    void Destroy_noBaseBuilding();
+    void Serialize_noBaseBuilding(SerializedGameData& sgd) const;
 
 public:
     noBaseBuilding(const NodalObjectType nop, const BuildingType type, const MapPoint pt, const unsigned char player);
@@ -55,18 +58,7 @@ public:
 
     ~noBaseBuilding() override;
 
-    /// Aufräummethoden
-protected:
-    void Destroy_noBaseBuilding();
-
-public:
     void Destroy() override { Destroy_noBaseBuilding(); }
-
-    /// Serialisierungsfunktionen
-protected:
-    void Serialize_noBaseBuilding(SerializedGameData& sgd) const;
-
-public:
     void Serialize(SerializedGameData& sgd) const override { Serialize_noBaseBuilding(sgd); }
 
     /// Eine bestellte Ware konnte doch nicht kommen
@@ -76,6 +68,7 @@ public:
     BuildingType GetBuildingType() const { return bldType_; }
     Nation GetNation() const { return nation; }
     BlockingManner GetBM() const override;
+    const BuildingDesc& GetDescription() const;
 
     /// Return the radius in which this building holds land
     virtual unsigned GetMilitaryRadius() const = 0;
@@ -98,12 +91,14 @@ public:
     /// Wird aufgerufen, wenn ein bestimmter Arbeiter für das hier gerufen wurde
     virtual void GotWorker(Job /*job*/, noFigure* /*worker*/){};
 
+    /// Draw the named animation if it exists
+    void DrawAnimation(DrawPoint drawPt, const std::string& name) const;
+
     /// Gibt ein Bild zurück für das normale Gebäude
     ITexture* GetBuildingImage() const;
     static ITexture* GetBuildingImage(BuildingType type, Nation nation);
-    /// Gibt ein Bild zurück für das Gebäudegerüst
     /// Gibt ein Bild zurück für die Tür des Gebäudes
-    glArchivItem_Bitmap* GetDoorImage() const;
+    ITexture* GetDoorImage() const;
 };
 
 #endif
