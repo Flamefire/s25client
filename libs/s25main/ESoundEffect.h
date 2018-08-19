@@ -4,7 +4,7 @@
 
 #pragma once
 
-enum class SoundEffect
+enum class ESoundEffect
 {
     Fanfare,
     Pidgeon

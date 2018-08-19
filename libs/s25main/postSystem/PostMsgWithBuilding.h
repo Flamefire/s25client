@@ -18,7 +18,7 @@ public:
     /// Creates the message.
     /// NOTE: Building is only valid during the call (do not store)
     PostMsgWithBuilding(unsigned sendFrame, const std::string& text, PostCategory cat, const noBaseBuilding& bld,
-                        SoundEffect soundEffect = SoundEffect::Pidgeon);
+                        ESoundEffect soundEffect = ESoundEffect::Pidgeon);
     PostMsgWithBuilding(unsigned sendFrame, const std::string& text, PostCategory cat, BuildingType bld, Nation nation,
                         const MapPoint& pos = MapPoint::Invalid());
 

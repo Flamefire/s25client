@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "ESoundEffect.h"
 #include "PostCategory.h"
-#include "SoundEffect.h"
 #include "gameTypes/MapCoordinates.h"
 #include "gameTypes/PactTypes.h"
 #include <string>
@@ -18,11 +18,11 @@ class PostMsg
 public:
     /// Create a simple message
     PostMsg(unsigned sendFrame, std::string text, PostCategory cat, const MapPoint& pt,
-            SoundEffect soundEffect = SoundEffect::Pidgeon);
-    PostMsg(unsigned sendFrame, std::string text, PostCategory cat, SoundEffect soundEffect = SoundEffect::Pidgeon);
+            ESoundEffect soundEffect = ESoundEffect::Pidgeon);
+    PostMsg(unsigned sendFrame, std::string text, PostCategory cat, ESoundEffect soundEffect = ESoundEffect::Pidgeon);
     /// Response to a diplomacy question. Last parameter states if the pact was accepted(true) or canceled(false)
     PostMsg(unsigned sendFrame, PactType pt, const BasePlayerInfo& otherPlayer, bool acceptedOrCanceled,
-            SoundEffect soundEffect = SoundEffect::Pidgeon);
+            ESoundEffect soundEffect = ESoundEffect::Pidgeon);
     virtual ~PostMsg() = default;
 
     unsigned GetSendFrame() const { return sendFrame_; }
@@ -30,7 +30,7 @@ public:
     PostCategory GetCategory() const { return cat_; }
     /// Get position related to this message (optional, defaults to invalid)
     MapPoint GetPos() const { return pt_; }
-    SoundEffect GetSoundEffect() const { return soundEffect_; }
+    ESoundEffect GetSoundEffect() const { return soundEffect_; }
     /// Get Associated image or nullptr if none exists
     virtual ITexture* GetImage_() const { return nullptr; }
 
@@ -42,5 +42,5 @@ private:
     std::string text_;
     PostCategory cat_;
     MapPoint pt_;
-    SoundEffect soundEffect_;
+    ESoundEffect soundEffect_;
 };

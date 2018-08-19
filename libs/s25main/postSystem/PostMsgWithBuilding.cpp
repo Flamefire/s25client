@@ -6,7 +6,7 @@
 #include "buildings/noBaseBuilding.h"
 
 PostMsgWithBuilding::PostMsgWithBuilding(unsigned sendFrame, const std::string& text, PostCategory cat,
-                                         const noBaseBuilding& bld, SoundEffect soundEffect)
+                                         const noBaseBuilding& bld, ESoundEffect soundEffect)
     : PostMsg(sendFrame, text, cat, bld.GetPos(), soundEffect), bldType(bld.GetBuildingType()), nation(bld.GetNation())
 {}
 

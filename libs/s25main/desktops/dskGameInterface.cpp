@@ -1334,11 +1334,11 @@ void dskGameInterface::UpdatePostIcon(const unsigned postmessages_count, bool sh
 void dskGameInterface::NewPostMessage(const PostMsg& msg, const unsigned msgCt)
 {
     UpdatePostIcon(msgCt, true);
-    SoundEffect soundEffect = msg.GetSoundEffect();
+    ESoundEffect soundEffect = msg.GetSoundEffect();
     switch(soundEffect)
     {
-        case SoundEffect::Pidgeon: LOADER.GetSoundN("sound", 114)->Play(100, false); break;
-        case SoundEffect::Fanfare: LOADER.GetSoundN("sound", 110)->Play(100, false);
+        case ESoundEffect::Pidgeon: LOADER.GetSoundN("sound", 114)->Play(100, false); break;
+        case ESoundEffect::Fanfare: LOADER.GetSoundN("sound", 110)->Play(100, false);
     }
 }
 
