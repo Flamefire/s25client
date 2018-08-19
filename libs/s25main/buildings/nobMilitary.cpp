@@ -680,7 +680,7 @@ void nobMilitary::AddPassiveSoldier(nofPassiveSoldier* soldier)
     if(new_built)
     {
         SendPostMessage(player, std::make_unique<PostMsgWithBuilding>(GetEvMgr().GetCurrentGF(), _("Military building occupied"),
-                                                                      PostCategory::Military, *this, SoundEffect::Fanfare));
+                                                                      PostCategory::Military, *this, ESoundEffect::Fanfare));
         // Ist nun besetzt
         new_built = false;
         // Landgrenzen verschieben

@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Return To The Roots. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef SoundEffect_h__
-#define SoundEffect_h__
+#ifndef ESoundEffect_h__
+#define ESoundEffect_h__
 
-enum class SoundEffect
+enum class ESoundEffect
 {
     Fanfare,
     Pidgeon
 };
 
-#endif // SoundEffect_h__
+#endif // ESoundEffect_h__
