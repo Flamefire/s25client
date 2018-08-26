@@ -5,16 +5,14 @@
 #pragma once
 
 #include "ResolvedFile.h"
+#include "addons/const_addons.h"
 #include <boost/filesystem/path.hpp>
-#include <map>
+#include <string>
 #include <vector>
 
-class Log;
-class ResourceId;
-
 /// Helper for locating archives.
-/// An archive is either a file (e.g. *.lst) or a folder containing 1 or more resources.
-/// Each archive is uniquely identified by its ResourceId (which can be constructed from a path).
+/// An archive is uniquely identified by its name (file stem + extension) and may contain multiple resources.
+/// A folder is considered an archive, each file a resource whose names need to start with a numeric index and a dot.
 /// The resource system is layered:
 /// If an archive exists in multiple folders the archives will be loaded in order with entries present in earlier
 /// archives being replaced by those in later ones.
@@ -24,32 +22,27 @@ class ArchiveLocator
     struct FolderData
     {
         /// Path to the folder
-        boost::filesystem::path path;
+        std::string path;
         /// Filenames in the folder
-        std::vector<boost::filesystem::path> files;
+        std::vector<std::string> files;
     };
 
 public:
-    explicit ArchiveLocator(Log&);
-    /// Add a folder with assets. Each asset (identified via resource id must only exist in 1 of those folders)
-    void addAssetFolder(const boost::filesystem::path& path);
-    /// Add a folder to the list of folders containing overrides. Files in folders added last will override prior ones
-    void addOverrideFolder(const boost::filesystem::path& path);
+    /// Convenience function to add standard paths
+    void addStandardFolders();
+    /// Add a folder to the list of folders containing resources.
+    /// Files in folders added last will override prior ones
+    /// Paths with macros will be resolved
+    /// Setting atBack to false will prepend the folder to the existing ones
+    void addFolder(std::string path, bool atBack = true);
+    /// Add the folder from an addon
+    void addAddonFolder(AddonId id);
     /// Remove all entries
     void clear();
-    /// Resolve the given file. That is get the files in order to be loaded
-    ResolvedFile resolve(const boost::filesystem::path& filepath) const;
-    /// Resolve the given asset. Must be in one of the asset folders
-    ResolvedFile resolve(const ResourceId& resId) const;
-
-    // TODO: Remove
-    const auto& getOverrideFolders() const { return overrideFolders_; }
+    /// Get all file paths for a given filename
+    ResolvedFile resolveFile(const std::string& filename);
 
 private:
-    template<typename T>
-    void gatherFiles(const boost::filesystem::path& path, T&& onValidResource) const;
-
-    Log& logger_;
-    std::map<ResourceId, boost::filesystem::path> assets_;
-    std::vector<FolderData> overrideFolders_;
+    std::vector<FolderData> folders_;
 };
+

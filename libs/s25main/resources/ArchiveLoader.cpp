@@ -3,183 +3,108 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ArchiveLoader.h"
-#include "ResolvedFile.h"
-#include "Timer.h"
-#include "commonDefines.h"
-#include "helpers/format.hpp"
-#include "mygettext/mygettext.h"
-#include "ogl/glArchivItem_Bob.h"
-#include "libsiedler2/Archiv.h"
-#include "libsiedler2/ArchivItem_Bob.h"
-#include "libsiedler2/ArchivItem_Text.h"
-#include "libsiedler2/ErrorCodes.h"
-#include "libsiedler2/libsiedler2.h"
-#include "s25util/Log.h"
-#include "s25util/strAlgos.h"
+#include "helpers/chronoIO.h"
+#include <libsiedler2/Archiv.h>
+#include <libsiedler2/ArchivItem.h>
+#include <libsiedler2/ErrorCodes.h>
+#include <libsiedler2/libsiedler2.h>
+#include <libutil/Log.h>
 #include <boost/filesystem.hpp>
-#include <boost/pointer_cast.hpp>
 #include <chrono>
-#include <sstream>
-#include <stdexcept>
+#include <mygettext/mygettext.h>
 
-namespace fs = boost::filesystem;
-
-template<typename... T>
-LoadError::LoadError(T&&... args) : std::runtime_error(helpers::format(std::forward<T>(args)...))
-{}
+namespace bfs = boost::filesystem;
 
 namespace {
-class NestedArchive : public libsiedler2::Archiv, public libsiedler2::ArchivItem
+/// Load a file into an archive
+int loadFile(libsiedler2::Archiv& archive, const bfs::path& filepath, const libsiedler2::ArchivItem_Palette* palette)
 {
-public:
-    NestedArchive(libsiedler2::Archiv&& archive) : libsiedler2::Archiv(std::move(archive)) {}
-    RTTR_CLONEABLE(NestedArchive)
-};
-
-bool isBobOverride(fs::path filePath)
-{
-    // For files we ignore the first extension as that is the type of the file (e.g. foo.bob.lst is a bob override file
-    // packed as lst) Note that the next call to `extension()` can return an empty path if only 1 extension was present
-    // Folders can be named anything so they must be named foo.bob directly rather than foo.bob.lst
-    if(fs::is_regular_file(filePath))
-        filePath.replace_extension();
-    return s25util::toLower(filePath.extension().string()) == ".bob";
+    LOG.write(_("Loading \"%s\": ")) % filepath;
+    return libsiedler2::Load(filepath.string(), archive, palette);
 }
 
-std::map<uint16_t, uint16_t> extractBobMapping(libsiedler2::Archiv& archive, const fs::path& filepath)
+/// Load a file into an archive
+int loadDirectory(libsiedler2::Archiv& archive, const bfs::path& path, const libsiedler2::ArchivItem_Palette* palette)
 {
-    std::unique_ptr<libsiedler2::ArchivItem_Text> txtItem;
-    for(auto& entry : archive)
+    LOG.write(_("Loading directory %s\n")) % path;
+    std::vector<libsiedler2::FileEntry> files = libsiedler2::ReadFolderInfo(path.string());
+    LOG.write(_("  Loading %1% entries: ")) % files.size();
+    return libsiedler2::LoadFolder(files, archive, palette);
+}
+
+/// Load a file or directory into the archive
+bool loadFileOrDir(libsiedler2::Archiv& to, const bfs::path& filePath, const libsiedler2::ArchivItem_Palette* palette)
+{
+    using namespace std::chrono;
+
+    if(!bfs::exists(filePath))
     {
-        if(entry && entry->getBobType() == libsiedler2::BobType::Text)
-        {
-            if(txtItem)
-                throw LoadError(_("Bob-like file contained multiple text entries: %s\n"), filepath);
-            txtItem = boost::static_pointer_cast<libsiedler2::ArchivItem_Text>(std::move(entry));
-        }
+        LOG.write(_("File or directory does not exist: %s\n")) % filePath;
+        return false;
     }
-    if(!txtItem)
-        return {};
-    std::istringstream s(txtItem->getText());
-    return libsiedler2::ArchivItem_Bob::readLinks(s);
-}
-} // namespace
-
-/// Load a single file into the archive
-libsiedler2::Archiv ArchiveLoader::loadFile(const fs::path& filePath,
-                                            const libsiedler2::ArchivItem_Palette* palette) const
-{
-    logger_.write(_("Loading %1%: ")) % filePath;
-
-    libsiedler2::Archiv archive;
-    if(int ec = libsiedler2::Load(filePath, archive, palette))
-        throw LoadError(libsiedler2::getErrorString(ec));
-
-    return archive;
-}
-
-libsiedler2::Archiv ArchiveLoader::loadDirectory(const fs::path& filePath,
-                                                 const libsiedler2::ArchivItem_Palette* palette) const
-{
-    logger_.write(_("Loading directory %s\n")) % filePath;
-    std::vector<libsiedler2::FileEntry> files = libsiedler2::ReadFolderInfo(filePath);
-    logger_.write(_("  Loading %1% entries: ")) % files.size();
-
-    libsiedler2::Archiv archive;
-
-    if(int ec = libsiedler2::LoadFolder(std::move(files), archive, palette))
-        throw LoadError(libsiedler2::getErrorString(ec));
-
-    return archive;
-}
-
-libsiedler2::Archiv ArchiveLoader::loadFileOrDir(const fs::path& filePath,
-                                                 const libsiedler2::ArchivItem_Palette* palette) const
-{
-    const auto fileStatus = status(filePath);
-    if(!exists(fileStatus))
-        throw LoadError(_("File or directory does not exist: %s\n"), filePath);
-    if(!is_regular_file(fileStatus) && !is_directory(fileStatus))
-        throw LoadError(_("Could not determine type of path %s\n"), filePath);
-
-    try
+    steady_clock::time_point start = steady_clock::now();
+    int ec;
+    if(bfs::is_regular_file(filePath))
+        ec = loadFile(to, filePath, palette);
+    else if(!bfs::is_directory(filePath))
     {
-        const Timer timer(true);
-
-        libsiedler2::Archiv result;
-        if(is_directory(fileStatus))
-            result = loadDirectory(filePath, palette);
-        else
-            result = loadFile(filePath, palette);
-
-        using namespace std::chrono;
-        // TODO: Change translations and use chronoIO
-        logger_.write(_("done in %ums\n")) % duration_cast<milliseconds>(timer.getElapsed()).count();
-
-        return result;
-    } catch(const LoadError& e)
+        LOG.write(_("Could not determine type of path %s\n")) % filePath;
+        return false;
+    } else
+        ec = loadDirectory(to, filePath, palette);
+    if(ec)
     {
-        logger_.write(_("failed: %1%\n")) % e.what();
-        throw LoadError();
+        LOG.write(_("failed: %1%\n")) % libsiedler2::getErrorString(ec);
+        return false;
     }
+    LOG.write(_("done in %1%\n")) % duration_cast<milliseconds>(steady_clock::now() - start);
+    return true;
 }
 
-void ArchiveLoader::mergeArchives(libsiedler2::Archiv& targetArchiv, libsiedler2::Archiv& otherArchiv)
+bool mergeArchives(libsiedler2::Archiv& targetArchive, libsiedler2::Archiv& otherArchive)
 {
-    if(targetArchiv.size() < otherArchiv.size())
-        targetArchiv.alloc_inc(otherArchiv.size() - targetArchiv.size());
-    for(unsigned i = 0; i < otherArchiv.size(); i++)
+    if(targetArchive.size() < otherArchive.size())
+        targetArchive.alloc_inc(otherArchive.size() - targetArchive.size());
+    for(unsigned i = 0; i < otherArchive.size(); i++)
     {
         // Skip empty entries
-        if(!otherArchiv[i])
+        if(!otherArchive[i])
             continue;
         // If target entry is empty, just move the new one
-        if(!targetArchiv[i])
-            targetArchiv.set(i, otherArchiv.release(i));
+        if(!targetArchive[i])
+            targetArchive.set(i, otherArchive.release(i));
         else
         {
-            auto* subArchiv = dynamic_cast<libsiedler2::Archiv*>(targetArchiv[i]);
+            libsiedler2::Archiv* subArchiv = dynamic_cast<libsiedler2::Archiv*>(targetArchive[i]);
             if(subArchiv)
             {
                 // We have a sub-archiv -> Merge
-                auto* otherSubArchiv = dynamic_cast<libsiedler2::Archiv*>(otherArchiv[i]);
+                libsiedler2::Archiv* otherSubArchiv = dynamic_cast<libsiedler2::Archiv*>(otherArchive[i]);
                 if(!otherSubArchiv)
-                    throw LoadError(_("Failed to merge entry %1%. Archive expected!\n"), i);
-                mergeArchives(*subArchiv, *otherSubArchiv);
+                {
+                    LOG.write(_("Failed to merge entry %1%. Archive expected!\n")) % i;
+                    return false;
+                }
+                if(!mergeArchives(*subArchiv, *otherSubArchiv))
+                    return false;
             } else
-                targetArchiv.set(i, otherArchiv.release(i)); // Just replace
+                targetArchive.set(i, otherArchive.release(i)); // Just replace
         }
     }
+    return true;
 }
+} // namespace
 
-libsiedler2::Archiv ArchiveLoader::load(const ResolvedFile& file, const libsiedler2::ArchivItem_Palette* palette) const
+std::shared_ptr<libsiedler2::Archiv> ArchiveLoader::load(const ResolvedFile& file) const
 {
-    libsiedler2::Archiv archive;
-    for(const fs::path& curFilepath : file)
+    std::shared_ptr<libsiedler2::Archiv> archive(new libsiedler2::Archiv);
+    for(const bfs::path& curFilepath : file)
     {
-        try
-        {
-            libsiedler2::Archiv newEntries = loadFileOrDir(curFilepath, palette);
-
-            std::map<uint16_t, uint16_t> bobMapping;
-            if(isBobOverride(curFilepath))
-            {
-                bobMapping = extractBobMapping(newEntries, curFilepath);
-                // Emulate bob structure: Single file where first entry is the BOB archive
-                libsiedler2::Archiv bobArchive;
-                bobArchive.push(std::make_unique<NestedArchive>(std::move(newEntries)));
-                using std::swap;
-                swap(bobArchive, newEntries);
-            }
-            mergeArchives(archive, newEntries);
-            if(!bobMapping.empty() && !archive.empty() && archive[0]->getBobType() == libsiedler2::BobType::Bob)
-                checkedCast<glArchivItem_Bob*>(archive[0])->mergeLinks(bobMapping);
-        } catch(const LoadError& e)
-        {
-            if(e.what() != std::string())
-                logger_.write("Exception caught: %1%\n") % e.what();
-            throw LoadError();
-        }
+        libsiedler2::Archiv newEntries;
+        if(!loadFileOrDir(newEntries, curFilepath, palette_))
+            return NULL;
+        if(!mergeArchives(*archive, newEntries))
+            return NULL;
     }
     return archive;
 }
