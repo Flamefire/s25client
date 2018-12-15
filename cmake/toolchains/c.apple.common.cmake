@@ -19,6 +19,10 @@ foreach(COMPILER_PREFIX i386-apple-darwin15 i686-apple-darwin10)
 endforeach()
 
 find_program(CMAKE_INSTALL_NAME_TOOL NAMES ${usedToolchain}-install_name_tool)
+find_program(CMAKE_OTOOL NAMES ${usedToolchain}-otool otool)
+
+include(${CMAKE_CURRENT_LIST_DIR}/CreateBundleUtilSymlinks.cmake)
+create_bundle_util_symlinks(${CMAKE_INSTALL_NAME_TOOL} ${CMAKE_OTOOL})
 
 set(OSX_SDKS "/usr/lib/apple/SDKs/MacOSX10.11.sdk" "/usr/lib/apple/SDKs/MacOSX10.5.sdk" "/usr/lib/apple/SDKs/MacOSX10.4u.sdk")
 
