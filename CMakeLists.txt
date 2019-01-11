@@ -64,7 +64,7 @@ endif()
 string(TOLOWER ${CMAKE_SYSTEM_NAME} LOWER_SYSTEM_NAME)
 if(CMAKE_CROSSCOMPILING)
     message(STATUS "Configuring for cross-compiling to ${CMAKE_SYSTEM} on ${CMAKE_SYSTEM_PROCESSOR}")
-    #Include cross-compile platform config
+	#Include cross-compile platform config
     set(_config "cmake/c.${LOWER_SYSTEM_NAME}.cmake")
     if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${_config}")
         message(STATUS "Using cross-platform config ${_config}")
@@ -339,12 +339,20 @@ endif()
 # Placeholder for S2 installation
 install(FILES "${RTTR_S2_PLACEHOLDER_PATH}" DESTINATION "${RTTR_GAMEDIR}")
 
-################################################################################
-# Postbuild
-################################################################################
+# Start script
+if(WIN32)
+	install(PROGRAMS "tools/release/bin/rttr.bat" DESTINATION "${RTTR_BINDIR}")
+elseif(APPLE)
+    # No-Op
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CYGWIN)
+	install(PROGRAMS "tools/release/bin/rttr.sh" DESTINATION "${RTTR_BINDIR}")
+else()
+	message(FATAL_ERROR "${CMAKE_SYSTEM_NAME} not supported")
+endif()
 
+# As last item
 if(RTTR_BUNDLE)
-    add_subdirectory("tools/release")
+    add_subdirectory(extras/createBundle)
 endif()
 
 ################################################################################
