@@ -12,6 +12,7 @@
 #include "network/PlayerGameCommands.h"
 #include "ogl/glAllocator.h"
 #include "random/Random.h"
+#include "random/randomIO.h"
 #include "variant.h"
 #include "world/GameWorld.h"
 #include "world/MapLoader.h"
@@ -26,13 +27,24 @@
 #    include <vld.h>
 #endif
 
-#include "gameTypes/BuildingType.h"
-
 struct Fixture : rttr::test::Fixture
 {
     Fixture() { libsiedler2::setAllocator(new GlAllocator); }
 };
 BOOST_GLOBAL_FIXTURE(Fixture);
+
+static boost::test_tools::predicate_result verifyChecksum(const AsyncChecksum& expected, const AsyncChecksum& actual)
+{
+    if(expected.randChecksum == 0 || expected == actual)
+        return true;
+    // LCOV_EXCL_START
+    boost::test_tools::predicate_result result(false);
+    result.message() << '\n' << expected << " != \n" << actual << '\n';
+    for(const auto& entry : RANDOM.GetAsyncLog())
+        result.message() << entry << '\n';
+    return result;
+    // LCOV_EXCL_STOP
+}
 
 static void playReplay(const boost::filesystem::path& replayPath)
 {
@@ -79,9 +91,7 @@ static void playReplay(const boost::filesystem::path& replayPath)
                                  [&game, &checksum](const Replay::GameCommand& cmd) {
                                      for(const gc::GameCommandPtr& gc : cmd.cmds.gcs)
                                          gc->Execute(game.world_, cmd.player);
-                                     const AsyncChecksum& msgChecksum = cmd.cmds.checksum;
-                                     if(msgChecksum.randChecksum != 0)
-                                         BOOST_TEST_REQUIRE(msgChecksum == checksum);
+                                     BOOST_TEST_REQUIRE(verifyChecksum(cmd.cmds.checksum, checksum));
                                  }),
                   cmd);
             nextGF = replay.ReadGF();
