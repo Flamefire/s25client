@@ -126,9 +126,9 @@ void dskCampaignSelection::Msg_TableSelectItem(const unsigned ctrl_id, const boo
             multiline.AddString(desc.longDescription, COLOR_YELLOW);
             campaignTitle.SetText(desc.name);
 
-            if(!desc.image.empty() && LOADER.LoadFiles({desc.image}))
+            if(desc.image && LOADER.LoadFiles({*desc.image}))
             {
-                campaignImage_ = LOADER.GetImageN(ResourceId::make(RTTRCONFIG.ExpandPath(desc.image)), 0);
+                campaignImage_ = LOADER.GetImageN(ResourceId::make(RTTRCONFIG.ExpandPath(*desc.image)), 0);
             }
 
             if(desc.selectionMapData.has_value())
