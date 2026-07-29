@@ -45,6 +45,19 @@ inline T& checkedCast(T_Src& src)
     return static_cast<T&>(src);
 }
 
+template<class T>
+T& assertNonNull(T* pointer)
+{
+    RTTR_Assert(pointer);
+    return *pointer;
+}
+/// Additionally assert dynamic type (if T & U are different)
+template<class T, class U>
+T& assertNonNull(U* pointer)
+{
+    return assertNonNull(checkedCast<T*>(pointer));
+}
+
 // Fwd decl
 namespace boost {
 namespace filesystem {
