@@ -197,8 +197,8 @@ public:
     void startWalking(Direction dir);
     /// Starts walking in a random dir and returns whether this was possible
     bool walkInRandomDir();
-    /// Umherirren starten (frei rumlaufen)
-    void startWandering(unsigned burned_wh_id = 0xFFFFFFFF);
+    /// Start wandering: i.e. walk around search for a flag to go back
+    virtual void startWandering(unsigned burned_wh_id = 0xFFFFFFFF);
     /// Auf Straßen(!) nach Hause laufen
     void goHome(noRoadNode* goal = nullptr);
     /// Aktuellen Weg, auf dem er läuft, fr ungültig erklären

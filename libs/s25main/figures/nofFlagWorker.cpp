@@ -57,6 +57,12 @@ void nofFlagWorker::abrogateWorkplace()
         RTTR_Assert(!world->getPlayer(player).isFlagWorker(this));
 }
 
+void nofFlagWorker::startWandering(const unsigned burned_wh_id)
+{
+    state = State::FigureWork;
+    noFigure::startWandering(burned_wh_id);
+}
+
 /// Geht wieder zurück zur Flagge und dann nach Hause
 void nofFlagWorker::goToFlag()
 {
@@ -79,7 +85,6 @@ void nofFlagWorker::goToFlag()
         {
             // Weg führt nicht mehr zum Lagerhaus, dann rumirren
             startWandering();
-            wander();
         }
 
         // Da wir quasi "freiwillig" nach Hause gegangen sind ohne das Abreißen der Flagge, auch manuell wieder
@@ -99,10 +104,6 @@ void nofFlagWorker::goToFlag()
         {
             abrogate();
             startWandering();
-            wander();
-            state = State::FigureWork;
-
-            flag = nullptr;
         }
     }
 }

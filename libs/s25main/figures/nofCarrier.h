@@ -120,6 +120,8 @@ public:
 
     void draw(DrawPoint drawPt) override;
 
+    void startWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Wird aufgerufen, wenn der Weg des Trägers abgerissen wurde
     void lostWork();
 

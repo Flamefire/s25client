@@ -44,6 +44,8 @@ public:
 
     GO_Type getGOT() const final { return GO_Type::NofDefender; }
 
+    void startWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Inform that a new attacker arrived at the flag while we are going in such that we can come right back
     void newAttacker(nofAttacker& attacker) { this->attacker = &attacker; }
     /// The attacker won't come to the flag anymore

@@ -106,6 +106,8 @@ public:
 
     void draw(DrawPoint drawPt) override;
 
+    void startWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Wenn eine neue Ware kommt oder die Produktion wieder erlaubt wurde, wird das aufgerufen
     void gotWareOrProductionAllowed();
     /// Wenn wieder Platz an der Flagge ist und eine Ware wieder rausgetragen werden kann

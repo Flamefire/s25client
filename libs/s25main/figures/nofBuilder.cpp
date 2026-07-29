@@ -80,6 +80,12 @@ void nofBuilder::abrogateWorkplace()
     }
 }
 
+void nofBuilder::startWandering(const unsigned burned_wh_id)
+{
+    state = BuilderState::FigureWork;
+    noFigure::startWandering(burned_wh_id);
+}
+
 void nofBuilder::lostWork()
 {
     building_site = nullptr;
@@ -92,8 +98,6 @@ void nofBuilder::lostWork()
         getEvMgr().removeEvent(current_ev);
 
         startWandering();
-        wander();
-        state = BuilderState::FigureWork;
     }
 }
 
