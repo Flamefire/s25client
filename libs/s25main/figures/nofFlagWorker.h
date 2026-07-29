@@ -43,6 +43,8 @@ public:
     void Destroy() override;
     void Serialize(SerializedGameData& sgd) const override;
 
+    void StartWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Wird aufgerufen, wenn die Flagge abgerissen wurde
     virtual void LostWork() = 0;
 

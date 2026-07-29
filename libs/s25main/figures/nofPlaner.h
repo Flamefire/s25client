@@ -50,6 +50,8 @@ public:
 
     void Draw(DrawPoint drawPt) override;
 
+    void StartWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Wird von der Baustelle aus aufgerufen, um den Bauarbeiter zu sagen, dass er gehen kann
     void LostWork();
 };

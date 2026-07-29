@@ -111,6 +111,8 @@ public:
     /// Draw soldier (for all types of soldiers done by this base class!)
     void Draw(DrawPoint drawPt) override;
 
+    void StartWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     /// Inform the different things that we are not coming anymore
     virtual void InformTargetsAboutCancelling();
     /// Is called when our home military building was destroyed

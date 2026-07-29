@@ -120,7 +120,6 @@ void nobMilitary::DestroyBuilding()
         troop->LeftBuilding();
         auto& soldier = world->AddFigure(pos, std::move(troop));
         soldier.StartWandering();
-        soldier.StartWalking(RANDOM_ENUM(Direction));
     }
     troops.clear();
 

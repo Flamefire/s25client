@@ -118,8 +118,10 @@ void BurnedWarehouse::HandleEvent(const unsigned /*id*/)
                         people[armoredSoldier]--;
                     }
                 }
-                figure.StartWandering(GetObjId());
+                // Start walking first so StartWandering sees us moving and doesn't auto-wander,
+                // preserving the directional distribution of refugees
                 figure.StartWalking(curDir);
+                figure.StartWandering(GetObjId());
             }
         }
     }

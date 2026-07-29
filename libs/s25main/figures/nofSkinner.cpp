@@ -169,7 +169,6 @@ void nofSkinner::HandleStateWalkingHome()
         // no way to home
         AbrogateWorkplace();
         StartWandering();
-        Wander();
     }
 }
 

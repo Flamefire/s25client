@@ -83,6 +83,12 @@ void nofPlaner::AbrogateWorkplace()
     }
 }
 
+void nofPlaner::StartWandering(const unsigned burned_wh_id)
+{
+    state = PlanerState::FigureWork;
+    noFigure::StartWandering(burned_wh_id);
+}
+
 void nofPlaner::LostWork()
 {
     building_site = nullptr;
@@ -100,11 +106,6 @@ void nofPlaner::LostWork()
         }
 
         StartWandering();
-        // wenn wir schon laufen, nicht nochmal laufen!
-        if(state != PlanerState::Walking)
-            Wander();
-
-        state = PlanerState::FigureWork;
     }
 }
 

@@ -426,7 +426,6 @@ void nofHunter::HandleStateWalkingHome()
         // Kein Weg führt mehr nach Hause--> Rumirren
         AbrogateWorkplace();
         StartWandering();
-        Wander();
     }
 }
 

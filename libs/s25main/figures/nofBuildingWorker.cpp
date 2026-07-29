@@ -226,6 +226,15 @@ bool nofBuildingWorker::FreePlaceAtFlag()
     } else
         return false;
 }
+void nofBuildingWorker::StartWandering(const unsigned burned_wh_id)
+{
+    // Notify about work cancelling and stop sounds
+    WorkAborted();
+    world->GetSoundMgr().stopSounds(*this);
+    state = State::FigureWork;
+    noFigure::StartWandering(burned_wh_id);
+}
+
 void nofBuildingWorker::LostWork()
 {
     switch(state)
@@ -251,18 +260,7 @@ void nofBuildingWorker::LostWork()
         {
             // Bisheriges Event abmelden, da die Arbeit unterbrochen wird
             GetEvMgr().RemoveEvent(current_ev);
-
-            // Bescheid sagen, dass Arbeit abgebrochen wurde
-            WorkAborted();
-
-            // Rumirren
             StartWandering();
-            Wander();
-
-            // Evtl. Sounds löschen
-            world->GetSoundMgr().stopSounds(*this);
-
-            state = State::FigureWork;
         }
         break;
         case State::EnterBuilding:
@@ -272,22 +270,7 @@ void nofBuildingWorker::LostWork()
         case State::HunterChasing:
         case State::HunterFindingShootingpoint:
         case State::HunterWalkingToCadaver:
-        case State::SkinnerWalkingToCarcass:
-        {
-            // Bescheid sagen, dass Arbeit abgebrochen wurde
-            WorkAborted();
-
-            // Rumirren
-            // Bei diesen States läuft man schon, darf also nicht noch zusätzlich Wander aufrufen, da man dann ja im
-            // Laufen nochmal losläuft!
-            StartWandering();
-
-            // Evtl. Sounds löschen
-            world->GetSoundMgr().stopSounds(*this);
-
-            state = State::FigureWork;
-        }
-        break;
+        case State::SkinnerWalkingToCarcass: StartWandering(); break;
     }
 
     workplace = nullptr;

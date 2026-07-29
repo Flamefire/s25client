@@ -71,7 +71,6 @@ void nobBaseMilitary::DestroyBuilding()
         {
             figRef.Abrogate();
             figRef.StartWandering();
-            figRef.StartWalking(RANDOM_ENUM(Direction));
         }
     }
 

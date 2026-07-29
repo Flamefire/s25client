@@ -279,6 +279,14 @@ void nofAttacker::Walked()
     }
 }
 
+void nofAttacker::StartWandering(const unsigned burned_wh_id)
+{
+    if(ship_obj_id)
+        CancelAtShip();
+    InformTargetsAboutCancelling();
+    nofActiveSoldier::StartWandering(burned_wh_id);
+}
+
 void nofAttacker::HomeDestroyed()
 {
     // If we are waiting, no events will trigger -> Start wandering right now,
@@ -287,14 +295,8 @@ void nofAttacker::HomeDestroyed()
     {
         // We are lost now so no valid source or target of attacks
         nobBaseMilitary* curGoal = attacked_goal; // attacked_goal gets reset
-        InformTargetsAboutCancelling();
-        if(ship_obj_id)
-            CancelAtShip();
-
         homeBld = nullptr;
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
 
         // Someone else might take this place
         curGoal->SendSuccessor(pos, radius);
@@ -310,14 +312,7 @@ void nofAttacker::HomeDestroyed()
 void nofAttacker::HomeDestroyedAtBegin()
 {
     homeBld = nullptr;
-
-    // We are lost now and hence not targetable
-    InformTargetsAboutCancelling();
-
-    state = SoldierState::FigureWork;
-
     StartWandering();
-    StartWalking(RANDOM_ENUM(Direction));
 }
 
 void nofAttacker::WonFighting()
@@ -327,20 +322,10 @@ void nofAttacker::WonFighting()
     // If our home was destroyed then we are lost
     // unless we are currently fighting at the flag so that building can become our new home
     if(!homeBld && state != SoldierState::AttackingFightingVsDefender)
-    {
-        // Lost -> Tell all dependents
-        InformTargetsAboutCancelling();
-        if(ship_obj_id)
-            CancelAtShip();
-
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
-    } else if(!attacked_goal)
-    {
-        // Target is gone -> Go home
-        ReturnHomeMissionAttacking();
-    } else
+    else if(!attacked_goal)
+        ReturnHomeMissionAttacking(); // Target is gone -> Go home
+    else
         ContinueAtFlag();
 }
 
@@ -398,14 +383,7 @@ void nofAttacker::MissAttackingWalk()
     // If our home is destroyed we are lost
     if(!homeBld)
     {
-        InformTargetsAboutCancelling();
-        if(ship_obj_id)
-            CancelAtShip();
-
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
-
         return;
     }
 
@@ -697,13 +675,7 @@ void nofAttacker::CapturingWalking()
             RTTR_Assert(attackedBld->GetPlayer() == player);
             attackedBld->NeedOccupyingTroops();
         }
-
-        if(ship_obj_id)
-            CancelAtShip();
-
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
     } else
     {
         // Our home still exists so walk to the flag of the building if possible
@@ -881,14 +853,9 @@ void nofAttacker::CancelAtHuntingDefender()
 
 void nofAttacker::HandleState_SeaAttack_ReturnToShip()
 {
-    if(!homeBld)
-    {
-        // Home destroyed -> start wandering
-        CancelAtShip();
+    if(!homeBld) // Home destroyed -> start wandering
         StartWandering();
-        state = SoldierState::FigureWork;
-        Wander();
-    } else if(pos == shipPos) // Arrived at ship
+    else if(pos == shipPos) // Arrived at ship
     {
         for(noBase& figure : world->GetFigures(pos))
         {
@@ -901,22 +868,11 @@ void nofAttacker::HandleState_SeaAttack_ReturnToShip()
 
         // Ship is gone, shouldn't happen!
         RTTR_Assert(false);
-        AbrogateWorkplace();
-        CancelAtShip();
         StartWandering();
-        state = SoldierState::FigureWork;
-        Wander();
     } else if(const auto dir = world->FindHumanPath(pos, shipPos, MAX_ATTACKING_RUN_DISTANCE))
         StartWalking(*dir);
-    else
-    {
-        // No path -> Notify home and ship, and wander around
-        AbrogateWorkplace();
-        CancelAtShip();
+    else // No path -> wander around
         StartWandering();
-        state = SoldierState::FigureWork;
-        Wander();
-    }
 }
 
 void nofAttacker::CancelSeaAttack()

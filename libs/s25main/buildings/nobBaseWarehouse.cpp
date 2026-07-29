@@ -477,10 +477,10 @@ void nobBaseWarehouse::HandleSendoutEvent()
                 inventory.real.Remove(jobEnumToAmoredSoldierEnum(jobType));
             }
 
+            // If no warehouse found, leave the figure with its default state (GotToGoal with no goal)
+            // When it leaves the building it will start wandering.
             if(wh)
                 fig->GoHome(wh);
-            else
-                fig->StartWandering();
 
             AddLeavingFigure(std::move(fig));
 
@@ -643,8 +643,8 @@ void nobBaseWarehouse::HandleLeaveEvent()
         if(fig.IsWalkingOnRoad())
             fig.InitializeRoadWalking(GetRoute(Direction::SouthEast), 0, true);
 
-        fig.ActAtFirst();
         FigureLeft(fig);
+        fig.ActAtFirst();
     } else
     {
         if(GetFlag()->HasSpaceForWare())

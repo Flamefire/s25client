@@ -253,7 +253,6 @@ void nofFarmhand::WalkHome()
         // Kein Weg führt mehr nach Hause--> Rumirren
         AbrogateWorkplace();
         StartWandering();
-        Wander();
     } else
     {
         // All good, let's start walking there

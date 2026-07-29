@@ -50,6 +50,7 @@ public:
     void Serialize(SerializedGameData& sgd) const override;
 
     GO_Type GetGOT() const final { return GO_Type::NofAggressivedefender; }
+    void StartWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
 
     /// Wenn ein Heimat-Militärgebäude bei Missionseinsätzen zerstört wurde
     void HomeDestroyed() override;

@@ -131,18 +131,24 @@ bool noFigure::IsSoldier() const
 
 void noFigure::ActAtFirst()
 {
-    // Je nach unserem Status bestimmte Dinge tun
+    // By default just go out.
+    // Special handling when (may) end up going to the current building where we don't leave at all
     switch(fs)
     {
         default: break;
-        case FigureState::GotToGoal: WalkToGoal(); break;
-        case FigureState::Job:
+        case FigureState::GotToGoal:
+            if(goal_)
+            {
+                WalkToGoal();
+                break;
+            }
+            BOOST_FALLTHROUGH;
+        case FigureState::Job: BOOST_FALLTHROUGH;
+        case FigureState::Wander:
+            // Go out first, further state handled at the flag
             StartWalking(Direction::SouthEast);
-            break; // erstmal rauslaufen, darum kümmern sich dann die abgeleiteten Klassen
+            break;
         case FigureState::GoHome:
-        {
-            // Wenn ich gleich wieder nach Hause geschickt wurde und aus einem Lagerhaus rauskomme, gar nicht erst
-            // rausgehen!
             if(goal_->GetPos() == pos)
             {
                 // Reset goal before re-adding to wh
@@ -153,11 +159,7 @@ void noFigure::ActAtFirst()
             } else
                 // ansonsten ganz normal rausgehen
                 WalkToGoal();
-        }
-        break;
-        case FigureState::Wander:
-            StartWalking(Direction::SouthEast);
-            break; // erstmal rauslaufen, darum kümmern sich dann die Wander-Funktionen
+            break;
     }
 }
 
@@ -258,7 +260,6 @@ void noFigure::WalkToGoal()
     if(!goal_)
     {
         StartWandering();
-        Wander();
         return;
     }
 
@@ -449,7 +450,6 @@ void noFigure::GoHome(noRoadNode* goal)
     {
         // Kein Lagerhaus gefunden --> Rumirren
         StartWandering();
-        cur_rs = nullptr;
     }
 }
 
@@ -460,21 +460,26 @@ void noFigure::StartWandering(const unsigned burned_wh_id)
     cur_rs = nullptr;
     rs_pos = 0;
     this->burned_wh_id = burned_wh_id;
-    // eine bestimmte Strecke rumirren und dann eine Flagge suchen
-    // 3x rumirren und eine Flagge suchen, wenn dann keine gefunden wurde, stirbt die Figur
+    // Walk a given time/distance then search for a flag,
+    // if no flag was found after some attempts the figure dies
     wander_way = WANDER_WAY_MIN + RANDOM_RAND(WANDER_WAY_MAX - WANDER_WAY_MIN);
-    // Soldaten sind härter im Nehmen
+    // Soldiers are stronger
     wander_tryings = IsSoldier() ? WANDER_TRYINGS_SOLDIERS : WANDER_TRYINGS;
 
-    // Wenn wir stehen, zusätzlich noch loslaufen!
-    if(waiting_for_free_node)
+    // Start walking if we are not yet
+    if(!IsMoving())
     {
-        waiting_for_free_node = false;
-        // We should be paused, so just continue moving now
-        if(IsStoppedBetweenNodes())
-            StartMoving(GetCurMoveDir(), GetPausedEvent().length);
-        else
+        if(!waiting_for_free_node)
             Wander();
+        else
+        {
+            waiting_for_free_node = false;
+            // We were paused, so just continue moving now
+            if(IsStoppedBetweenNodes())
+                StartMoving(GetCurMoveDir(), GetPausedEvent().length);
+            else
+                Wander();
+        }
     }
 }
 
@@ -589,11 +594,8 @@ void noFigure::Wander()
     {
         RTTR_Assert(wander_way > 0);
         --wander_way;
-    } else
-    {
-        // Wir sind eingesperrt! Kein Weg mehr gefunden --> Sterben
+    } else // We are completely blocked and can't walk anywhere
         Die();
-    }
 }
 
 bool noFigure::WalkInRandomDir()
@@ -624,7 +626,6 @@ void noFigure::WanderToFlag()
     {
         // Wenn nicht, wieder normal weiter rumirren
         StartWandering();
-        Wander();
         return;
     }
 
@@ -647,8 +648,7 @@ void noFigure::WanderToFlag()
         } else
         {
             // Wenn nicht, wieder normal weiter rumirren
-            StartWandering();
-            Wander();
+            StartWandering(burned_wh_id);
             return;
         }
     }
@@ -664,7 +664,6 @@ void noFigure::WanderToFlag()
     {
         // Wenn nicht, wieder normal weiter rumirren
         StartWandering();
-        Wander();
     }
 }
 
@@ -925,9 +924,7 @@ void noFigure::Abrogate()
 
 void noFigure::StopIfNecessary(const MapPoint pt)
 {
-    // Lauf ich auf Wegen --> wenn man zum Ziel oder Weg läuft oder die Träger, die natürlich auch auf Wegen arbeiten
-    if(fs == FigureState::GoHome || fs == FigureState::GotToGoal
-       || (fs == FigureState::Job && GetGOT() == GO_Type::NofCarrier))
+    if(IsWalkingOnRoad())
     {
         // Laufe ich zu diesem Punkt?
         if(current_ev && !waiting_for_free_node && world->GetNeighbour(this->pos, GetCurMoveDir()) == pt)

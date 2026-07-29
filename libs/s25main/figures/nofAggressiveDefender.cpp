@@ -70,6 +70,12 @@ void nofAggressiveDefender::Walked()
         nofActiveSoldier::Walked();
 }
 
+void nofAggressiveDefender::StartWandering(const unsigned burned_wh_id)
+{
+    InformTargetsAboutCancelling();
+    nofActiveSoldier::StartWandering(burned_wh_id);
+}
+
 void nofAggressiveDefender::HomeDestroyed()
 {
     homeBld = nullptr;
@@ -78,15 +84,7 @@ void nofAggressiveDefender::HomeDestroyed()
 void nofAggressiveDefender::HomeDestroyedAtBegin()
 {
     homeBld = nullptr;
-
-    // angegriffenem Gebäude Bescheid sagen, dass wir doch nicht mehr kommen
-    InformTargetsAboutCancelling();
-
-    state = SoldierState::FigureWork;
-
-    // Rumirren
     StartWandering();
-    StartWalking(RANDOM_ENUM(Direction));
 }
 
 void nofAggressiveDefender::CancelAtAttackedBld()
@@ -106,20 +104,9 @@ void nofAggressiveDefender::WonFighting()
 
     // Ist evtl. unser Heimatgebäude zerstört?
     if(!homeBld)
-    {
-        // Ziel Bescheid sagen
-        InformTargetsAboutCancelling();
-
-        // Rumirren
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
-
-        return;
-    }
-
-    // Continue walking to our attacker
-    MissAggressiveDefendingContinueWalking();
+    else // Continue walking to our attacker
+        MissAggressiveDefendingContinueWalking();
 }
 
 void nofAggressiveDefender::LostFighting()
@@ -179,11 +166,7 @@ void nofAggressiveDefender::MissAggressiveDefendingWalk()
 {
     if(!homeBld)
     {
-        // Home destroyed so abort and wander around
-        InformTargetsAboutCancelling();
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
         return;
     }
 

@@ -74,10 +74,7 @@ void nofActiveSoldier::WalkingHome()
     if(!homeBld)
     {
         // Start wandering around
-        state = SoldierState::FigureWork;
         StartWandering();
-        Wander();
-
         return;
     }
 
@@ -87,29 +84,17 @@ void nofActiveSoldier::WalkingHome()
         StartWalking(Direction::NorthWest); // Enter via the door
     else if(GetPos() == homeBld->GetPos())  // or are we at the building
         homeBld->AddActiveSoldier(world->RemoveFigure(pos, *this));
-    else
+    else if(const auto dir = world->FindHumanPath(pos, homeBld->GetFlagPos(), 100))
     {
-        const auto dir = world->FindHumanPath(pos, homeBld->GetFlagPos(), 100);
+        // Find all sorts of enemies (attackers, aggressive defenders..) nearby
+        if(TryFightingNearbyEnemy())
+            // Enemy found -> abort, because nofActiveSoldier handles all things now (inclusive one walking step)
+            return;
 
-        if(dir)
-        {
-            // Find all sorts of enemies (attackers, aggressive defenders..) nearby
-            if(TryFightingNearbyEnemy())
-                // Enemy found -> abort, because nofActiveSoldier handles all things now (inclusive one walking step)
-                return;
-
-            // Start walking
-            StartWalking(*dir);
-        } else
-        {
-            // Inform our home building that we're not coming anymore
-            Abrogate();
-            // Start wandering around then
-            StartWandering();
-            state = SoldierState::FigureWork;
-            Wander();
-        }
-    }
+        // Start walking
+        StartWalking(*dir);
+    } else // Start wandering around if no path found
+        StartWandering();
 }
 
 void nofActiveSoldier::Draw(DrawPoint drawPt)
@@ -142,6 +127,13 @@ void nofActiveSoldier::Draw(DrawPoint drawPt)
             break;
         }
     }
+}
+
+void nofActiveSoldier::StartWandering(const unsigned burned_wh_id)
+{
+    Abrogate();
+    state = SoldierState::FigureWork;
+    nofSoldier::StartWandering(burned_wh_id);
 }
 
 unsigned nofActiveSoldier::GetVisualRange() const
@@ -184,14 +176,7 @@ void nofActiveSoldier::ExpelEnemies() const
         if(!owner.IsAlly(fig->GetPlayer()) && !fig->IsSoldier() && fig->IsWalkingOnRoad())
         {
             // Then he should start wandering around
-            fig->Abrogate();
             fig->StartWandering();
-            // Not walking? (Could be carriers who are waiting for wares on roads)
-            if(!fig->IsMoving() && !fig->WalkInRandomDir())
-            {
-                // No possible way found (unlikely but just in case)
-                fig->Die();
-            }
         }
     }
 }

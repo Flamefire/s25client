@@ -93,6 +93,8 @@ public:
     void Destroy() override;
     void Serialize(SerializedGameData& sgd) const override;
 
+    void StartWandering(unsigned burned_wh_id = 0xFFFFFFFF) override;
+
     GO_Type GetGOT() const final { return GO_Type::NofAttacker; }
     const nofAggressiveDefender* GetHuntingDefender() const { return huntingDefender; }
 

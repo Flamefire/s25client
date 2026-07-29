@@ -118,20 +118,17 @@ void nobHarborBuilding::DestroyBuilding()
 
         figure.Abrogate();
         figure.StartWandering();
-        figure.StartWalking(RANDOM_ENUM(Direction));
     }
     figures_for_ships.clear();
 
     for(auto& soldiers_for_ship : soldiers_for_ships)
     {
         nofAttacker& soldier = world->AddFigure(pos, std::move(soldiers_for_ship.attacker));
-
         soldier.CancelSeaAttack();
         RTTR_Assert(!soldier.GetAttackedGoal());
         RTTR_Assert(!soldier.GetHomeBld());
         RTTR_Assert(!soldier.GetGoal());
         soldier.StartWandering();
-        soldier.StartWalking(RANDOM_ENUM(Direction));
     }
     soldiers_for_ships.clear();
 
