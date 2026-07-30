@@ -923,6 +923,79 @@ BOOST_FIXTURE_TEST_CASE(ConquerWithCarriersWalkingIn, AttackFixture<2>)
     RTTR_EXEC_TILL(40, !milBld1->IsDoorOpen());
 }
 
+BOOST_FIXTURE_TEST_CASE(ExpelledEnemiesCarrierReachesHQ, AttackFixture<2>)
+{
+    // Verify handling of expelled carriers during a fight:
+    // - Soldier expells figures on same node or walking towards it
+    // - Wandering figures eventually reach warehouse/HQ
+    // - Carried wares are lost
+    // Weak attacker against strong defender so we loose and don't destroy the roads
+    // as road destruction only triggers the usual path of lost carriers & wares
+    AddSoldiers(milBld0Pos, 6, Job::Private);
+    AddSoldiers(milBld1Pos, 1, Job::General);
+    const MapPoint milBld1FlagPos = milBld1->GetFlagPos();
+
+    // Build a road of length 4 from milBld1's flag going west
+    curPlayer = 1;
+    this->BuildRoad(milBld1FlagPos, false, std::vector<Direction>(4, Direction::West));
+    const MapPoint westFlagPos = world.MakeMapPoint(milBld1FlagPos - Position(4, 0));
+    auto& westFlag = ensureNonNull(world.GetSpecObj<noFlag>(westFlagPos));
+    RoadSegment& rs = ensureNonNull(westFlag.GetRoute(Direction::East));
+
+    // Create a carrier at the western flag, carrying a coin toward milBld1
+    auto& carrier = world.AddFigure(
+      westFlagPos, std::make_unique<nofCarrier>(CarrierType::Normal, westFlagPos, curPlayer, &rs, &westFlag));
+    rs.setCarrier(0, &carrier);
+    // Add a coin for the military building at the western flag
+    auto coin = std::make_unique<Ware>(GoodType::Coins, milBld1, &westFlag);
+    coin->WaitAtFlag(westFlag);
+    coin->RecalcRoute();
+    westFlag.AddWare(std::move(coin));
+    world.GetPlayer(1).IncreaseInventoryWare(GoodType::Coins, 1);
+
+    // Start the carrier - it picks up the coin and walks east
+    carrier.ActAtFirst();
+    BOOST_TEST_REQUIRE(westFlag.GetNumWares() == 0u);
+
+    // Move the carrier 3 steps east (1 node west of milBld1FlagPos)
+    for(unsigned i = 0; i < 3; i++)
+    {
+        rescheduleWalkEvent(carrier, 1);
+        RTTR_SKIP_GFS(1);
+    }
+    // Pause the carrier near milBld1FlagPos
+    rescheduleWalkEvent(carrier, 10000);
+
+    // Attack milBld1 with 1 weak soldier from player 0
+    curPlayer = 0;
+    this->Attack(milBld1Pos, 1, false);
+    BOOST_TEST_REQUIRE(milBld0->GetLeavingFigures().size() == 1u);
+    auto& attacker = dynamic_cast<nofAttacker&>(milBld0->GetLeavingFigures().front());
+    // Move him directly out
+    RTTR_EXEC_TILL(70, milBld0->GetLeavingFigures().empty());
+
+    // Move attacker to milBld1's flag - ExpelEnemies fires on arrival
+    moveObjTo(attacker, milBld1FlagPos);
+    RTTR_EXEC_TILL(20, attacker.GetPos() == milBld1FlagPos);
+
+    // The carrier should now be wandering (expelled by ExpelEnemies)
+    BOOST_TEST_REQUIRE(carrier.IsWandering());
+
+    // Unpause the carrier so it actually starts wandering
+    rescheduleWalkEvent(carrier, 1);
+    RTTR_SKIP_GFS(1);
+
+    // Wait for the carrier to reach the HQ
+    // This may fail or crash because ExpelEnemies doesn't call Abrogate,
+    // leaving the carrier's workplace pointer stale
+    RTTR_EXEC_TILL(5000, carrier.GetPos() == hqPos[1]);
+
+    // Check coin count: player coins should match HQ coins
+    // This may fail because the coin is lost when the carrier is destroyed
+    nobBaseWarehouse* hq1 = world.GetSpecObj<nobBaseWarehouse>(hqPos[1]);
+    BOOST_TEST_REQUIRE(world.GetPlayer(1).GetInventory()[GoodType::Coins] == hq1->GetNumRealWares(GoodType::Coins));
+}
+
 BOOST_FIXTURE_TEST_CASE(FlagBecomesUnreachableForWaitingAttacker, AttackFixture<2>)
 {
     // Setup:
